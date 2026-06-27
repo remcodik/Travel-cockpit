@@ -1,188 +1,42 @@
 # Product Principles
 
-**Document ID:** TC-PRD-005
+**Document ID:** TC-PROD-013  
+**Version:** 0.2  
+**Status:** Stable
 
-**Project:** Travel Cockpit
+## Purpose
 
-**Version:** 1.0
+These principles are mandatory for every functional, UX and technical decision in Travel Cockpit.
 
-**Status:** Approved
+## Principles
 
-**Owner:** Product Team
+### 1. Traveller First
+Every feature must provide clear value to the traveller.
 
----
+### 2. Roadtrip First
+The product is optimised for multi-day road trips.
 
-# Purpose
+### 3. One Place Model
+All physical locations are represented by the Place entity.
 
-This document defines the principles that guide every product decision.
+### 4. Planning by Choice
+Only traveller-approved activities become part of Planning.
 
-Every new feature should be evaluated against these principles before being implemented.
+### 5. AI Assists
+AI explains, compares and recommends, but never decides.
 
-If a feature conflicts with one or more principles, it should be redesigned or rejected.
+### 6. Current Context
+The application adapts to the active trip, traveller, accommodation and location.
 
----
+### 7. Offline First
+Essential travel information remains available without internet.
 
-# Principle 1
+### 8. Keep It Simple
+Prefer simple, maintainable solutions over complex feature sets.
 
-## Travel Companion, not Travel Planner
+### 9. Future Ready
+Design for extension without redesigning the core architecture.
 
-Travel Cockpit supports travellers during their journey.
+## Guiding Principle
 
-The application does not create complete itineraries.
-
-The traveller remains responsible for planning.
-
-Travel Cockpit assists.
-
----
-
-# Principle 2
-
-## Accommodation is the operational centre
-
-Every travel day starts from the active accommodation.
-
-Activities, restaurants, cafés, routes and AI suggestions are always presented in relation to that accommodation.
-
----
-
-# Principle 3
-
-## The map is the primary interface
-
-The map is not an additional feature.
-
-It is one of the core navigation methods.
-
-Travellers should understand their trip by looking at the map.
-
----
-
-# Principle 4
-
-## AI supports, never decides
-
-Artificial Intelligence exists to reduce searching.
-
-AI may recommend.
-
-AI may explain.
-
-AI never changes planning automatically.
-
-Every action requires confirmation.
-
----
-
-# Principle 5
-
-## Practical information first
-
-The application always prioritises practical information.
-
-Examples:
-
-- route
-- parking
-- charging
-- fuel
-- weather
-- opening hours
-- tickets
-
-Interesting background information is secondary.
-
----
-
-# Principle 6
-
-## One tap to action
-
-Important actions should never require multiple screens.
-
-Examples:
-
-- Open Google Maps
-- Call accommodation
-- Open booking
-- Show ticket
-- Start Komoot
-- Refresh AI suggestions
-
----
-
-# Principle 7
-
-## Offline whenever possible
-
-Essential travel information must remain available without internet.
-
-Synchronisation improves the experience but should never prevent the traveller from using the application.
-
----
-
-# Principle 8
-
-## Current context is more important than stored data
-
-Travel Cockpit should understand:
-
-- where the traveller is
-- where the traveller stays
-- what has already been done
-- today's weather
-- today's plans
-
-The application should always answer:
-
-"What is useful right now?"
-
----
-
-# Principle 9
-
-## Discover before Search
-
-Travellers should discover ideas naturally.
-
-Searching is important but should not be the primary interaction.
-
-Travel Cockpit should inspire without overwhelming.
-
----
-
-# Principle 10
-
-## One Place model
-
-Every physical location is represented as a Place.
-
-Different location types are distinguished by categories instead of separate models.
-
-This keeps the application consistent and scalable.
-
----
-
-# Principle 11
-
-## The traveller owns the experience
-
-Personal notes.
-
-Personal photos.
-
-Personal favourites.
-
-Personal planning.
-
-Travel Cockpit should always feel personal without becoming a social network.
-
----
-
-# Final Rule
-
-Whenever a new feature is proposed, ask one question:
-
-> Does this make travelling easier while I am on the road?
-
-If the answer is no, the feature probably does not belong in Travel Cockpit.
+> Every new feature should strengthen the travel experience while keeping the product simple.

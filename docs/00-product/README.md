@@ -1,58 +1,29 @@
-# Product Documentation
+# Product README
 
-This folder contains the functional foundation of the Travel Cockpit project.
+This folder contains the product architecture documentation for Travel Cockpit.
 
-Everything in this folder describes **what** the application should do and **why** it should behave that way.
+## Document Order
 
-It intentionally does **not** describe technical implementation details.
+01-purpose.md
+02-vision.md
+03-mission.md
+04-product-goal.md
+05-design-principles.md
+06-roadtrip-first.md
+07-current-context.md
+08-ai-philosophy.md
+09-future-scope.md
+10-out-of-scope.md
 
----
+Existing reference documents:
 
-## Documents
+- 00-brand-guidelines.md
+- 02-decision-log.md
+- 04-traveller-profile.md
+- 05-product-principles.md
 
-### 01 Product Blueprint
+## Purpose
 
-The vision, mission and design philosophy of Travel Cockpit.
+These documents define the product vision and architectural principles for Travel Cockpit.
 
-This is the most important document in the repository.
-
----
-
-### 02 Decision Log
-
-Contains all important product and architecture decisions.
-
-Every significant design choice is documented together with the reason behind it.
-
----
-
-### 03 User Journey
-
-Describes how a traveller uses the application before, during and after a trip.
-
-The focus is on the experience during the trip.
-
----
-
-### 04 Glossary
-
-Definitions of all important concepts used throughout the project.
-
-Examples:
-
-- Trip
-- Accommodation
-- Activity
-- Energy Point
-- Planning
-- AI Suggestion
-
----
-
-## Principles
-
-The Product Documentation is the source of truth for functional behaviour.
-
-Whenever new functionality is proposed, it should first be evaluated against the Product Blueprint before implementation starts.
-
-Technical documentation belongs in the Technical section, not here.
+All UX, Database, AI and Technical documentation should align with the product documentation contained in this folder.

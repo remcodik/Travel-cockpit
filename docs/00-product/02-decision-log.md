@@ -1,203 +1,57 @@
 # Decision Log
 
-**Document ID:** TC-PRD-002  
-**Version:** 1.0  
-**Status:** Active  
-**Owner:** Product Team
+**Document ID:** TC-PROD-011  
+**Version:** 0.2  
+**Status:** Stable
+
+## Purpose
+
+The Decision Log records architectural decisions that influence the design of Travel Cockpit.
+
+Each decision is considered binding unless explicitly replaced by a newer decision.
 
 ---
-
-# Purpose
-
-The Decision Log records all major product and architecture decisions made during the development of Travel Cockpit.
-
-Every important decision should be documented together with the reasoning behind it.
-
-This prevents the same discussions from happening multiple times and ensures consistency throughout the project.
-
----
-
-# Decision Status
-
-Possible statuses:
-
-- Proposed
-- Approved
-- Locked
-- Deprecated
-
----
-
-# Decisions
 
 ## DL-001
-
-### Title
-
-Travel Cockpit is primarily used during the journey.
-
-### Status
-
-Locked
-
-### Reason
-
-Most travel applications focus on planning before departure.
-
-Travel Cockpit focuses on supporting travellers while travelling.
-
----
+Travel Cockpit is designed as a roadtrip-first application.
 
 ## DL-002
-
-### Title
-
-The active accommodation is the starting point.
-
-### Status
-
-Locked
-
-### Reason
-
-Travellers naturally think from their current accommodation.
-
-Activities, restaurants, cafés and routes all originate from that location.
-
----
+Place is the central domain object for all physical locations.
 
 ## DL-003
-
-### Title
-
-AI never changes data automatically.
-
-### Status
-
-Locked
-
-### Reason
-
-Users remain in control.
-
-AI may suggest.
-
-Users decide.
-
----
+Accommodation is a specialised Place, not a separate location model.
 
 ## DL-004
-
-### Title
-
-Google Maps remains the primary navigation system.
-
-### Status
-
-Locked
-
-### Reason
-
-Navigation is not part of the product vision.
-
-Travel Cockpit launches navigation using GPS coordinates.
-
----
+Only one Trip can be active at a time.
 
 ## DL-005
-
-### Title
-
-The map is a primary screen.
-
-### Status
-
-Locked
-
-### Reason
-
-Travellers should understand their trip by looking at the map.
-
----
+Every Trip has one Active Accommodation that acts as the operational centre.
 
 ## DL-006
-
-### Title
-
-Offline support is mandatory.
-
-### Status
-
-Locked
-
-### Reason
-
-Road trips often take place in areas with limited internet connectivity.
-
----
+Planning only contains confirmed traveller decisions.
 
 ## DL-007
-
-### Title
-
-Planning contains only planned and completed activities.
-
-### Status
-
-Locked
-
-### Reason
-
-Ideas remain separate from the daily planning.
-
-This keeps the planning clean and focused.
-
----
+Discover contains inspiration and suggestions only.
 
 ## DL-008
-
-### Title
-
-Energy Points support both EV charging and fuel stations.
-
-### Status
-
-Locked
-
-### Reason
-
-Travel Cockpit must support electric, fuel and hybrid vehicles using the same architecture.
-
----
+AI supports the traveller but never makes decisions automatically.
 
 ## DL-009
+Current Context is used throughout the application to personalise the experience.
 
-### Title
+## DL-010
+Offline capability is a core design requirement.
 
-One tap to Google Maps.
+## DL-011
+The first release targets a single traveller.
 
-### Status
-
-Locked
-
-### Reason
-
-Users should never manually search for destinations.
-
-Travel Cockpit always launches navigation using coordinates.
+## DL-012
+Connected Travel and collaboration are future functionality and are intentionally postponed.
 
 ---
 
-## DL-010
+## Change Process
 
-### Title
+Architectural decisions are never silently changed.
 
-Travel Cockpit is a Travel Companion rather than a traditional Travel Planner.
-
-### Status
-
-Locked
-
-### Reason
-
-The application supports decisions during the journey instead of replacing the traveller's planning.
+If a decision changes, a new Decision Log entry is added describing the reason.
