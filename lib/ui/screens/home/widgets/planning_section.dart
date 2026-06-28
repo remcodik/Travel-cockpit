@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../domain/models/planning_item.dart';
 import '../../../../providers/planning_provider.dart';
+import '../../../../providers/place_provider.dart';
 
 class PlanningSection extends ConsumerWidget {
   final AsyncValue<List<PlanningItem>> planningAsync;
@@ -38,9 +39,13 @@ class PlanningSection extends ConsumerWidget {
           child: planningAsync.when(
             loading: () => const _LoadingRows(),
             error:   (_, __) => const _EmptyPlanning(),
-            data:    (items) => items.isEmpty
-                ? const _EmptyPlanning()
-                : _PlanningList(items: items, ref: ref),
+            data: (items) {
+              // Only show non-completed items, max 3
+              final active = items.where((i) => !i.isCompleted).take(3).toList();
+              return active.isEmpty
+                  ? const _EmptyPlanning()
+                  : _PlanningList(items: active);
+            },
           ),
         ),
       ],
@@ -48,122 +53,111 @@ class PlanningSection extends ConsumerWidget {
   }
 }
 
-class _PlanningList extends StatelessWidget {
+class _PlanningList extends ConsumerWidget {
   final List<PlanningItem> items;
-  final WidgetRef ref;
-  const _PlanningList({required this.items, required this.ref});
+  const _PlanningList({required this.items});
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ...items.take(3).toList().asMap().entries.map((entry) {
-          final i    = entry.key;
-          final item = entry.value;
-          return _PlanningRow(
-            index: i + 1,
-            item: item,
-            onTap: () => context.push('/place/\${item.placeId}'),
-            onCheck: () => ref.read(planningNotifierProvider.notifier)
-                .markCompleted(item.id),
-          );
-        }),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-          child: SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => context.push('/planning'),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Activiteit toevoegen'),
-            ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(children: [
+      ...items.asMap().entries.map((e) {
+        final item = e.value;
+        return _HomeItemRow(
+          index:   e.key + 1,
+          item:    item,
+          onTap:   () => context.push('/place/${item.placeId}'),
+          onCheck: () => ref.read(planningNotifierProvider.notifier)
+              .markCompleted(item.id),
+        );
+      }),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => context.push('/discover'),
+            icon: const Text('✨'),
+            label: const Text('AI ideeën bekijken'),
           ),
         ),
-      ],
-    );
+      ),
+    ]);
   }
 }
 
-class _PlanningRow extends StatelessWidget {
+// Shows real place name from DB
+class _HomeItemRow extends ConsumerWidget {
   final int index;
   final PlanningItem item;
   final VoidCallback onTap;
   final VoidCallback onCheck;
 
-  const _PlanningRow({
-    required this.index,
-    required this.item,
-    required this.onTap,
-    required this.onCheck,
-  });
+  const _HomeItemRow({required this.index, required this.item,
+      required this.onTap, required this.onCheck});
 
   @override
-  Widget build(BuildContext context) {
-    final done = item.isCompleted;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final placeAsync = ref.watch(placeByIdProvider(item.placeId));
+    final place = placeAsync.valueOrNull;
+    final name  = place?.name     ?? '…';
+    final emoji = place?.category.emoji ?? '📍';
+    final sub   = place?.description?.split('.').first ?? '';
+    final done  = item.isCompleted;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          children: [
-            // Number
-            Container(
-              width: 26, height: 26,
-              decoration: const BoxDecoration(
-                color: AppColors.primary, shape: BoxShape.circle),
-              child: Center(child: Text('\$index',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
-                      color: Colors.white))),
-            ),
-            const SizedBox(width: 10),
-            // Thumb
-            Container(
-              width: 48, height: 48,
+        child: Row(children: [
+          // Number badge
+          Container(width: 26, height: 26,
+            decoration: BoxDecoration(
+              color: done ? AppColors.border : AppColors.primary,
+              shape: BoxShape.circle),
+            child: Center(child: Text('$index',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
+                    color: done ? AppColors.textThird : Colors.white)))),
+          const SizedBox(width: 10),
+          // Emoji thumb
+          Container(width: 48, height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(12)),
+            child: Center(child: Text(emoji,
+                style: const TextStyle(fontSize: 22)))),
+          const SizedBox(width: 12),
+          // Name
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name, style: TextStyle(fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: done ? AppColors.textThird : AppColors.textPrimary,
+                  decoration: done ? TextDecoration.lineThrough : null),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              if (sub.isNotEmpty)
+                Text(sub, style: const TextStyle(fontSize: 11,
+                    color: AppColors.textThird),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+            ])),
+          // Check
+          GestureDetector(
+            onTap: onCheck,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 24, height: 24,
               decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(child: Text('\U0001f3d4\ufe0f',
-                  style: TextStyle(fontSize: 22))),
-            ),
-            const SizedBox(width: 12),
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Activiteit \$index',
-                      style: TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700,
-                        color: done ? AppColors.textThird : AppColors.textPrimary,
-                        decoration: done ? TextDecoration.lineThrough : null,
-                      )),
-                  const Text('Tap om te openen',
-                      style: TextStyle(fontSize: 12, color: AppColors.textThird)),
-                ],
-              ),
-            ),
-            // Check
-            GestureDetector(
-              onTap: onCheck,
-              child: Container(
-                width: 24, height: 24,
-                decoration: BoxDecoration(
-                  color: done ? AppColors.action : Colors.transparent,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: done ? AppColors.action : AppColors.border,
-                    width: 2,
-                  ),
-                ),
-                child: done
-                    ? const Icon(Icons.check, color: Colors.white, size: 14)
-                    : null,
-              ),
-            ),
-          ],
-        ),
+                color: done ? AppColors.action : Colors.transparent,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: done ? AppColors.action : AppColors.border,
+                  width: 2)),
+              child: done
+                  ? const Icon(Icons.check_rounded,
+                      color: Colors.white, size: 14)
+                  : null)),
+        ]),
       ),
     );
   }
@@ -174,25 +168,21 @@ class _EmptyPlanning extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.all(20),
-    child: Column(
-      children: [
-        const Text('\U0001f4c5', style: TextStyle(fontSize: 32)),
-        const SizedBox(height: 8),
-        const Text('Niets gepland vandaag',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary)),
-        const SizedBox(height: 4),
-        const Text('Voeg een activiteit toe of bekijk AI idee\u00ebn.',
-            style: TextStyle(fontSize: 12, color: AppColors.textThird),
-            textAlign: TextAlign.center),
-        const SizedBox(height: 14),
-        OutlinedButton(
-          onPressed: () => context.push('/discover'),
-          child: const Text('Bekijk AI idee\u00ebn \u2728'),
-        ),
-      ],
-    ),
-  );
+    child: Column(children: [
+      const Text('📅', style: TextStyle(fontSize: 32)),
+      const SizedBox(height: 8),
+      const Text('Niets gepland vandaag', style: TextStyle(
+          fontSize: 14, fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary)),
+      const SizedBox(height: 4),
+      const Text('Voeg activiteiten toe via AI ideeën.',
+          style: TextStyle(fontSize: 12, color: AppColors.textThird),
+          textAlign: TextAlign.center),
+      const SizedBox(height: 14),
+      OutlinedButton(
+        onPressed: () => context.push('/discover'),
+        child: const Text('Bekijk AI ideeën ✨')),
+    ]));
 }
 
 class _LoadingRows extends StatelessWidget {
@@ -201,11 +191,8 @@ class _LoadingRows extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     children: List.generate(2, (_) => Container(
       margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      height: 48,
+      height: 56,
       decoration: BoxDecoration(
         color: AppColors.border,
-        borderRadius: BorderRadius.circular(12),
-      ),
-    )),
-  );
+        borderRadius: BorderRadius.circular(12)))));
 }
