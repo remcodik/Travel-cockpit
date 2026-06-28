@@ -30,17 +30,17 @@ class AiContext {
   });
 
   String get formattedDate {
-    final months = ['jan','feb','mrt','apr','mei','jun',
+    const months = ['jan','feb','mrt','apr','mei','jun',
                     'jul','aug','sep','okt','nov','dec'];
-    return '\${today.day} \${months[today.month - 1]} \${today.year}';
+    return '${today.day} ${months[today.month - 1]} ${today.year}';
   }
 
   String get weatherSummary {
     if (temperatureCelsius == null) return 'Onbekend';
-    final temp = '\${temperatureCelsius!.round()}\u00b0C';
+    final temp = '${temperatureCelsius!.round()}\u00b0C';
     final cond = weatherCondition ?? '';
     final rain = rainProbabilityPercent != null
-        ? ', \${rainProbabilityPercent}% kans op regen' : '';
-    return '\$temp \$cond\$rain'.trim();
+        ? ', ${rainProbabilityPercent}% kans op regen' : '';
+    return '$temp $cond$rain'.trim();
   }
 }
