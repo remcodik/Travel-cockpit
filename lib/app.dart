@@ -12,6 +12,8 @@ import 'ui/screens/tickets/tickets_screen.dart';
 import 'ui/screens/charging/charging_screen.dart';
 import 'ui/screens/activity/activity_detail_screen.dart';
 import 'ui/screens/meer/meer_screen.dart';
+import 'ui/screens/roadtrip/roadtrip_screen.dart';
+import 'ui/screens/settings/settings_screen.dart';
 
 class _Placeholder extends StatelessWidget {
   final String title;
@@ -57,12 +59,14 @@ final _router = GoRouter(
     GoRoute(path: '/place/:id',
         builder: (_, s) => ActivityDetailScreen(
             placeId: s.pathParameters['id']!)),
+    // ✅ Nu echte schermen
     GoRoute(path: '/roadtrip',
-        builder: (_, __) => const _Placeholder(title: 'Roadtrip-modus')),
+        builder: (_, __) => const RoadtripScreen()),
+    GoRoute(path: '/settings',
+        builder: (_, __) => const SettingsScreen()),
+    // Nog placeholders
     GoRoute(path: '/notifications',
         builder: (_, __) => const _Placeholder(title: 'Meldingen')),
-    GoRoute(path: '/settings',
-        builder: (_, __) => const _Placeholder(title: 'Instellingen')),
     GoRoute(path: '/profile',
         builder: (_, __) => const _Placeholder(title: 'Profiel')),
   ],
