@@ -4,45 +4,47 @@ import '../domain/models/place.dart';
 import 'database_provider.dart';
 import 'trip_provider.dart';
 
-// Today's planning items for active trip
+// Today's planning for the active trip
 final todayPlanningProvider = StreamProvider<List<PlanningItem>>((ref) {
-  final trip = ref.watch(activeTripProvider).valueOrNull;
+  final trip  = ref.watch(activeTripProvider).valueOrNull;
   if (trip == null) return const Stream.empty();
   final today = DateTime.now();
   return ref.watch(planningRepositoryProvider).watchByDate(trip.id, today);
 });
 
-// All planning items for active trip
+// All planning items for the active trip (all days)
 final allPlanningProvider = StreamProvider<List<PlanningItem>>((ref) {
   final trip = ref.watch(activeTripProvider).valueOrNull;
   if (trip == null) return const Stream.empty();
   return ref.watch(planningRepositoryProvider).watchByTrip(trip.id);
 });
 
-// Planning actions
+// Planning actions notifier
 class PlanningNotifier extends StateNotifier<AsyncValue<void>> {
   final PlanningRepository _planningRepo;
-  final PlaceRepository _placeRepo;
-  final String? _tripId;
+  final PlaceRepository    _placeRepo;
+  final Ref                _ref;
 
-  PlanningNotifier(this._planningRepo, this._placeRepo, this._tripId)
+  PlanningNotifier(this._planningRepo, this._placeRepo, this._ref)
       : super(const AsyncValue.data(null));
 
-  /// Add AI suggestion or manual place to planning.
-  /// AI never adds automatically — user must call this explicitly (DL-008).
+  String? get _tripId =>
+      _ref.read(activeTripProvider).valueOrNull?.id;
+
+  /// Add a Place to planning.
+  /// Per DL-008: only called by explicit user action — never automatic.
   Future<void> addPlace(Place place, {DateTime? plannedDate}) async {
-    if (_tripId == null) return;
+    final tid = _tripId;
+    if (tid == null) return;
+
     state = const AsyncValue.loading();
     try {
-      // Save place first if not already saved
       await _placeRepo.save(place);
-      // Create planning item
-      final item = PlanningItem.create(
-        tripId:      _tripId!,
+      await _planningRepo.save(PlanningItem.create(
+        tripId:      tid,
         placeId:     place.id,
         plannedDate: plannedDate,
-      );
-      await _planningRepo.save(item);
+      ));
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -61,8 +63,9 @@ class PlanningNotifier extends StateNotifier<AsyncValue<void>> {
 
 final planningNotifierProvider =
     StateNotifierProvider<PlanningNotifier, AsyncValue<void>>((ref) {
-  final trip        = ref.watch(activeTripProvider).valueOrNull;
-  final planningRepo= ref.watch(planningRepositoryProvider);
-  final placeRepo   = ref.watch(placeRepositoryProvider);
-  return PlanningNotifier(planningRepo, placeRepo, trip?.id);
+  return PlanningNotifier(
+    ref.watch(planningRepositoryProvider),
+    ref.watch(placeRepositoryProvider),
+    ref,                         // pass ref so notifier can always read current trip
+  );
 });
