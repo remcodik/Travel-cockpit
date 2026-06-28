@@ -25,8 +25,9 @@ final aiRepositoryProvider = Provider<AiRepository>((ref) {
   // SharedPreferences — use synchronous instance for simplicity
   // In production: use ref.watch(sharedPrefsProvider).value
   // This is initialised in main.dart before runApp()
-  final prefs = _globalPrefs!;
-  return AiRepository(client: client, prefs: prefs);
+  assert(_globalPrefs != null,
+      'setGlobalPrefs() must be called in main() before runApp()');
+  return AiRepository(client: client, prefs: _globalPrefs!);
 });
 
 // Set by main.dart before runApp() — avoids async in provider
