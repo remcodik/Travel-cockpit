@@ -4,11 +4,13 @@ import '../data/repositories/trip_repository.dart';
 import '../data/repositories/place_repository.dart';
 import '../data/repositories/planning_repository.dart';
 
-// Single database instance for the whole app
+/// Overridden in main() with the seeded instance
+final databaseInstanceProvider = Provider<AppDatabase>((ref) {
+  throw UnimplementedError('databaseInstanceProvider must be overridden in main()');
+});
+
 final databaseProvider = Provider<AppDatabase>((ref) {
-  final db = AppDatabase();
-  ref.onDispose(db.close);
-  return db;
+  return ref.watch(databaseInstanceProvider);
 });
 
 final tripRepositoryProvider = Provider<TripRepository>((ref) {
