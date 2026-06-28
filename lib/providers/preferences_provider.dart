@@ -5,17 +5,20 @@ import '../domain/models/user_preferences.dart';
 
 const _prefsKey = 'user_preferences';
 
+// Global prefs instance — set in main.dart before runApp()
+SharedPreferences? _sharedPrefs;
+void initPreferencesProvider(SharedPreferences prefs) => _sharedPrefs = prefs;
+
 class PreferencesNotifier extends StateNotifier<UserPreferences> {
   final SharedPreferences _prefs;
 
-  PreferencesNotifier(this._prefs)
-      : super(_load(_prefs));
+  PreferencesNotifier(this._prefs) : super(_load(_prefs));
 
   static UserPreferences _load(SharedPreferences prefs) {
-    final json = prefs.getString(_prefsKey);
-    if (json == null) return UserPreferences.defaults();
+    final raw = prefs.getString(_prefsKey);
+    if (raw == null) return UserPreferences.defaults();
     try {
-      return UserPreferences.fromJson(jsonDecode(json));
+      return UserPreferences.fromJson(jsonDecode(raw));
     } catch (_) {
       return UserPreferences.defaults();
     }
@@ -45,9 +48,7 @@ class PreferencesNotifier extends StateNotifier<UserPreferences> {
 
 final preferencesProvider =
     StateNotifierProvider<PreferencesNotifier, UserPreferences>((ref) {
-  // Requires setGlobalPrefs() called in main()
-  return PreferencesNotifier(_globalPrefs!);
+  assert(_sharedPrefs != null,
+      'Call initPreferencesProvider() in main() before runApp()');
+  return PreferencesNotifier(_sharedPrefs!);
 });
-
-// Reuse the global prefs instance from ai_provider.dart
-import 'ai_provider.dart' show _globalPrefs;
