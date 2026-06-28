@@ -1,139 +1,138 @@
 # MVP
 
 **Document ID:** TC-ROAD-001
-**Version:** 1.0
-**Status:** Draft
-**Owner:** Product Team
-**Last Updated:** 2025-06-27
+**Version:** 2.0
+**Status:** In Progress
+**Last Updated:** 2026-06-28
 
 ---
 
-# Purpose
+# MVP Status
 
-This document defines the minimum viable product for Travel Cockpit version 1.0.
-
-The MVP is the smallest version of the application that delivers real value to a traveller on the road.
-
-Every feature in this document must justify its inclusion against the Product Blueprint design rule:
-
-> Does this make travelling easier while being on the road?
-
----
-
-# MVP Philosophy
-
-The MVP does not aim to be feature-complete.
-
-It aims to be useful during one real trip.
-
-A traveller with a real trip should be able to use Travel Cockpit as their primary travel companion for the full duration of that trip.
+| Phase | Status |
+|---|---|
+| Phase AI — AI Integration | ✅ Complete |
+| Phase 1 — Data Foundation | ✅ Complete |
+| Phase 2 — Core Screens | ✅ Complete |
+| Phase 3 — Map | ✅ Complete |
+| Phase 4 — Discover & AI | ✅ Complete |
+| Phase 5 — Energy & Tickets | 🟡 Partial — UI only |
+| Phase 6 — Roadtrip Mode | ❌ Not started |
+| Phase 7 — Offline & Polish | 🟡 Partial |
 
 ---
 
-# Included in MVP
+# What Works Now
 
 ## Trips
-
-- Create a trip with a name, country and date range.
+- Create trip with name, country (10 options), date range.
 - Set one trip as active.
 - Switch between trips.
-- Only one trip can be active at a time.
+- Delete trip with confirmation.
+- Noorwegen 2026 seed data loaded on first launch.
 
 ## Accommodations
-
-- Add accommodations to a trip.
-- Set check-in and check-out dates.
-- One accommodation is automatically active based on today's date.
-- View accommodation details: name, location, dates, contact info.
-- Link activities and nearby places to the active accommodation.
+- 4 accommodations from Norway 2026 seed data.
+- Active accommodation determined by today's date automatically (DL-005).
+- Accommodation detail: name, address, check-in/out times, confirmation, contact with call button.
+- All trip stops shown in sequence with active badge.
+- Hero with topographic texture, live weather badge.
 
 ## Activities
-
-- Add activities manually to a trip.
-- Assign an activity to a date.
-- Add name, category, location, distance and notes.
-- Mark activity as completed.
-- Reorder activities manually.
-- Remove activities from planning.
+- 19 activities from Norway 2026 seed data with real coordinates.
+- Activity detail: description, notes, category, add/remove from planning, mark done.
+- Google Maps navigation from activity detail.
+- Komoot link from activity detail.
 
 ## Planning
-
-- View today's planned activities.
-- View upcoming planned activities by day.
-- Planning only contains confirmed decisions.
-- AI suggestions are not in planning until the traveller confirms them.
+- Scrollable day tab bar from trip start to end dates.
+- Today's planning on dashboard with real place names.
+- All planning items with swipe-to-delete and checkmark.
+- Unscheduled items shown separately.
 
 ## Map
+- Real OpenStreetMap tiles via flutter_map.
+- All trip places as pins from database.
+- Category filter chips.
+- Real Norway 2026 route line.
+- Real stop strip with 4 stays, dates, addresses.
+- Tap pin to see details and navigate.
 
-- Show all planned activities on a map.
-- Show all accommodations on the route.
-- Filter by category: activities, restaurants, energy, cafés.
-- Tap a pin to view place details.
-- Launch Google Maps from any place.
-- Route line between accommodations.
+## AI Discover
+- Claude claude-sonnet-4-6 via Anthropic API.
+- Real weather context from Open-Meteo.
+- Real already-planned list sent to AI (no duplicates).
+- Real user preferences from PreferencesProvider.
+- 24-hour cache per region.
+- Offline: shows cached suggestions.
+- Category filters: alles, activiteit, restaurant, café, regen.
+- Load more: 5 additional suggestions.
+- Add to planning: creates Place + PlanningItem in DB.
 
-## Discover (AI Ideas)
+## Meer Menu
+- Full navigation to all screens.
+- Norway 2026 route info, travel tips from original reisplanning.
+- Roadtrip quick card.
 
-- Ask AI for activity suggestions based on current location, weather and user preferences.
-- Filter suggestions by category: activities, restaurants, cafés, rain alternatives.
-- Add a suggestion to planning with one tap.
-- AI never adds suggestions automatically.
-
-## Energy Points
-
-- View nearby charging stations and fuel stations.
-- Filter by connector type and minimum power.
-- View live availability per station.
-- Launch navigation to a station with one tap.
-- Find stations along the route.
-
-## Tickets
-
-- Add a ticket manually to a trip.
-- Store ticket name, date, time and number of persons.
-- Display a barcode or QR code.
-- Tickets are available offline.
-- Mark a ticket as used.
-
-## Roadtrip Mode
-
-- Show distance to next accommodation.
-- Show estimated arrival time.
-- Show first stop on today's route.
-- Show nearest charging station along the route.
-- Show weather forecast for the route.
-- Launch navigation with one tap.
-
-## User Preferences
-
-- Set travel preferences: nature, walking, culture, cafés, photography etc.
-- Set vehicle type: EV or fuel.
-- Set EV charging networks and minimum power.
-- Preferences are saved and used by AI suggestions.
-
-## Offline Support
-
-- All trip data available without internet.
-- Maps downloadable per country.
-- Tickets available offline.
-- AI suggestions require internet.
-- App notifies user when offline.
+## Offline
+- Offline banner when no internet (DL-010).
+- All trip data from local SQLite.
+- AI suggestions cached 24h.
+- Weather cached 1h.
 
 ---
 
-# Not Included in MVP
+# What is Still Needed for MVP
 
-These features are deliberately excluded from version 1.0.
+## Priority 1 — Roadtrip Mode (DL-001: roadtrip-first)
 
-- Shared trips and collaboration.
-- Social features.
-- Booking accommodations.
-- Reviews.
-- Cost tracking.
-- Navigation engine.
-- Automatic planning by AI.
-- Gamification.
-- Chat.
+Screen that shows:
+- Distance and ETA to next accommodation.
+- Today's first planned activity.
+- Nearest charging station along route.
+- Weather for current location.
+- One-tap navigation launch.
+
+## Priority 2 — Tickets (functional)
+
+The ticket model exists. The screen shows demo data.
+Needs: add ticket form, link to Klimapark 2469 ticket from seed, barcode scan.
+
+## Priority 3 — Activity detail — walk fields
+
+Description contains walk info as free text (km, level, duration).
+Needs: structured fields shown as chips.
+
+## Priority 4 — Map — add to planning with date
+
+Currently adds without asking for a date.
+Needs: date picker in the map place sheet.
+
+## Priority 5 — Charging live data
+
+Currently 4 hardcoded stations near Skjåk.
+Needs: Open Charge Map API or OCPI integration.
+
+---
+
+# Build Order — Remaining
+
+## Phase 6 — Roadtrip Mode
+
+1. Distance calculation to next accommodation.
+2. ETA display.
+3. Weather strip for route.
+4. Next planned activity display.
+5. Nearest charger along route.
+6. One-tap navigation to next stop.
+
+## Phase 7 — Polish & Offline
+
+1. Map tile download per country.
+2. Offline status display (last synced time).
+3. Edge cases: no trip, trip ended, no accommodations.
+4. Performance: large planning lists.
+5. Error states: all screens must handle errors gracefully.
 
 ---
 
@@ -141,88 +140,11 @@ These features are deliberately excluded from version 1.0.
 
 The MVP is successful when:
 
-1. A traveller can create a real trip and use the app for its full duration.
-2. The traveller opens Travel Cockpit before opening Google Maps, Booking or any other travel app.
-3. The traveller adds at least three activities to planning during the trip.
-4. The traveller uses AI suggestions at least once.
-5. The app works offline at a location with no internet.
-
----
-
-# MVP Screens
-
-| Screen | Status |
-|---|---|
-| Vandaag (Dashboard) | Required |
-| Kaart (Map) | Required |
-| Planning | Required |
-| Ideeën (AI Discover) | Required |
-| Activiteit Detail | Required |
-| Accommodatie Detail | Required |
-| Accommodaties Overzicht | Required |
-| Laadstations | Required |
-| Tickets | Required |
-| Roadtrip-modus | Required |
-| Mijn Reizen | Required |
-| Profiel & Voorkeuren | Required |
-| Instellingen | Required |
-
----
-
-# Build Order
-
-Build in this sequence. Each phase must work fully before the next begins.
-
-## Phase 1 — Data Foundation
-
-1. Trip model: create, read, update, delete.
-2. Accommodation model linked to trip.
-3. Activity / Place model linked to trip.
-4. Local database with offline-first storage.
-5. Active trip and active accommodation logic.
-
-## Phase 2 — Core Screens
-
-1. Dashboard showing active trip, accommodation and today's planning.
-2. Planning screen with day tabs and activity list.
-3. Activity detail screen with Google Maps integration.
-4. Accommodations overview and detail.
-
-## Phase 3 — Map
-
-1. Map screen with pins for activities and accommodations.
-2. Route line between accommodations.
-3. Category filters.
-4. Place detail sheet on pin tap.
-
-## Phase 4 — Discover & AI
-
-1. AI suggestion screen with category filters.
-2. Add suggestion to planning with one tap.
-3. User preferences saved and sent to AI.
-
-## Phase 5 — Energy & Tickets
-
-1. Charging station list with live availability.
-2. Filter by connector and power.
-3. Ticket storage with barcode display.
-4. Offline ticket access.
-
-## Phase 6 — Roadtrip Mode
-
-1. Distance and ETA to next accommodation.
-2. First stop display.
-3. Nearest charger along route.
-4. Weather strip.
-5. One-tap navigation launch.
-
-## Phase 7 — Offline & Polish
-
-1. Map download per country.
-2. Offline indicator in UI.
-3. Sync status display.
-4. Performance optimisation.
-5. Edge cases: no trip, no accommodation, no internet.
+1. A traveller can load the app during the Norway 2026 trip and see their real planning.
+2. The AI suggests relevant activities based on current location and weather.
+3. The app works fully offline in a Norwegian mountain valley.
+4. The traveller opens Travel Cockpit instead of Google Maps for the route overview.
+5. A new trip can be created and used within 2 minutes.
 
 ---
 
@@ -230,4 +152,5 @@ Build in this sequence. Each phase must work fully before the next begins.
 
 | Version | Date | Change |
 |---|---|---|
-| 1.0 | 2025-06-27 | Initial draft |
+| 1.0 | 2026-06-10 | Initial MVP spec |
+| 2.0 | 2026-06-28 | Updated with current build status, phases 1-5 complete |
