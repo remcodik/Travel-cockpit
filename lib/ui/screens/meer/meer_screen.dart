@@ -131,7 +131,11 @@ class MeerScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   const _TripFact('🏔️', '19 activiteiten gepland'),
                   const SizedBox(height: 8),
-                  const _TripFact('⛽', 'Route: Bergen → Sogndal → Lom → Valdres → Sørlandet → ferry'),
+                  const _TripFact('⛴️', 'Heen: Nijmegen → Hirtshals (ferry) → Stavanger → Bergen'),
+                  const SizedBox(height: 8),
+                  const _TripFact('🚗', 'Bergen → Sogndal → Skjåk → Valdres → Gjerstad'),
+                  const SizedBox(height: 8),
+                  const _TripFact('⛴️', 'Terug: Kristiansand → Hirtshals (ferry) → Kolding → Nijmegen'),
                   const SizedBox(height: 12),
                   // Route tips from index.html
                   _TipBox('Op verblijfsdagen liever niet de hele dag autorijden. '
