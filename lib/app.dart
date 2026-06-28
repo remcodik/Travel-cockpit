@@ -11,6 +11,7 @@ import 'ui/screens/trips/trips_screen.dart';
 import 'ui/screens/tickets/tickets_screen.dart';
 import 'ui/screens/charging/charging_screen.dart';
 import 'ui/screens/activity/activity_detail_screen.dart';
+import 'ui/screens/meer/meer_screen.dart';
 
 class _Placeholder extends StatelessWidget {
   final String title;
@@ -19,8 +20,7 @@ class _Placeholder extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(title)),
     body: Center(child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
+      mainAxisAlignment: MainAxisAlignment.center, children: [
         const Text('🚧', style: TextStyle(fontSize: 48)),
         const SizedBox(height: 16),
         Text(title, style: const TextStyle(fontSize: 18,
@@ -28,8 +28,7 @@ class _Placeholder extends StatelessWidget {
         const SizedBox(height: 8),
         const Text('Komt binnenkort',
             style: TextStyle(fontSize: 13, color: Color(0xFF7A9280))),
-      ],
-    )),
+      ])),
   );
 }
 
@@ -44,7 +43,7 @@ final _router = GoRouter(
         GoRoute(path: '/map',      builder: (_, __) => const MapScreen()),
         GoRoute(path: '/planning', builder: (_, __) => const PlanningScreen()),
         GoRoute(path: '/discover', builder: (_, __) => const DiscoverScreen()),
-        GoRoute(path: '/meer',     builder: (_, __) => const _Placeholder(title: 'Meer')),
+        GoRoute(path: '/meer',     builder: (_, __) => const MeerScreen()),
       ],
     ),
     GoRoute(path: '/accommodation',
@@ -55,18 +54,17 @@ final _router = GoRouter(
         builder: (_, __) => const TicketsScreen()),
     GoRoute(path: '/charging',
         builder: (_, __) => const ChargingScreen()),
-    // ✅ Now wired to real ActivityDetailScreen
     GoRoute(path: '/place/:id',
         builder: (_, s) => ActivityDetailScreen(
             placeId: s.pathParameters['id']!)),
+    GoRoute(path: '/roadtrip',
+        builder: (_, __) => const _Placeholder(title: 'Roadtrip-modus')),
     GoRoute(path: '/notifications',
         builder: (_, __) => const _Placeholder(title: 'Meldingen')),
     GoRoute(path: '/settings',
         builder: (_, __) => const _Placeholder(title: 'Instellingen')),
     GoRoute(path: '/profile',
         builder: (_, __) => const _Placeholder(title: 'Profiel')),
-    GoRoute(path: '/roadtrip',
-        builder: (_, __) => const _Placeholder(title: 'Roadtrip-modus')),
   ],
 );
 
