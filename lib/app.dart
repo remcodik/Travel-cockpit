@@ -1,75 +1,139 @@
-// lib/app.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
+import 'ui/screens/home/home_screen.dart';
 import 'ui/screens/discover/discover_screen.dart';
+import 'ui/screens/planning/planning_screen.dart';
+import 'ui/screens/map/map_screen.dart';
+import 'ui/screens/accommodation/accommodation_screen.dart';
+import 'ui/screens/trips/trips_screen.dart';
+import 'ui/screens/tickets/tickets_screen.dart';
+import 'ui/screens/charging/charging_screen.dart';
 
-// Temporary home screen placeholder until Phase 2
-class _HomeScreen extends StatelessWidget {
-  const _HomeScreen();
-
+class _Placeholder extends StatelessWidget {
+  final String title;
+  const _Placeholder({required this.title});
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF2F0EC),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('🧭', style: TextStyle(fontSize: 64)),
-            const SizedBox(height: 16),
-            const Text(
-              'Travel Cockpit',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF111A14),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Noorwegen 2025',
-              style: TextStyle(fontSize: 16, color: Color(0xFF7A9280)),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton.icon(
-              onPressed: () => context.push('/discover'),
-              icon: const Text('💡', style: TextStyle(fontSize: 18)),
-              label: const Text('AI Ideeën openen'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(title)),
+    body: Center(
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Text('🚧', style: TextStyle(fontSize: 48)),
+        const SizedBox(height: 16),
+        Text(title, style: const TextStyle(fontSize: 18,
+            fontWeight: FontWeight.w700, color: Color(0xFF3D5244))),
+        const SizedBox(height: 8),
+        const Text('Komt in volgende versie',
+            style: TextStyle(fontSize: 13, color: Color(0xFF7A9280))),
+      ]),
+    ),
+  );
 }
 
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (_, __) => const _HomeScreen(),
+    // Shell: bottom nav tabs
+    ShellRoute(
+      builder: (context, state, child) =>
+          _Shell(child: child, location: state.matchedLocation),
+      routes: [
+        GoRoute(path: '/',         builder: (_, __) => const HomeScreen()),
+        GoRoute(path: '/map',      builder: (_, __) => const MapScreen()),
+        GoRoute(path: '/planning', builder: (_, __) => const PlanningScreen()),
+        GoRoute(path: '/discover', builder: (_, __) => const DiscoverScreen()),
+        GoRoute(path: '/meer',     builder: (_, __) => const _Placeholder(title: 'Meer')),
+      ],
     ),
-    GoRoute(
-      path: '/discover',
-      builder: (_, __) => const DiscoverScreen(),
-    ),
+    // Full-screen routes — no bottom nav
+    GoRoute(path: '/accommodation',
+        builder: (_, __) => const AccommodationScreen()),
+    GoRoute(path: '/trips',
+        builder: (_, __) => const TripsScreen()),
+    GoRoute(path: '/tickets',
+        builder: (_, __) => const TicketsScreen()),
+    GoRoute(path: '/charging',
+        builder: (_, __) => const ChargingScreen()),
+    GoRoute(path: '/place/:id',
+        builder: (_, s) => _Placeholder(
+            title: 'Activiteit')),
+    GoRoute(path: '/notifications',
+        builder: (_, __) => const _Placeholder(title: 'Meldingen')),
+    GoRoute(path: '/settings',
+        builder: (_, __) => const _Placeholder(title: 'Instellingen')),
+    GoRoute(path: '/profile',
+        builder: (_, __) => const _Placeholder(title: 'Profiel')),
+    GoRoute(path: '/roadtrip',
+        builder: (_, __) => const _Placeholder(title: 'Roadtrip-modus')),
   ],
 );
 
+// Shell with bottom navigation bar
+class _Shell extends StatelessWidget {
+  final Widget child;
+  final String location;
+  const _Shell({required this.child, required this.location});
+
+  int get _idx {
+    if (location.startsWith('/map'))      return 1;
+    if (location.startsWith('/planning')) return 2;
+    if (location.startsWith('/discover')) return 3;
+    if (location.startsWith('/meer'))     return 4;
+    return 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _idx,
+        onDestinationSelected: (i) {
+          const routes = ['/', '/map', '/planning', '/discover', '/meer'];
+          context.go(routes[i]);
+        },
+        destinations: const [
+          NavigationDestination(
+            icon:         Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label:        'Vandaag',
+          ),
+          NavigationDestination(
+            icon:         Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map_rounded),
+            label:        'Kaart',
+          ),
+          NavigationDestination(
+            icon:         Icon(Icons.calendar_today_outlined),
+            selectedIcon: Icon(Icons.calendar_today_rounded),
+            label:        'Planning',
+          ),
+          NavigationDestination(
+            icon:         Icon(Icons.lightbulb_outline),
+            selectedIcon: Icon(Icons.lightbulb_rounded),
+            label:        'Ideeën',
+          ),
+          NavigationDestination(
+            icon:         Icon(Icons.more_horiz_rounded),
+            selectedIcon: Icon(Icons.more_horiz_rounded),
+            label:        'Meer',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class TravelCockpitApp extends ConsumerWidget {
   const TravelCockpitApp({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'Travel Cockpit',
+      title:                    'Travel Cockpit',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      routerConfig: _router,
+      theme:                    AppTheme.light,
+      routerConfig:             _router,
     );
   }
 }
