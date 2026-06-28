@@ -1,0 +1,28 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.g.dart
+*.freezed.dart
+
+# API keys — NEVER commit
+.env
+lib/core/env.g.dart
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# macOS
+.DS_Store
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+
+# Android
+android/.gradle/
+android/local.properties
