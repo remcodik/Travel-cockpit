@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:uuid/uuid.dart';
-import 'place.dart';
 
 part 'planning_item.freezed.dart';
 part 'planning_item.g.dart';
@@ -19,7 +18,7 @@ class PlanningItem with _$PlanningItem {
   const factory PlanningItem({
     required String id,
     required String tripId,
-    required String placeId,   // → Place.id
+    required String placeId,
     @Default(PlanningStatus.planned) PlanningStatus status,
     DateTime? plannedDate,
     int? plannedHour,
@@ -30,6 +29,12 @@ class PlanningItem with _$PlanningItem {
     DateTime? createdAt,
   }) = _PlanningItem;
 
+  const PlanningItem._();
+
+  bool get isCompleted => status == PlanningStatus.completed;
+  bool get isPlanned   => status == PlanningStatus.planned;
+  bool get isActive    => status == PlanningStatus.inProgress;
+
   factory PlanningItem.create({
     required String tripId,
     required String placeId,
@@ -38,28 +43,16 @@ class PlanningItem with _$PlanningItem {
     String? notes,
   }) {
     return PlanningItem(
-      id: const Uuid().v4(),
-      tripId: tripId,
-      placeId: placeId,
+      id:          const Uuid().v4(),
+      tripId:      tripId,
+      placeId:     placeId,
       plannedDate: plannedDate,
-      priority: priority,
-      notes: notes,
-      createdAt: DateTime.now(),
+      priority:    priority,
+      notes:       notes,
+      createdAt:   DateTime.now(),
     );
   }
 
   factory PlanningItem.fromJson(Map<String, dynamic> json) =>
       _\$PlanningItemFromJson(json);
-}
-
-/// Planning item with its Place — used in UI.
-class PlanningItemWithPlace {
-  final PlanningItem item;
-  final Place place;
-  const PlanningItemWithPlace({required this.item, required this.place});
-
-  bool get isCompleted => item.status == PlanningStatus.completed;
-  bool get isPlanned   => item.status == PlanningStatus.planned;
-  String get name      => place.name;
-  String get emoji     => place.category.emoji;
 }
