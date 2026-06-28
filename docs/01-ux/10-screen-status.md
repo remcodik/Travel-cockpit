@@ -1,77 +1,88 @@
 # Screen Status
 
 **Document ID:** TC-UX-010
-**Version:** 3.0
+**Version:** 4.0
 **Status:** Living document
 **Last Updated:** 2026-06-28
 
 ---
 
-# Quick Status
+# Snelle status
 
-| Screen | Status | Real data |
+| Scherm | Route | Status |
 |---|---|---|
-| HomeScreen `/` | ✅ Werkend | Ja — offline banner, hero, stats, planning, nearby (echt) |
-| PlanningScreen `/planning` | ✅ Werkend | Ja — dag-nummers, accommodatie-kleuren |
-| MapScreen `/map` | ✅ Werkend | Ja — volledige route, dag-labels, kleur per verblijf |
-| DiscoverScreen `/discover` | ✅ Werkend | Ja — echt weer, echte planning-context |
-| AccommodationScreen `/accommodation` | ✅ Werkend | Ja — alle velden uit DB |
-| ActivityDetailScreen `/place/:id` | ✅ Werkend | Ja |
-| TripsScreen `/trips` | ✅ Werkend | Ja |
-| MeerScreen `/meer` | ✅ Werkend | Ja — volledige navigatie |
-| TicketsScreen `/tickets` | 🟡 UI only | Nee — demo tickets |
-| ChargingScreen `/charging` | 🟡 UI only | Nee — 4 statische stations |
-| RoadtripScreen `/roadtrip` | 🚧 Placeholder | — |
-| Settings/Profile/Notifications | 🚧 Placeholder | — |
+| HomeScreen | `/` | ✅ Volledig echt |
+| PlanningScreen | `/planning` | ✅ Dag-nummers + acc-kleuren |
+| MapScreen | `/map` | ✅ Volledige route + dag-labels |
+| DiscoverScreen | `/discover` | ✅ Echte AI + weer + planning context |
+| MeerScreen | `/meer` | ✅ Volledige navigatie |
+| AccommodationScreen | `/accommodation` | ✅ Alle velden echt |
+| ActivityDetailScreen | `/place/:id` | ✅ Echt |
+| TripsScreen | `/trips` | ✅ Echt |
+| **RoadtripScreen** | `/roadtrip` | ✅ **Nieuw — volledig gebouwd** |
+| **SettingsScreen** | `/settings` | ✅ **Nieuw — voorkeuren echt** |
+| TicketsScreen | `/tickets` | ✅ + knop werkend, barcode, seed |
+| ChargingScreen | `/charging` | 🟡 UI, 4 statische stations |
+| ProfileScreen | `/profile` | 🚧 Placeholder |
+| NotificationsScreen | `/notifications` | 🚧 Placeholder |
 
 ---
 
-# Detail per scherm
+# RoadtripScreen — nieuw gebouwd
 
-## HomeScreen — ✅ volledig echt
-- Offline banner (DL-010) bovenaan, verschijnt bij geen internet.
-- Trip header met vlag, datums, dagen-teller, meldingen-badge.
-- Hero accommodatie: echte naam, adres, datums, live weer. **Provider leak gefixt** — providers nu top-level.
-- Stats row: te-doen/gedaan echt uit DB, tickets uit seed, laders.
-- Planning sectie: echte plaatsnamen via `placeByIdProvider`.
-- Nearby strip: **echte categorie-tellingen** uit DB (was hardcoded, nu gefixt).
-- AI card: echt weer + trip naam.
+Hoofdscherm voor gebruik onderweg (DL-001: roadtrip-first).
 
-## PlanningScreen — ✅ dag-nummering + accommodatie-kleur
-- Dag-tabs: `D1`–`D16`, gekleurd per verblijf, accommodatie-stip, legenda-strip.
-- Dag-header: `Dag 4 · woensdag 18 jun · vanuit Sogndal`, vandaag-badge.
-- Items: gekleurde band links per accommodatie, gekleurd index-badge, swipe-delete, afvinken.
-
-## MapScreen — ✅ volledige route + dag-labels
-- Volledige route Nijmegen → Hirtshals → Stavanger → Bergen → 4 verblijven → Kristiansand → Hirtshals → Kolding → Nijmegen.
-- Rijden = groene lijn, ferry = blauwe stippellijn.
-- Accommodaties = grote pins met naam-label (Sgd/Skj/Val/Gjr).
-- Activiteiten = gekleurd per verblijf, dag-label `D4-2`.
-- Dunne lijnen verbinden verblijf met zijn activiteiten.
-- Filter per verblijf (chips + tik op pin).
-- 🌍/🇳🇴 toggle voor heel Europa of alleen Noorwegen.
-- Legenda onderaan.
-
-## DiscoverScreen — ✅ echte AI-context
-- **Echt weer** van WeatherProvider (was hardcoded 18°C, gefixt).
-- **Echte al-geplande lijst** naar AI gestuurd zodat geen duplicaten (was leeg, gefixt).
-- Echte voorkeuren uit PreferencesProvider.
-- `EmptyState` widget **toegevoegd** (was 404, brak compile).
-- Add-to-plan schrijft Place + PlanningItem naar DB.
-- Load more, categorie-filters, offline-cache.
-
-## AccommodationScreen — ✅ herbouwd
-- Was 404 → volledig herbouwd.
-- Hero met topografisch patroon, live weer.
-- Check-in/out tijden, adres + Maps-knop, bellen, boekingsnummer, omschrijving.
-- "Vanaf hier" navigatie, alle 4 stops met actief-badge.
+Bevat:
+- **Weerstrip** — live temperatuur, conditie, regenkans, locatie. Gradient past op het weer.
+- **Huidig verblijf** — naam, check-out datum en tijd, navigatieknop naar Google Maps. Volgende stop eronder.
+- **Volgende activiteit** — eerste onafgevinkte activiteit van vandaag, naam, omschrijving, navigatieknop.
+- **Voortgang** — progressiebalk: X/Y activiteiten afgerond, percentage.
+- **Mini-kaart** — interactieve FlutterMap van het huidige gebied. Tik om volledig scherm te openen.
+- **Snelknoppen** — Navigeer naar stop, Laadstation vinden, AI ideeën, Tankstation.
+- **Vandaag-lijst** — alle geplande activiteiten van vandaag met checkmark en navigatieknop per item.
 
 ---
 
-# Change History
+# SettingsScreen — nieuw gebouwd
 
-| Version | Date | Change |
+Schrijft naar `PreferencesProvider` (persisted in `SharedPreferences`).
+
+Bevat:
+- **Voertuigtype** — EV / Benzine / Geen (3 opties, radio-select stijl).
+- **Reisvoorkeur** — 8 stijlen als togglebare chips: Natuur, Wandelen, Fotografie, Eten, Cultuur, Geschiedenis, Water & fjord, Rust. Dit gaat direct naar de AI-context.
+- **AI instellingen** — AI suggesties aan/uit, Weersuggesties aan/uit.
+- **Taal** — Nederlands / Engels / Duits.
+- **App info** — versie, kaartdata (OSM), weer (Open-Meteo), AI (Claude).
+
+---
+
+# TicketsScreen — verbeterd
+
+- Barcode is nu uitklapbaar per ticket (tik om te tonen/verbergen).
+- Werkende `+` knop opent een bottom sheet met: naam, locatie, boekingscode, datum, tijd, aantal personen.
+- Klimapark 2469 seed-ticket aanwezig (status: gebruikt).
+- Tickets verwijderbaar via uitgeklapte view.
+- Lege state met call-to-action.
+
+---
+
+# Nog te bouwen
+
+| Item | Reden |
+|---|---|
+| ProfileScreen | Naam, avatar, reishistorie |
+| NotificationsScreen | Meldingen voor check-in, weer |
+| ChargingScreen live API | Open Charge Map / OCPI |
+| Map date picker bij toevoegen | Datum kiezen voor geplande activiteit |
+| Ticket DB-tabel koppeling | Nu in-memory, moet naar Drift |
+
+---
+
+# Changelog
+
+| Versie | Datum | Wijziging |
 |---|---|---|
-| 1.0 | 2026-06-10 | Initial |
-| 2.0 | 2026-06-28 | Full audit, real vs hardcoded |
-| 3.0 | 2026-06-28 | Na bugfix-ronde: nearby echt, hero leak gefixt, empty_state toegevoegd, dag-nummering + route compleet |
+| 1.0 | 2026-06-10 | Initieel |
+| 2.0 | 2026-06-28 | Volledige audit, echt vs hardcoded |
+| 3.0 | 2026-06-28 | Bugfix-ronde, dag-nummering, route |
+| 4.0 | 2026-06-28 | RoadtripScreen + SettingsScreen gebouwd, Tickets verbeterd |
