@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Travel Cockpit — Noorwegen 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --green:      #1B4D35;
+    --green-dark: #0F2E1E;
+    --green-mid:  #2A6B4A;
+    --green-lt:   #EBF5EF;
+    --action:     #1F7A49;
+    --red:        #A8291F;
+    --red-lt:     #FDECEA;
+    --blue:       #1A3F6F;
+    --blue-lt:    #DDE8F5;
+    --bg:         #F2F0EC;
+    --card:       #FDFCFA;
+    --border:     #DDE5DF;
+    --t1:         #111A14;
+    --t2:         #3D5244;
+    --t3:         #7A9280;
+    --amber:      #D4931A;
+    /* Accommodation colours */
+    --sgd:        #2d6a4f;
+    --skj:        #1565c0;
+    --val:        #ef6c00;
+    --gjr:        #6a1b9a;
+  }
+
+  body {
+    font-family: -apple-system, 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--t1);
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100dvh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ── Screens ── */
+  .screen {
+    display: none;
+    flex-direction: column;
+    min-height: 100dvh;
+    padding-bottom: 80px;
+  }
+  .screen.active { display: flex; }
+
+  /* ── Bottom nav ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    background: white;
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: env(safe-area-inset-bottom, 0) 0 0;
+    z-index: 100;
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; padding: 8px 4px 10px;
+    cursor: pointer; transition: opacity .15s;
+    font-size: 9px; font-weight: 700;
+    color: var(--t3); gap: 3px;
+    border: none; background: none;
+  }
+  .nav-item.active { color: var(--green); }
+  .nav-item svg { width: 22px; height: 22px; }
+
+  /* ── Shared components ── */
+  .safe-top { padding-top: env(safe-area-inset-top, 16px); }
+
+  .header {
+    padding: 12px 16px 8px;
+    display: flex; align-items: flex-start;
+  }
+  .header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; }
+  .header .sub { font-size: 12px; color: var(--t3); font-weight: 500; margin-top: 2px; }
+
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(15,46,30,.04);
+    overflow: hidden;
+  }
+
+  .section-label {
+    font-size: 11px; font-weight: 800;
+    letter-spacing: .6px; color: var(--t3);
+    text-transform: uppercase;
+    padding: 0 16px; margin-bottom: 8px;
+  }
+
+  .btn-primary {
+    background: var(--green); color: white;
+    border: none; border-radius: 12px;
+    font-size: 14px; font-weight: 700;
+    padding: 13px 20px; cursor: pointer;
+    width: 100%; transition: opacity .15s;
+  }
+  .btn-primary:active { opacity: .8; }
+
+  .btn-secondary {
+    background: transparent; color: var(--green);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-size: 14px; font-weight: 700;
+    padding: 12px 20px; cursor: pointer;
+    width: 100%; transition: opacity .15s;
+  }
+
+  /* ── Hero card ── */
+  .hero-card {
+    margin: 0 16px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #0A2418 0%, #1B4D35 60%, #1A3F6F 100%);
+    height: 190px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(15,46,30,.12);
+  }
+  .hero-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,.55));
+  }
+  .hero-topo {
+    position: absolute; inset: 0;
+    opacity: .06;
+    background-image: repeating-linear-gradient(
+      0deg, transparent, transparent 18px,
+      rgba(255,255,255,.8) 18px, rgba(255,255,255,.8) 19px
+    );
+  }
+  .hero-badge {
+    position: absolute; top: 14px; left: 14px;
+    background: rgba(0,0,0,.28);
+    color: rgba(255,255,255,.7);
+    font-size: 10px; font-weight: 800;
+    letter-spacing: .8px; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 20px;
+  }
+  .hero-weather {
+    position: absolute; top: 14px; right: 14px;
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 14px;
+    padding: 6px 12px;
+    display: flex; align-items: center; gap: 5px;
+    color: white; font-size: 14px; font-weight: 700;
+  }
+  .hero-content {
+    position: absolute; bottom: 14px; left: 16px; right: 16px;
+  }
+  .hero-content h2 {
+    font-size: 22px; font-weight: 700; color: white; letter-spacing: -.2px;
+  }
+  .hero-content p { font-size: 12px; color: rgba(255,255,255,.7); margin-top: 3px; }
+  .hero-details-btn {
+    display: inline-block; margin-top: 10px;
+    padding: 7px 13px;
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.28);
+    border-radius: 10px;
+    color: white; font-size: 12px; font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ── Stats row ── */
+  .stats-row {
+    display: flex;
+    background: var(--card);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    margin: 12px 16px 0;
+    box-shadow: 0 2px 8px rgba(15,46,30,.04);
+  }
+  .stat {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; padding: 13px 4px;
+    cursor: pointer;
+  }
+  .stat:not(:last-child) { border-right: 1px solid var(--border); }
+  .stat-emoji { font-size: 20px; }
+  .stat-num { font-size: 17px; font-weight: 900; color: var(--t1); margin-top: 3px; }
+  .stat-label { font-size: 9px; color: var(--t3); font-weight: 600; text-align: center; }
+
+  /* ── Planning items ── */
+  .planning-item {
+    display: flex; align-items: center;
+    padding: 10px 14px; cursor: pointer;
+    position: relative;
+  }
+  .planning-item:not(:last-child)::after {
+    content: '';
+    position: absolute; bottom: 0; left: 14px; right: 14px;
+    height: 1px; background: var(--border);
+  }
+  .item-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--green); color: white;
+    font-size: 11px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .item-num.done { background: var(--border); }
+  .item-emoji {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: var(--green-lt);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0; margin: 0 10px 0 10px;
+  }
+  .item-info { flex: 1; overflow: hidden; }
+  .item-name {
+    font-size: 14px; font-weight: 700; color: var(--t1);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .item-name.done { color: var(--t3); text-decoration: line-through; }
+  .item-sub { font-size: 11px; color: var(--t3); margin-top: 1px; }
+  .item-check {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .2s; flex-shrink: 0;
+  }
+  .item-check.checked {
+    background: var(--action); border-color: var(--action);
+  }
+  .item-acc-band {
+    width: 4px; position: absolute; left: 0; top: 0; bottom: 0;
+    border-radius: 16px 0 0 16px;
+  }
+
+  /* ── Day tabs ── */
+  .day-tabs {
+    display: flex; overflow-x: auto; gap: 6px;
+    padding: 10px 16px; background: white;
+    scrollbar-width: none;
+  }
+  .day-tabs::-webkit-scrollbar { display: none; }
+  .day-tab {
+    flex-shrink: 0; width: 70px; padding: 6px 4px;
+    border-radius: 14px; display: flex; flex-direction: column;
+    align-items: center; cursor: pointer;
+    background: var(--bg); border: 2px solid transparent;
+    transition: all .18s;
+  }
+  .day-tab.active { border-color: transparent; }
+  .day-tab .dn { font-size: 11px; font-weight: 900; letter-spacing: .3px; }
+  .day-tab .dd { font-size: 18px; font-weight: 900; color: var(--t1); }
+  .day-tab .dm { font-size: 9px; font-weight: 600; color: var(--t3); }
+  .day-tab .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    margin-top: 2px;
+  }
+  .day-tab.active .dd { color: white; }
+  .day-tab.active .dm { color: rgba(255,255,255,.6); }
+  .day-tab.active .dot { background: rgba(255,255,255,.8) !important; }
+
+  /* Acc legend strip */
+  .acc-legend {
+    background: white; height: 24px;
+    padding: 0 16px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px; font-weight: 700;
+  }
+  .acc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Map ── */
+  .map-container {
+    flex: 1; position: relative;
+    background: #e8eaed;
+    overflow: hidden;
+  }
+  .map-svg { width: 100%; height: 100%; }
+
+  /* ── Route strip ── */
+  .route-strip {
+    background: white;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.1);
+    padding: 10px 16px 24px;
+  }
+  .route-handle {
+    width: 38px; height: 4px; background: var(--border);
+    border-radius: 2px; margin: 0 auto 12px;
+  }
+  .route-stops {
+    display: flex; gap: 6px; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .route-stops::-webkit-scrollbar { display: none; }
+  .route-stop {
+    flex-shrink: 0; width: 100px;
+    padding: 8px; border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .route-stop.acc { background: var(--green-lt); border-color: var(--green); }
+  .route-stop.ferry { background: var(--blue-lt); border-color: var(--blue); }
+  .route-stop.home { background: var(--red-lt); border-color: var(--red); }
+  .stop-emoji { font-size: 14px; }
+  .stop-name { font-size: 10px; font-weight: 800; color: var(--t1); margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stop-date { font-size: 9px; color: var(--t3); }
+  .stop-sub { font-size: 9px; font-weight: 700; color: var(--green); }
+  .stop-sub.ferry { color: var(--blue); }
+
+  /* ── AI card ── */
+  .ai-card {
+    margin: 0 16px;
+    padding: 15px;
+    background: linear-gradient(135deg, var(--green-lt), #EFF7F2);
+    border-radius: 16px;
+    border: 1px solid rgba(27,77,53,.12);
+    display: flex; gap: 13px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(27,77,53,.06);
+  }
+  .ai-avatar {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--green), var(--blue));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(27,77,53,.22);
+  }
+  .ai-btn {
+    display: inline-block; margin-top: 9px;
+    padding: 7px 14px; background: var(--green);
+    border-radius: 20px; color: white;
+    font-size: 12px; font-weight: 800;
+  }
+
+  /* ── Discover ── */
+  .ai-header {
+    background: linear-gradient(135deg, var(--green-lt), #EFF7F2);
+    border-bottom: 1px solid rgba(27,77,53,.12);
+    padding: 12px 16px;
+    display: flex; gap: 12px; align-items: center;
+  }
+  .suggestion-card {
+    background: var(--card);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    margin: 0 16px;
+    display: flex; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(15,46,30,.05);
+    cursor: pointer;
+    transition: transform .15s;
+  }
+  .suggestion-card:active { transform: scale(.98); }
+  .suggestion-thumb {
+    width: 96px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+  }
+  .suggestion-body { flex: 1; padding: 12px 12px 12px 8px; }
+  .suggestion-name {
+    font-size: 15px; font-weight: 800; color: var(--t1); letter-spacing: -.1px;
+  }
+  .suggestion-desc {
+    font-size: 12px; color: var(--t2); margin-top: 3px;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+    line-height: 1.5;
+  }
+  .suggestion-meta {
+    display: flex; gap: 10px; margin-top: 7px;
+    font-size: 11px; color: var(--t3); font-weight: 600;
+    align-items: center;
+  }
+  .suggestion-actions {
+    display: flex; gap: 6px; margin-top: 8px;
+  }
+  .add-btn {
+    padding: 6px 14px; background: var(--green);
+    border-radius: 10px; color: white;
+    font-size: 12px; font-weight: 700;
+    border: none; cursor: pointer;
+  }
+  .nav-btn {
+    padding: 6px 10px; border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 12px; font-weight: 700;
+    color: var(--t2); cursor: pointer; background: transparent;
+  }
+  .filter-chips {
+    display: flex; gap: 7px; overflow-x: auto;
+    padding: 8px 16px; background: white;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0; padding: 6px 14px;
+    border-radius: 20px; font-size: 12px; font-weight: 700;
+    border: 1.5px solid var(--border);
+    background: white; color: var(--t2);
+    cursor: pointer; transition: all .15s;
+  }
+  .chip.active { background: var(--green); border-color: var(--green); color: white; }
+
+  /* ── Accommodation screen ── */
+  .acc-hero {
+    height: 248px; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #0A1E12 0%, #1B4D35 60%, #12304A 100%);
+  }
+  .acc-hero-topo {
+    position: absolute; inset: 0; opacity: .05;
+    background-image: repeating-linear-gradient(
+      0deg, transparent, transparent 22px,
+      rgba(255,255,255,.8) 22px, rgba(255,255,255,.8) 23px
+    );
+  }
+  .acc-hero-content {
+    position: absolute; bottom: 16px; left: 16px; right: 16px;
+  }
+  .acc-hero-back {
+    position: absolute; top: 48px; left: 14px;
+    width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(0,0,0,.3);
+    border: 1px solid rgba(255,255,255,.2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: white; font-size: 18px;
+  }
+  .info-card { background: var(--card); border-radius: 16px; border: 1px solid var(--border); }
+  .info-row {
+    display: flex; align-items: center;
+    padding: 13px 16px; gap: 14px;
+  }
+  .info-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+  .info-icon { font-size: 18px; color: var(--t3); width: 20px; text-align: center; }
+  .info-label { font-size: 11px; font-weight: 700; color: var(--t3); letter-spacing: .3px; }
+  .info-value { font-size: 14px; font-weight: 700; color: var(--t1); }
+  .maps-btn {
+    padding: 4px 10px; background: var(--green-lt);
+    border-radius: 20px; color: var(--green);
+    font-size: 12px; font-weight: 700;
+    border: none; cursor: pointer; margin-left: auto;
+  }
+
+  /* ── More screen ── */
+  .meer-card { background: var(--card); border-radius: 16px; border: 1px solid var(--border); }
+  .meer-row {
+    display: flex; align-items: center; padding: 14px 16px; gap: 14px; cursor: pointer;
+  }
+  .meer-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+  .meer-emoji { font-size: 22px; width: 30px; text-align: center; }
+  .meer-label { font-size: 14px; font-weight: 700; color: var(--t1); flex: 1; }
+  .meer-sub { font-size: 12px; color: var(--t3); }
+  .meer-chevron { color: var(--border); font-size: 16px; }
+
+  /* ── Roadtrip screen ── */
+  .rt-topbar {
+    background: var(--green-dark); color: white;
+    padding: 8px 16px 12px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .rt-next-card {
+    margin: 0 16px;
+    background: linear-gradient(135deg, var(--green), var(--green-dark));
+    border-radius: 16px; padding: 16px;
+    box-shadow: 0 3px 10px rgba(15,46,30,.2);
+    cursor: pointer;
+  }
+  .weather-strip {
+    margin: 0 16px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--green), #1A3F6F);
+    display: flex; align-items: center; gap: 14px;
+    color: white;
+  }
+  .progress-bar {
+    height: 8px; background: var(--green-lt);
+    border-radius: 4px; overflow: hidden;
+  }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 4px; }
+  .quick-btns { display: flex; gap: 8px; }
+  .quick-btn {
+    flex: 1; padding: 12px 4px;
+    border-radius: 14px; display: flex;
+    flex-direction: column; align-items: center;
+    gap: 5px; cursor: pointer; border: none;
+    font-size: 9px; font-weight: 700;
+  }
+
+  /* ── Settings ── */
+  .style-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px; }
+  .style-chip {
+    padding: 10px 14px; border-radius: 24px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    font-size: 13px; font-weight: 700;
+    color: var(--t2); cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: all .15s;
+  }
+  .style-chip.on { background: var(--green); border-color: var(--green); color: white; }
+
+  /* ── Tickets ── */
+  .ticket-card {
+    margin: 0 16px;
+    border-radius: 18px;
+    background: var(--card);
+    border-left: 5px solid var(--green);
+    box-shadow: 0 3px 10px rgba(15,46,30,.06);
+    overflow: hidden;
+  }
+  .ticket-card.used { border-left-color: var(--border); opacity: .65; }
+  .barcode {
+    display: flex; align-items: flex-end; justify-content: center;
+    height: 56px; gap: 1.4px;
+  }
+  .barcode-bar { background: var(--t1); border-radius: 1px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 95px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--green); color: white;
+    padding: 10px 20px; border-radius: 14px;
+    font-size: 13px; font-weight: 700;
+    opacity: 0; transition: all .3s;
+    pointer-events: none; z-index: 999;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(15,46,30,.3);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Scrollable content ── */
+  .scroll-content { flex: 1; overflow-y: auto; }
+  .pad { padding: 0 16px; }
+  .gap { height: 12px; }
+  .gap-sm { height: 8px; }
+  .gap-lg { height: 20px; }
+
+  /* ── Sheet ── */
+  .sheet-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.4); z-index: 200;
+  }
+  .sheet-overlay.open { display: block; }
+  .sheet {
+    position: fixed; bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    background: var(--card);
+    border-radius: 22px 22px 0 0;
+    padding: 12px 20px 40px;
+    z-index: 201;
+    max-height: 85vh; overflow-y: auto;
+  }
+  .sheet-handle {
+    width: 40px; height: 4px; background: var(--border);
+    border-radius: 2px; margin: 0 auto 16px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     HOME SCREEN
+═══════════════════════════════════════════ -->
+<div id="home" class="screen active safe-top">
+  <!-- Trip header -->
+  <div class="header" style="padding-bottom:12px">
+    <div style="flex:1">
+      <div style="font-size:10px;font-weight:800;letter-spacing:.8px;color:var(--t3);text-transform:uppercase">Actieve reis</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+        <span style="font-size:20px;font-weight:900;letter-spacing:-.3px">🇳🇴 Noorwegen 2026</span>
+        <span style="font-size:14px;color:var(--t3)">▾</span>
+      </div>
+      <div style="font-size:12px;color:var(--t3);font-weight:500;margin-top:1px">15–30 jun · 16 dagen</div>
+    </div>
+    <div style="position:relative">
+      <button onclick="showToast('Geen nieuwe meldingen')" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px">🔔</button>
+      <div style="position:absolute;top:6px;right:4px;width:14px;height:14px;background:var(--red);border-radius:50%;border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:8px;color:white;font-weight:800">2</div>
+    </div>
+  </div>
+
+  <div class="scroll-content">
+    <!-- Hero accommodation -->
+    <div class="hero-card" onclick="nav('accommodation')">
+      <div class="hero-topo"></div>
+      <div class="hero-badge">Huidig verblijf</div>
+      <div class="hero-weather">⛅ 14°</div>
+      <div class="hero-content">
+        <h2>Skjåk Solside</h2>
+        <p>📍 Skjåk Solside 799 · 19–23 jun · 4 nachten</p>
+        <div class="hero-details-btn" onclick="event.stopPropagation();nav('accommodation')">Details bekijken ›</div>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats-row">
+      <div class="stat" onclick="nav('planning')">
+        <span class="stat-emoji">🏔️</span>
+        <span class="stat-num">8</span>
+        <span class="stat-label">Te doen</span>
+      </div>
+      <div class="stat" onclick="nav('planning')">
+        <span class="stat-emoji">✅</span>
+        <span class="stat-num">9</span>
+        <span class="stat-label">Gedaan</span>
+      </div>
+      <div class="stat" onclick="nav('meer')">
+        <span class="stat-emoji">🎟️</span>
+        <span class="stat-num">1</span>
+        <span class="stat-label">Tickets</span>
+      </div>
+      <div class="stat" onclick="nav('meer')">
+        <span class="stat-emoji">⚡</span>
+        <span class="stat-num">4</span>
+        <span class="stat-label">Laders</span>
+      </div>
+    </div>
+
+    <div class="gap"></div>
+
+    <!-- Planning today -->
+    <div class="pad section-label">Gepland vandaag</div>
+    <div class="pad">
+      <div class="card">
+        <div id="home-planning"></div>
+        <div style="padding:8px 12px 12px">
+          <button class="btn-secondary" onclick="nav('discover')" style="font-size:13px">✨ AI ideeën bekijken</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap"></div>
+
+    <!-- Nearby strip -->
+    <div style="padding:0 16px 0;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span class="section-label" style="padding:0;margin:0">In de buurt</span>
+      <span style="font-size:12px;font-weight:700;color:var(--action);cursor:pointer" onclick="nav('map')">Kaart</span>
+    </div>
+    <div style="display:flex;gap:8px;overflow-x:auto;padding:0 16px;scrollbar-width:none">
+      <div style="flex-shrink:0;width:68px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer" onclick="nav('discover')">
+        <span style="font-size:22px">☕</span>
+        <span style="font-size:15px;font-weight:900">2</span>
+        <span style="font-size:9px;color:var(--t3);font-weight:600">Café</span>
+      </div>
+      <div style="flex-shrink:0;width:68px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer" onclick="nav('discover')">
+        <span style="font-size:22px">🍽️</span>
+        <span style="font-size:15px;font-weight:900">5</span>
+        <span style="font-size:9px;color:var(--t3);font-weight:600">Restaurant</span>
+      </div>
+      <div style="flex-shrink:0;width:68px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer" onclick="nav('meer')">
+        <span style="font-size:22px">⚡</span>
+        <span style="font-size:15px;font-weight:900">4</span>
+        <span style="font-size:9px;color:var(--t3);font-weight:600">Laadstation</span>
+      </div>
+      <div style="flex-shrink:0;width:68px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer" onclick="nav('discover')">
+        <span style="font-size:22px">🛒</span>
+        <span style="font-size:15px;font-weight:900">2</span>
+        <span style="font-size:9px;color:var(--t3);font-weight:600">Supermarkt</span>
+      </div>
+    </div>
+
+    <div class="gap"></div>
+
+    <!-- AI card -->
+    <div class="ai-card" onclick="nav('discover')">
+      <div class="ai-avatar">🤖</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:800;color:var(--green-dark)">AI ideeën voor vandaag</div>
+        <div style="font-size:12px;color:var(--t2);margin-top:3px;line-height:1.4">⛅ 14°C · Licht bewolkt · Skjåk, Noorwegen</div>
+        <div class="ai-btn">✨ Bekijk ideeën</div>
+      </div>
+    </div>
+
+    <div class="gap-lg"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAP SCREEN
+═══════════════════════════════════════════ -->
+<div id="map" class="screen safe-top">
+  <!-- Search + toggle -->
+  <div style="padding:10px 14px 0;display:flex;gap:8px">
+    <div style="flex:1;background:white;border-radius:26px;padding:11px 16px;display:flex;align-items:center;gap:8px;box-shadow:0 3px 12px rgba(0,0,0,.09)">
+      <span style="color:var(--t3);font-size:18px">🔍</span>
+      <span style="font-size:13px;color:var(--t3)">19 plaatsen · Noorwegen 2026</span>
+    </div>
+    <button id="mapToggle" onclick="toggleMapView()" style="width:44px;height:44px;border-radius:50%;background:white;border:none;cursor:pointer;font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,.09)">🇳🇴</button>
+  </div>
+  <!-- Filter chips -->
+  <div class="filter-chips" style="border-top:none;margin-top:8px">
+    <div class="chip active">Alles</div>
+    <div class="chip">🏡 Verblijven</div>
+    <div class="chip">🏔️ Activiteiten</div>
+    <div class="chip">🍽️ Eten</div>
+    <div class="chip">⚡ Laders</div>
+  </div>
+  <!-- Acc filter row -->
+  <div style="display:flex;gap:6px;overflow-x:auto;padding:6px 14px;scrollbar-width:none;background:rgba(255,255,255,.9)">
+    <div onclick="filterAcc('sgd')" style="flex-shrink:0;padding:5px 10px;border-radius:20px;border:1.5px solid var(--sgd);background:white;display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:800;color:var(--sgd)"><span style="width:8px;height:8px;border-radius:50%;background:var(--sgd);display:inline-block"></span>Sgd</div>
+    <div onclick="filterAcc('skj')" style="flex-shrink:0;padding:5px 10px;border-radius:20px;border:1.5px solid var(--skj);background:white;display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:800;color:var(--skj)"><span style="width:8px;height:8px;border-radius:50%;background:var(--skj);display:inline-block"></span>Skj</div>
+    <div onclick="filterAcc('val')" style="flex-shrink:0;padding:5px 10px;border-radius:20px;border:1.5px solid var(--val);background:white;display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:800;color:var(--val)"><span style="width:8px;height:8px;border-radius:50%;background:var(--val);display:inline-block"></span>Val</div>
+    <div onclick="filterAcc('gjr')" style="flex-shrink:0;padding:5px 10px;border-radius:20px;border:1.5px solid var(--gjr);background:white;display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:800;color:var(--gjr)"><span style="width:8px;height:8px;border-radius:50%;background:var(--gjr);display:inline-block"></span>Gjr</div>
+  </div>
+  <!-- Map SVG -->
+  <div class="map-container">
+    <svg viewBox="0 0 400 500" class="map-svg" xmlns="http://www.w3.org/2000/svg">
+      <!-- OSM-style background -->
+      <rect width="400" height="500" fill="#d4e8c4"/>
+      <!-- Water -->
+      <ellipse cx="60" cy="200" rx="55" ry="180" fill="#a8c8e8" opacity=".7"/>
+      <ellipse cx="350" cy="120" rx="40" ry="80" fill="#a8c8e8" opacity=".5"/>
+      <!-- Roads (schematic) -->
+      <path d="M200 450 Q180 380 160 300 Q140 220 150 180 Q160 140 190 120 Q220 100 240 80" stroke="white" stroke-width="3" fill="none" opacity=".6"/>
+      <!-- Ferry routes (dashed blue) -->
+      <path d="M80 420 Q50 300 70 200 Q90 140 110 100" stroke="#1A3F6F" stroke-width="2" stroke-dasharray="6,4" fill="none"/>
+      <path d="M280 430 Q260 410 230 400" stroke="#1A3F6F" stroke-width="2" stroke-dasharray="6,4" fill="none"/>
+      <!-- Drive routes (green) -->
+      <path d="M110 100 Q130 110 150 130 Q160 150 160 180" stroke="#1B4D35" stroke-width="2.5" fill="none" opacity=".7"/>
+      <path d="M160 180 Q165 220 175 250 Q185 270 200 280" stroke="#2d6a4f" stroke-width="2.5" fill="none" opacity=".7"/>
+      <path d="M200 280 Q210 310 220 330 Q230 350 235 370" stroke="#1565c0" stroke-width="2.5" fill="none" opacity=".7"/>
+      <path d="M235 370 Q245 390 255 410 Q265 430 280 430" stroke="#ef6c00" stroke-width="2.5" fill="none" opacity=".7"/>
+
+      <!-- Thin lines acc → activities -->
+      <line x1="160" y1="180" x2="140" y2="160" stroke="#2d6a4f" stroke-width="1" opacity=".3"/>
+      <line x1="160" y1="180" x2="175" y2="165" stroke="#2d6a4f" stroke-width="1" opacity=".3"/>
+      <line x1="200" y1="280" x2="185" y2="265" stroke="#1565c0" stroke-width="1" opacity=".3"/>
+      <line x1="200" y1="280" x2="215" y2="260" stroke="#1565c0" stroke-width="1" opacity=".3"/>
+      <line x1="235" y1="370" x2="220" y2="355" stroke="#ef6c00" stroke-width="1" opacity=".3"/>
+
+      <!-- Activity pins — Sogndal (green) -->
+      <g onclick="showPlace('Molden hike','🥾','Uitzichtwandeling boven Lustrafjord. ±7 km · 3–4 uur · gemiddeld.','D4-1')" style="cursor:pointer">
+        <circle cx="140" cy="158" r="16" fill="#2d6a4f" stroke="white" stroke-width="2"/>
+        <text x="140" y="163" text-anchor="middle" font-size="12">🥾</text>
+        <rect x="126" y="174" width="28" height="10" rx="3" fill="#2d6a4f"/>
+        <text x="140" y="181" text-anchor="middle" font-size="7" fill="white" font-weight="bold">D4-1</text>
+      </g>
+      <g onclick="showPlace('Urnes Stavkerk','🏛️','UNESCO-staafkerk, oudste van Noorwegen. 1–2 uur · makkelijk.','D5-2')" style="cursor:pointer">
+        <circle cx="178" cy="162" r="16" fill="#2d6a4f" stroke="white" stroke-width="2"/>
+        <text x="178" y="167" text-anchor="middle" font-size="12">🏛️</text>
+        <rect x="164" y="178" width="28" height="10" rx="3" fill="#2d6a4f"/>
+        <text x="178" y="185" text-anchor="middle" font-size="7" fill="white" font-weight="bold">D5-2</text>
+      </g>
+
+      <!-- Activity pins — Skjåk (blue) -->
+      <g onclick="showPlace('Klimapark 2469','🧊','IJstunnel & permafrost bij Juvasshytta. Tour ±3u · begeleid.','D7-1')" style="cursor:pointer">
+        <circle cx="185" cy="262" r="16" fill="#1565c0" stroke="white" stroke-width="2"/>
+        <text x="185" y="267" text-anchor="middle" font-size="12">🧊</text>
+        <rect x="171" y="278" width="28" height="10" rx="3" fill="#1565c0"/>
+        <text x="185" y="285" text-anchor="middle" font-size="7" fill="white" font-weight="bold">D7-1</text>
+      </g>
+      <g onclick="showPlace('Dønfoss','🌊','Waterval dichtbij Skjåk. 30–60 min · makkelijk.','D8-1')" style="cursor:pointer">
+        <circle cx="215" cy="256" r="16" fill="#1565c0" stroke="white" stroke-width="2"/>
+        <text x="215" y="261" text-anchor="middle" font-size="12">🌊</text>
+        <rect x="201" y="272" width="28" height="10" rx="3" fill="#1565c0"/>
+        <text x="215" y="279" text-anchor="middle" font-size="7" fill="white" font-weight="bold">D8-1</text>
+      </g>
+
+      <!-- Activity pins — Valdres (orange) -->
+      <g onclick="showPlace('Besseggen','🏔️','Topwandeling. 14–18 km · 6–8 uur · zwaar. Alleen bij goed weer.','D10-1')" style="cursor:pointer">
+        <circle cx="222" cy="353" r="16" fill="#ef6c00" stroke="white" stroke-width="2"/>
+        <text x="222" y="358" text-anchor="middle" font-size="12">🏔️</text>
+        <rect x="208" y="369" width="30" height="10" rx="3" fill="#ef6c00"/>
+        <text x="223" y="376" text-anchor="middle" font-size="7" fill="white" font-weight="bold">D10-1</text>
+      </g>
+
+      <!-- Ferry stops -->
+      <g onclick="showPlace('Bergen','⛴️','Aankomst ferry ±13:00. Vertrek Bergen naar Sogndal.','')">
+        <circle cx="110" cy="100" r="14" fill="#1A3F6F" stroke="white" stroke-width="2.5"/>
+        <text x="110" y="105" text-anchor="middle" font-size="11">⛴️</text>
+      </g>
+      <g onclick="showPlace('Kristiansand','⛴️','Ferry terminal · terug naar Hirtshals.','')">
+        <circle cx="280" cy="432" r="14" fill="#1A3F6F" stroke="white" stroke-width="2.5"/>
+        <text x="280" y="437" text-anchor="middle" font-size="11">⛴️</text>
+      </g>
+
+      <!-- Accommodation pins — large -->
+      <g onclick="showPlace('Sogndal','🏡','Årøyvegen 202 · 16–19 jun · 3 nachten','')">
+        <circle cx="160" cy="180" r="22" fill="#2d6a4f" stroke="white" stroke-width="3"/>
+        <text x="160" y="186" text-anchor="middle" font-size="16">🏡</text>
+        <rect x="142" y="202" width="36" height="12" rx="4" fill="#2d6a4f"/>
+        <text x="160" y="211" text-anchor="middle" font-size="8" fill="white" font-weight="bold">Sgd</text>
+      </g>
+      <g onclick="showPlace('Skjåk Solside','🏡','Skjåk Solside 799 · 19–23 jun · 4 nachten','')">
+        <circle cx="200" cy="280" r="22" fill="#1565c0" stroke="white" stroke-width="3"/>
+        <text x="200" y="286" text-anchor="middle" font-size="16">🏡</text>
+        <rect x="182" y="302" width="36" height="12" rx="4" fill="#1565c0"/>
+        <text x="200" y="311" text-anchor="middle" font-size="8" fill="white" font-weight="bold">Skj</text>
+      </g>
+      <g onclick="showPlace('Valdres','🏡','Førsøddin 30 · 23–27 jun · 4 nachten','')">
+        <circle cx="235" cy="370" r="22" fill="#ef6c00" stroke="white" stroke-width="3"/>
+        <text x="235" y="376" text-anchor="middle" font-size="16">🏡</text>
+        <rect x="217" y="392" width="36" height="12" rx="4" fill="#ef6c00"/>
+        <text x="235" y="401" text-anchor="middle" font-size="8" fill="white" font-weight="bold">Val</text>
+      </g>
+      <g onclick="showPlace('Gjerstad','🏡','Løyteveien 14 · 27–29 jun · 2 nachten','')">
+        <circle cx="268" cy="448" r="22" fill="#6a1b9a" stroke="white" stroke-width="3"/>
+        <text x="268" y="454" text-anchor="middle" font-size="16">🏡</text>
+        <rect x="250" y="470" width="36" height="12" rx="4" fill="#6a1b9a"/>
+        <text x="268" y="479" text-anchor="middle" font-size="8" fill="white" font-weight="bold">Gjr</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Route strip -->
+  <div class="route-strip">
+    <div class="route-handle"></div>
+    <div style="display:flex;align-items:center;margin-bottom:10px">
+      <span style="font-size:13px;font-weight:800;color:var(--t1)">🇳🇴 Volledige route Noorwegen 2026</span>
+    </div>
+    <div class="route-stops">
+      <div class="route-stop home"><span class="stop-emoji">🏠</span><div class="stop-name">Nijmegen</div><div class="stop-date">15 jun</div><div class="stop-sub">vertrek</div></div>
+      <div class="route-stop ferry"><span class="stop-emoji">⛴️</span><div class="stop-name">Hirtshals</div><div class="stop-date">15 jun nacht</div><div class="stop-sub ferry">ferry →</div></div>
+      <div class="route-stop ferry"><span class="stop-emoji">🚢</span><div class="stop-name">Stavanger</div><div class="stop-date">16 jun</div><div class="stop-sub ferry">tussenstop</div></div>
+      <div class="route-stop ferry"><span class="stop-emoji">⛴️</span><div class="stop-name">Bergen</div><div class="stop-date">16 jun 13:00</div><div class="stop-sub ferry">aankomst</div></div>
+      <div class="route-stop acc"><span class="stop-emoji">🏡</span><div class="stop-name">Sogndal</div><div class="stop-date">16–19 jun</div><div class="stop-sub">3 nachten</div></div>
+      <div class="route-stop acc"><span class="stop-emoji">🏡</span><div class="stop-name">Skjåk</div><div class="stop-date">19–23 jun</div><div class="stop-sub">4 nachten</div></div>
+      <div class="route-stop acc"><span class="stop-emoji">🏡</span><div class="stop-name">Valdres</div><div class="stop-date">23–27 jun</div><div class="stop-sub">4 nachten</div></div>
+      <div class="route-stop acc"><span class="stop-emoji">🏡</span><div class="stop-name">Gjerstad</div><div class="stop-date">27–29 jun</div><div class="stop-sub">2 nachten</div></div>
+      <div class="route-stop ferry"><span class="stop-emoji">⛴️</span><div class="stop-name">Kristiansand</div><div class="stop-date">29 jun</div><div class="stop-sub ferry">ferry →</div></div>
+      <div class="route-stop ferry"><span class="stop-emoji">⛴️</span><div class="stop-name">Hirtshals</div><div class="stop-date">29 jun</div><div class="stop-sub ferry">aankomst</div></div>
+      <div class="route-stop" style="background:var(--card)"><span class="stop-emoji">🏨</span><div class="stop-name">Kolding</div><div class="stop-date">29–30 jun</div><div class="stop-sub">overnacht</div></div>
+      <div class="route-stop home"><span class="stop-emoji">🏠</span><div class="stop-name">Nijmegen</div><div class="stop-date">30 jun</div><div class="stop-sub">thuis!</div></div>
+    </div>
+    <div style="display:flex;gap:16px;margin-top:10px;font-size:10px;color:var(--t3)">
+      <span>🟢 Rijden</span>
+      <span>🔵 - - Ferry</span>
+      <span>🏡 Verblijf · D4-2 = Dag 4 stop 2</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PLANNING SCREEN
+═══════════════════════════════════════════ -->
+<div id="planning" class="screen safe-top">
+  <div class="header">
+    <div style="flex:1"><h1>Planning</h1></div>
+    <button onclick="nav('discover')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--green)">＋</button>
+  </div>
+
+  <!-- Day tabs -->
+  <div class="day-tabs" id="dayTabs"></div>
+  <!-- Acc legend -->
+  <div class="acc-legend" id="accLegend"></div>
+  <div style="height:1px;background:var(--border)"></div>
+
+  <!-- Day header -->
+  <div id="dayHeader" style="background:white;padding:10px 16px;border-bottom:1px solid var(--border)"></div>
+
+  <!-- Items -->
+  <div class="scroll-content" style="padding:8px 16px 0">
+    <div id="planningItems"></div>
+    <div class="gap"></div>
+    <button class="btn-secondary" onclick="nav('discover')" style="margin-bottom:16px">
+      ＋ Activiteit toevoegen
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     DISCOVER SCREEN
+═══════════════════════════════════════════ -->
+<div id="discover" class="screen safe-top">
+  <!-- AI header -->
+  <div class="ai-header">
+    <div class="ai-avatar" style="width:48px;height:48px;border-radius:14px;flex-shrink:0">🤖</div>
+    <div>
+      <div style="font-size:14px;font-weight:800;color:var(--green-dark)">Wat kan ik vandaag doen?</div>
+      <div style="font-size:12px;color:var(--t2);margin-top:2px">⛅ 14°C · Skjåk Solside, Noorwegen</div>
+    </div>
+    <button onclick="showToast('Nieuwe ideeën geladen!')" style="margin-left:auto;background:none;border:none;font-size:20px;cursor:pointer">🔄</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-chips">
+    <div class="chip active" onclick="setFilter(this)">Alles</div>
+    <div class="chip" onclick="setFilter(this)">🏔️ Activiteit</div>
+    <div class="chip" onclick="setFilter(this)">🍽️ Restaurant</div>
+    <div class="chip" onclick="setFilter(this)">☕ Café</div>
+    <div class="chip" onclick="setFilter(this)">🌧️ Regen-dag</div>
+  </div>
+
+  <div class="scroll-content">
+    <div style="height:12px"></div>
+    <div id="suggestions"></div>
+    <div style="padding:6px 16px 16px">
+      <button class="btn-secondary" onclick="showToast('Meer ideeën geladen!')">↻ Meer ideeën laden</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MEER SCREEN
+═══════════════════════════════════════════ -->
+<div id="meer" class="screen safe-top">
+  <div class="header"><h1>Meer</h1><span style="font-size:28px;margin-left:auto">🇳🇴</span></div>
+
+  <div class="scroll-content">
+    <!-- Roadtrip card -->
+    <div style="margin:0 16px;padding:16px;background:linear-gradient(135deg,#0A1E12,#1B4D35,#1A3F6F);border-radius:18px;cursor:pointer;box-shadow:0 4px 12px rgba(15,46,30,.12)" onclick="nav('roadtrip')">
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="font-size:32px">🚗</span>
+        <div style="flex:1">
+          <div style="font-size:16px;font-weight:800;color:white;letter-spacing:-.2px">Roadtrip-modus</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">⛅ 14°C · Noorwegen 2026</div>
+        </div>
+        <span style="color:rgba(255,255,255,.4);font-size:16px">›</span>
+      </div>
+    </div>
+
+    <div class="gap-lg"></div>
+
+    <div class="pad section-label">Mijn reis</div>
+    <div class="pad">
+      <div class="meer-card">
+        <div class="meer-row" onclick="nav('accommodation')">
+          <span class="meer-emoji">🏡</span>
+          <div style="flex:1"><div class="meer-label">Accommodaties</div><div class="meer-sub">4 verblijven · Noorwegen</div></div>
+          <span class="meer-chevron">›</span>
+        </div>
+        <div class="meer-row" onclick="nav('tickets')">
+          <span class="meer-emoji">🎟️</span>
+          <div style="flex:1"><div class="meer-label">Tickets</div><div class="meer-sub">1 ticket · Klimapark 2469</div></div>
+          <span class="meer-chevron">›</span>
+        </div>
+        <div class="meer-row" onclick="showToast('Mijn reizen — komt binnenkort')">
+          <span class="meer-emoji">✈️</span>
+          <div style="flex:1"><div class="meer-label">Mijn reizen</div><div class="meer-sub">Noorwegen 2026 · actief</div></div>
+          <span class="meer-chevron">›</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap-lg"></div>
+
+    <div class="pad section-label">Onderweg</div>
+    <div class="pad">
+      <div class="meer-card">
+        <div class="meer-row" onclick="showToast('Laadstations — 4 in de buurt')">
+          <span class="meer-emoji">⚡</span>
+          <div style="flex:1"><div class="meer-label">Laadstations</div><div class="meer-sub">4 stations in de buurt</div></div>
+          <span class="meer-chevron">›</span>
+        </div>
+        <div class="meer-row" onclick="nav('map')">
+          <span class="meer-emoji">🗺️</span>
+          <div style="flex:1"><div class="meer-label">Kaart</div><div class="meer-sub">Alle activiteiten en stops</div></div>
+          <span class="meer-chevron">›</span>
+        </div>
+        <div class="meer-row" onclick="nav('discover')">
+          <span class="meer-emoji">💡</span>
+          <div style="flex:1"><div class="meer-label">AI ideeën</div><div class="meer-sub">Activiteitensuggesties</div></div>
+          <span class="meer-chevron">›</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap-lg"></div>
+
+    <div class="pad section-label">Noorwegen 2026</div>
+    <div class="pad">
+      <div class="card" style="padding:16px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:10px"><span>📅</span><span style="font-size:13px;color:var(--t2)">15–30 juni 2026 · 16 dagen</span></div>
+          <div style="display:flex;gap:10px"><span>🏡</span><span style="font-size:13px;color:var(--t2)">4 verblijven · Sogndal, Skjåk, Valdres, Gjerstad</span></div>
+          <div style="display:flex;gap:10px"><span>⛴️</span><span style="font-size:13px;color:var(--t2)">Heen: Nijmegen → Hirtshals (ferry) → Stavanger → Bergen</span></div>
+          <div style="display:flex;gap:10px"><span>🚗</span><span style="font-size:13px;color:var(--t2)">Bergen → Sogndal → Skjåk → Valdres → Gjerstad</span></div>
+          <div style="display:flex;gap:10px"><span>⛴️</span><span style="font-size:13px;color:var(--t2)">Terug: Kristiansand → Hirtshals (ferry) → Kolding → Nijmegen</span></div>
+          <div style="background:var(--green-lt);border-radius:10px;padding:10px;margin-top:4px">
+            <span style="font-size:12px;color:var(--green-dark);line-height:1.5">💡 Op verblijfsdagen liever niet de hele dag autorijden. Rustige dag: één hoofdactiviteit + koffie/lunch + kleine stop.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap-lg"></div>
+
+    <div class="pad section-label">Instellingen</div>
+    <div class="pad">
+      <div class="meer-card">
+        <div class="meer-row" onclick="nav('settings')">
+          <span class="meer-emoji">⚙️</span>
+          <div style="flex:1"><div class="meer-label">Instellingen</div><div class="meer-sub">Voertuig, voorkeuren, taal</div></div>
+          <span class="meer-chevron">›</span>
+        </div>
+        <div class="meer-row" onclick="showToast('Profiel — komt binnenkort')">
+          <span class="meer-emoji">👤</span>
+          <div style="flex:1"><div class="meer-label">Profiel</div><div class="meer-sub">Reisvoorkeuren</div></div>
+          <span class="meer-chevron">›</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap-lg"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ACCOMMODATION SCREEN (full-screen)
+═══════════════════════════════════════════ -->
+<div id="accommodation" class="screen safe-top" style="padding-bottom:0">
+  <div class="acc-hero">
+    <div class="acc-hero-topo"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.6))"></div>
+    <div class="acc-hero-back" onclick="nav('meer')">‹</div>
+    <!-- Weather -->
+    <div style="position:absolute;top:48px;right:14px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:6px 12px;display:flex;gap:5px;align-items:center">
+      <span style="font-size:14px">⛅</span>
+      <span style="font-size:14px;font-weight:700;color:white">14°</span>
+    </div>
+    <div class="acc-hero-content">
+      <h2 style="font-size:24px;font-weight:700;color:white;letter-spacing:-.4px">Skjåk Solside</h2>
+      <p style="font-size:12px;color:rgba(255,255,255,.7);margin-top:3px">📍 Skjåk Solside 799, Skjåk</p>
+      <p style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;font-weight:500">19–23 jun · 4 nachten</p>
+    </div>
+  </div>
+
+  <!-- Action bar -->
+  <div style="background:white;display:flex;border-bottom:1px solid var(--border)">
+    <button onclick="showToast('Navigatie gestart!')" style="flex:1;padding:13px;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:var(--t2);font-weight:600">
+      <span style="font-size:22px">🗺️</span>Route
+    </button>
+    <button onclick="nav('map')" style="flex:1;padding:13px;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:var(--t2);font-weight:600">
+      <span style="font-size:22px">📍</span>In de buurt
+    </button>
+    <button onclick="showToast('Weerdetails')" style="flex:1;padding:13px;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:var(--t2);font-weight:600">
+      <span style="font-size:22px">☀️</span>Weer
+    </button>
+    <button onclick="showToast('Gebeld!')" style="flex:1;padding:13px;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:var(--t2);font-weight:600">
+      <span style="font-size:22px">📞</span>Bel
+    </button>
+  </div>
+
+  <div class="scroll-content">
+    <div style="height:16px"></div>
+    <!-- Info card -->
+    <div class="pad">
+      <div class="info-card">
+        <div class="info-row"><span class="info-icon">🔑</span><div><div class="info-label">Check-in</div><div class="info-value">19 jun · vanaf 15:00</div></div></div>
+        <div class="info-row"><span class="info-icon">🚪</span><div><div class="info-label">Check-out</div><div class="info-value">23 jun · voor 11:00</div></div></div>
+        <div class="info-row"><span class="info-icon">🌙</span><div><div class="info-label">Nachten</div><div class="info-value">4 nachten</div></div></div>
+        <div class="info-row">
+          <span class="info-icon">📍</span>
+          <div style="flex:1"><div class="info-label">Adres</div><div class="info-value">Skjåk Solside 799, 2690 Skjåk</div></div>
+          <button class="maps-btn" onclick="showToast('Google Maps geopend!')">Maps</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div style="height:14px"></div>
+    <div class="pad">
+      <div style="background:var(--green-lt);border-radius:14px;border:1px solid var(--border);padding:14px;display:flex;gap:10px">
+        <span style="font-size:16px">💡</span>
+        <span style="font-size:13px;color:var(--green-dark);line-height:1.55;font-weight:500">Skjåk is een droog bergdal, handig voor Lom, Dønfoss en Juvasshytta. Lom is de beste plek voor koffie, lunch en avondeten in de buurt.</span>
+      </div>
+    </div>
+
+    <!-- From here -->
+    <div style="height:20px"></div>
+    <div class="pad section-label">VANAF HIER</div>
+    <div class="pad">
+      <div class="meer-card">
+        <div class="meer-row" onclick="nav('planning')"><span class="meer-emoji">🏔️</span><div style="flex:1"><div class="meer-label">Geplande activiteiten</div></div><span class="meer-chevron">›</span></div>
+        <div class="meer-row" onclick="nav('discover')"><span class="meer-emoji">💡</span><div style="flex:1"><div class="meer-label">AI ideeën in de buurt</div></div><span class="meer-chevron">›</span></div>
+        <div class="meer-row" onclick="showToast('Laadstations: IONITY 2.3km, Mer 22km')"><span class="meer-emoji">⚡</span><div style="flex:1"><div class="meer-label">Laadstations</div></div><span class="meer-chevron">›</span></div>
+        <div class="meer-row" onclick="nav('tickets')"><span class="meer-emoji">🎟️</span><div style="flex:1"><div class="meer-label">Tickets</div></div><span class="meer-chevron">›</span></div>
+        <div class="meer-row" onclick="nav('map')"><span class="meer-emoji">🗺️</span><div style="flex:1"><div class="meer-label">Bekijk op kaart</div></div><span class="meer-chevron">›</span></div>
+      </div>
+    </div>
+
+    <!-- All stops -->
+    <div style="height:24px"></div>
+    <div class="pad section-label">ROUTE DEZE REIS</div>
+    <div class="pad" id="allStops"></div>
+    <div style="height:32px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ROADTRIP SCREEN (full-screen)
+═══════════════════════════════════════════ -->
+<div id="roadtrip" class="screen safe-top" style="padding-bottom:0">
+  <div class="rt-topbar">
+    <button onclick="nav('meer')" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer">‹</button>
+    <div style="flex:1">
+      <div style="font-size:16px;font-weight:900;color:white">Roadtrip-modus</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.6)">Noorwegen 2026</div>
+    </div>
+    <div style="padding:4px 8px;background:rgba(0,255,0,.15);border:1px solid rgba(0,255,0,.3);border-radius:10px;font-size:10px;font-weight:700;color:#4caf50;display:flex;align-items:center;gap:4px">
+      <span style="width:6px;height:6px;background:#4caf50;border-radius:50%;display:inline-block"></span>Online
+    </div>
+  </div>
+
+  <div class="scroll-content">
+    <div style="height:12px"></div>
+
+    <!-- Weather -->
+    <div class="weather-strip">
+      <span style="font-size:32px">⛅</span>
+      <div style="flex:1">
+        <div style="font-size:28px;font-weight:900;color:white">14°C</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.8)">Licht bewolkt</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:rgba(255,255,255,.7)">💧 8% regen</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:4px">Skjåk, Noorwegen</div>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <!-- Current stop -->
+    <div class="pad">
+      <div class="card">
+        <div style="display:flex;align-items:center;padding:14px;gap:12px">
+          <div style="width:44px;height:44px;background:var(--green-lt);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏡</div>
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.3px;text-transform:uppercase">Huidig verblijf</div>
+            <div style="font-size:15px;font-weight:800;color:var(--t1)">Skjåk Solside</div>
+            <div style="font-size:12px;color:var(--t3)">Check-out: 23 jun · 11:00</div>
+          </div>
+          <button onclick="showToast('Navigatie naar Skjåk Solside!')" style="width:40px;height:40px;background:var(--green);border:none;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">🧭</button>
+        </div>
+        <div style="border-top:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px;color:var(--t3)">↓</span>
+          <span style="font-size:11px;color:var(--t3);font-weight:600">Volgende stop:</span>
+          <span style="font-size:12px;font-weight:800;color:var(--t1)">Valdres / Noord-Aurdal</span>
+          <span style="font-size:11px;color:var(--t3);margin-left:auto">23 jun</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <!-- Next activity -->
+    <div style="margin:0 16px;background:linear-gradient(135deg,var(--green),var(--green-dark));border-radius:16px;padding:16px;cursor:pointer;box-shadow:0 3px 10px rgba(15,46,30,.2)" onclick="showToast('Dønfoss navigatie gestart!')">
+      <div style="display:flex;gap:14px;align-items:center">
+        <div style="width:54px;height:54px;background:rgba(255,255,255,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">🌊</div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Volgende activiteit</div>
+          <div style="font-size:16px;font-weight:800;color:white;letter-spacing:-.2px">Dønfoss</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.7)">Waterval · 30–60 min · makkelijk</div>
+        </div>
+        <div style="width:44px;height:44px;background:rgba(255,255,255,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px">🧭</div>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <!-- Progress -->
+    <div class="pad">
+      <div class="card" style="padding:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:800">Voortgang reis</span>
+          <span style="font-size:12px;color:var(--t3);font-weight:600">9 / 17 gedaan</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:53%"></div>
+        </div>
+        <div style="font-size:10px;color:var(--t3);margin-top:6px">53% van activiteiten afgerond</div>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <!-- Quick actions -->
+    <div class="pad">
+      <div class="quick-btns">
+        <button class="quick-btn" style="background:rgba(27,77,53,.1);color:var(--green)" onclick="showToast('Navigatie gestart naar volgend stop!')">
+          <span style="font-size:24px">🧭</span>Navigeer<br>naar stop
+        </button>
+        <button class="quick-btn" style="background:rgba(21,101,192,.1);color:var(--skj)" onclick="showToast('4 laadstations gevonden langs route!')">
+          <span style="font-size:24px">⚡</span>Laadstation<br>vinden
+        </button>
+        <button class="quick-btn" style="background:rgba(42,107,74,.1);color:var(--green-mid)" onclick="nav('discover')">
+          <span style="font-size:24px">💡</span>AI<br>ideeën
+        </button>
+        <button class="quick-btn" style="background:rgba(121,85,72,.1);color:#795548" onclick="showToast('Tankstations: Shell 18km, Circle K 28km')">
+          <span style="font-size:24px">⛽</span>Tankstation<br>vinden
+        </button>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <!-- Today list -->
+    <div class="pad section-label">VANDAAG</div>
+    <div class="pad" id="rtTodayList"></div>
+    <div style="height:32px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TICKETS SCREEN (full-screen)
+═══════════════════════════════════════════ -->
+<div id="tickets" class="screen safe-top" style="padding-bottom:0">
+  <div class="header">
+    <button onclick="nav('meer')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--t2);margin-right:8px">‹</button>
+    <h1 style="flex:1">Tickets</h1>
+    <button onclick="openAddTicket()" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--green)">＋</button>
+  </div>
+
+  <div class="scroll-content">
+    <div style="height:8px"></div>
+    <div class="pad section-label">GEBRUIKT</div>
+    <div class="ticket-card used" style="margin-bottom:12px">
+      <div style="padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div style="font-size:16px;font-weight:800;color:var(--t1);letter-spacing:-.2px">Klimapark 2469 / Mimisbrunnr</div>
+            <div style="font-size:12px;color:var(--t3);margin-top:3px">IJstunnel & permafrost tour · 2 personen</div>
+          </div>
+          <div style="padding:4px 10px;background:#F0F0F0;border-radius:20px;font-size:11px;font-weight:800;color:var(--t3);flex-shrink:0;margin-left:8px">Gebruikt</div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--t2);font-weight:600">📅 21 jun 2026</span>
+          <span style="font-size:11px;color:var(--t2);font-weight:600">🕙 10:00</span>
+          <span style="font-size:11px;color:var(--t2);font-weight:600">👥 2 personen</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+    <div class="pad">
+      <button class="btn-secondary" onclick="openAddTicket()">＋ Ticket toevoegen</button>
+    </div>
+    <div style="height:32px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SETTINGS SCREEN (full-screen)
+═══════════════════════════════════════════ -->
+<div id="settings" class="screen safe-top" style="padding-bottom:0">
+  <div class="header">
+    <button onclick="nav('meer')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--t2);margin-right:8px">‹</button>
+    <h1>Instellingen</h1>
+  </div>
+
+  <div class="scroll-content">
+    <div class="pad section-label">VOERTUIG</div>
+    <div class="pad">
+      <div class="card">
+        <div onclick="selectVehicle(this,'ev')" data-vehicle="ev" class="info-row" style="cursor:pointer">
+          <span class="info-icon">⚡</span>
+          <div style="flex:1"><div class="info-value">Elektrisch</div><div style="font-size:11px;color:var(--t3)">Toont laadstations en EV-routes</div></div>
+          <div class="v-check" style="width:22px;height:22px;border-radius:50%;background:var(--green);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;color:white;font-size:12px">✓</div>
+        </div>
+        <div onclick="selectVehicle(this,'fuel')" data-vehicle="fuel" class="info-row" style="cursor:pointer">
+          <span class="info-icon">⛽</span>
+          <div style="flex:1"><div class="info-value">Benzine / Diesel</div><div style="font-size:11px;color:var(--t3)">Toont tankstations</div></div>
+          <div class="v-check" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border)"></div>
+        </div>
+        <div onclick="selectVehicle(this,'none')" data-vehicle="none" class="info-row" style="cursor:pointer">
+          <span class="info-icon">🚶</span>
+          <div style="flex:1"><div class="info-value">Geen voertuig</div><div style="font-size:11px;color:var(--t3)">Alleen OV en wandelen</div></div>
+          <div class="v-check" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border)"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap-lg"></div>
+    <div class="pad section-label">WAT VIND JE LEUK?</div>
+    <div class="pad" style="margin-bottom:4px;font-size:12px;color:var(--t3)">Wordt gebruikt voor AI suggesties.</div>
+    <div class="gap-sm"></div>
+    <div class="style-grid">
+      <div class="style-chip on" onclick="toggleStyle(this)">🏔️ Natuur</div>
+      <div class="style-chip on" onclick="toggleStyle(this)">🥾 Wandelen</div>
+      <div class="style-chip" onclick="toggleStyle(this)">📸 Fotografie</div>
+      <div class="style-chip" onclick="toggleStyle(this)">🍽️ Eten & drinken</div>
+      <div class="style-chip" onclick="toggleStyle(this)">🏛️ Cultuur</div>
+      <div class="style-chip" onclick="toggleStyle(this)">🎭 Geschiedenis</div>
+      <div class="style-chip" onclick="toggleStyle(this)">🛶 Water & fjord</div>
+      <div class="style-chip" onclick="toggleStyle(this)">🧘 Rust & natuur</div>
+    </div>
+
+    <div class="gap-lg"></div>
+    <div class="pad section-label">AI IDEEËN</div>
+    <div class="pad">
+      <div class="card">
+        <div class="info-row" style="justify-content:space-between">
+          <div style="display:flex;gap:14px;align-items:center">
+            <span class="info-icon">🤖</span>
+            <div><div class="info-value">AI suggesties</div><div style="font-size:11px;color:var(--t3)">Via Claude (Anthropic)</div></div>
+          </div>
+          <div onclick="this.classList.toggle('on');showToast(this.classList.contains('on')?'AI ingeschakeld':'AI uitgeschakeld')" style="width:48px;height:28px;background:var(--green);border-radius:14px;cursor:pointer;position:relative;transition:.2s">
+            <div style="position:absolute;top:3px;right:3px;width:22px;height:22px;background:white;border-radius:50%;transition:.2s"></div>
+          </div>
+        </div>
+        <div class="info-row" style="justify-content:space-between">
+          <div style="display:flex;gap:14px;align-items:center">
+            <span class="info-icon">☀️</span>
+            <div><div class="info-value">Weersuggesties</div><div style="font-size:11px;color:var(--t3)">Past aan op het weer</div></div>
+          </div>
+          <div onclick="this.classList.toggle('on');showToast(this.classList.contains('on')?'Weer-AI aan':'Weer-AI uit')" style="width:48px;height:28px;background:var(--green);border-radius:14px;cursor:pointer;position:relative;transition:.2s">
+            <div style="position:absolute;top:3px;right:3px;width:22px;height:22px;background:white;border-radius:50%;transition:.2s"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap-lg"></div>
+    <div class="pad section-label">TAAL</div>
+    <div class="pad">
+      <div class="card">
+        <div class="info-row" style="cursor:pointer" onclick="showToast('Taal: Nederlands geselecteerd')">
+          <span class="info-icon">🇳🇱</span>
+          <div style="flex:1"><div class="info-value">Nederlands</div></div>
+          <span style="color:var(--green);font-size:18px">✓</span>
+        </div>
+        <div class="info-row" style="cursor:pointer" onclick="showToast('Taal: Engels geselecteerd')">
+          <span class="info-icon">🇬🇧</span>
+          <div style="flex:1"><div class="info-value">Engels</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap-lg"></div>
+    <div class="pad section-label">OVER</div>
+    <div class="pad">
+      <div class="card">
+        <div class="info-row"><span class="info-icon">ℹ️</span><div style="flex:1"><div class="info-value">Travel Cockpit</div></div><span style="font-size:12px;color:var(--t3)">v1.0.0 beta</span></div>
+        <div class="info-row"><span class="info-icon">🗺️</span><div style="flex:1"><div class="info-value">Kaartdata</div></div><span style="font-size:12px;color:var(--t3)">OpenStreetMap</span></div>
+        <div class="info-row"><span class="info-icon">☁️</span><div style="flex:1"><div class="info-value">Weer</div></div><span style="font-size:12px;color:var(--t3)">Open-Meteo</span></div>
+        <div class="info-row"><span class="info-icon">🤖</span><div style="flex:1"><div class="info-value">AI</div></div><span style="font-size:12px;color:var(--t3)">Claude (Anthropic)</span></div>
+      </div>
+    </div>
+    <div style="height:32px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     BOTTOM NAVIGATION
+═══════════════════════════════════════════ -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-home" onclick="nav('home')">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    Vandaag
+  </button>
+  <button class="nav-item" id="nav-map" onclick="nav('map')">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+    Kaart
+  </button>
+  <button class="nav-item" id="nav-planning" onclick="nav('planning')">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
+    Planning
+  </button>
+  <button class="nav-item" id="nav-discover" onclick="nav('discover')">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+    Ideeën
+  </button>
+  <button class="nav-item" id="nav-meer" onclick="nav('meer')">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+    Meer
+  </button>
+</nav>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Map place sheet -->
+<div class="sheet-overlay" id="placeOverlay" onclick="closePlaceSheet()">
+  <div class="sheet" onclick="event.stopPropagation()" id="placeSheet">
+    <div class="sheet-handle"></div>
+    <div id="placeContent"></div>
+  </div>
+</div>
+
+<!-- Add ticket sheet -->
+<div class="sheet-overlay" id="ticketOverlay" onclick="closeTicketSheet()">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <h3 style="font-size:18px;font-weight:800;color:var(--t1);margin-bottom:20px">Ticket toevoegen</h3>
+    <input id="ticketTitle" placeholder="Naam activiteit / evenement" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;margin-bottom:12px;background:var(--card)">
+    <input id="ticketVenue" placeholder="Locatie" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;margin-bottom:12px;background:var(--card)">
+    <input id="ticketCode" placeholder="Boekingscode / referentie" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;margin-bottom:12px;background:var(--card)">
+    <div style="display:flex;gap:12px;margin-bottom:20px">
+      <input type="date" id="ticketDate" value="2026-06-22" style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;background:var(--card)">
+      <input type="time" id="ticketTime" value="10:00" style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;background:var(--card)">
+    </div>
+    <button class="btn-primary" onclick="saveTicket()">Ticket opslaan</button>
+  </div>
+</div>
+
+<script>
+// ── Data ─────────────────────────────────────────────────
+const tripStart = new Date(2026, 5, 15); // June 15 2026
+
+const accs = [
+  {name:'Sogndal',               short:'Sgd', color:'#2d6a4f', ci:new Date(2026,5,16), co:new Date(2026,5,19)},
+  {name:'Skjåk Solside',         short:'Skj', color:'#1565c0', ci:new Date(2026,5,19), co:new Date(2026,5,23)},
+  {name:'Valdres / Noord-Aurdal',short:'Val', color:'#ef6c00', ci:new Date(2026,5,23), co:new Date(2026,5,27)},
+  {name:'Gjerstad',              short:'Gjr', color:'#6a1b9a', ci:new Date(2026,5,27), co:new Date(2026,5,29)},
+];
+
+function accForDate(d) {
+  const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return accs.find(a => dt >= a.ci && dt < a.co) || null;
+}
+
+function dayNum(d) {
+  return Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate()) - tripStart) / 86400000) + 1;
+}
+
+const activities = [
+  {name:'Molden hike',           emoji:'🥾', acc:0, done:true,  date:new Date(2026,5,18), desc:'Uitzichtwandeling · ±7 km · 3–4 uur'},
+  {name:'Solvorn',               emoji:'🏘️', acc:0, done:true,  date:new Date(2026,5,19), desc:'Fjorddorpje · 1–2 uur · makkelijk'},
+  {name:'Urnes Stavkerk',        emoji:'🏛️', acc:0, done:true,  date:new Date(2026,5,19), desc:'UNESCO-staafkerk · 1–2 uur'},
+  {name:'Bøyabreen gletsjer',    emoji:'🧊', acc:0, done:true,  date:new Date(2026,5,19), desc:'Korte gletsjerstop · 30–60 min'},
+  {name:'Lom centrum',           emoji:'🏕️', acc:1, done:true,  date:new Date(2026,5,20), desc:'Rustig rondwandelen · 30–60 min'},
+  {name:'Bakeriet i Lom',        emoji:'☕', acc:1, done:true,  date:new Date(2026,5,20), desc:'Beste koffie/lunch in Lom'},
+  {name:'Lom Stavkyrkje',        emoji:'🏛️', acc:1, done:true,  date:new Date(2026,5,20), desc:'Historische staafkerk · 30–45 min'},
+  {name:'Klimapark 2469',        emoji:'🧊', acc:1, done:true,  date:new Date(2026,5,21), desc:'IJstunnel · tour ±3 uur · begeleid'},
+  {name:'Vegaskjelet rondtocht', emoji:'🥾', acc:1, done:true,  date:new Date(2026,5,21), desc:'Rondwandeling vanuit Lom · 4–6 km'},
+  {name:'Dønfoss',               emoji:'🌊', acc:1, done:false, date:new Date(2026,5,22), desc:'Waterval · 30–60 min · makkelijk'},
+  {name:'Gjelbrue / Tundragjelet',emoji:'🥾',acc:1, done:false, date:new Date(2026,5,22), desc:'Kloof/rivierwandeling · 1–2 uur'},
+  {name:'Besseggen',             emoji:'🏔️', acc:2, done:false, date:null, desc:'Topwandeling · 14–18 km · zwaar'},
+  {name:'Bygdin / M/S Bitihorn', emoji:'🚢', acc:2, done:false, date:null, desc:'Bergmeerboot · 2–4 uur'},
+  {name:'Mjølkevegen',           emoji:'🚴', acc:2, done:false, date:null, desc:'Fietsroute · halve dag · middel'},
+  {name:'Gomobu – Snøhetta-top', emoji:'🏔️', acc:2, done:false, date:new Date(2026,5,24), desc:'Rondwandeling · 2–3 uur · middel'},
+  {name:'Syndin / Bergsjøområdet',emoji:'🏞️',acc:2, done:false, date:new Date(2026,5,24), desc:'Bergmeren · 2–4 uur'},
+  {name:'Solhomfjell',           emoji:'🌲', acc:3, done:false, date:null, desc:'Wandeling bos/berg · ±11 km · middel'},
+  {name:'Risør',                 emoji:'🏖️', acc:3, done:false, date:null, desc:'Wit kustplaatsje · 2–3 uur'},
+  {name:'Tvedestrand',           emoji:'⚓', acc:3, done:false, date:null, desc:'Havenwandeling · 1–2 uur'},
+];
+
+const suggestions = [
+  {name:'Breheimsenteret',       emoji:'🏔️', desc:'Bezoekerscentrum van de Jostedalsbreen gletsjer. Fascinerende tentoonstelling over klimaatverandering en ijs.', meta:'3.2 km · 2–3u · gratis', color:'linear-gradient(135deg,#1B4D35,#2A6B4A)'},
+  {name:'Grotli Uitzichtpunt',   emoji:'🌄', desc:'Spectaculair panoramapunt over het Skjåkdal. Bij goed weer zicht tot de gletsjer van Galdhøpiggen.', meta:'8 km · 30 min rijden · gratis', color:'linear-gradient(135deg,#1565c0,#1A3F6F)'},
+  {name:'Bakeriet i Lom',        emoji:'☕', desc:'Beroemde bakkerij in Lom. Verse norskebrood, kanelboller en uitstekende koffie. Kan druk zijn maar het is de moeite.', meta:'18 km · al gepland ✓', color:'linear-gradient(135deg,#795548,#5D4037)'},
+  {name:'Sognefjellet (E55)',    emoji:'🚗', desc:'De hoogste bergweg van Noord-Europa. Bijzondere rijervaring, zeker bij goed weer. Stop bij de Noregs-høgfjellsveg bord.', meta:'35 km omrijden · 1u extra', color:'linear-gradient(135deg,#D4931A,#B8800E)'},
+];
+
+// ── Navigation ────────────────────────────────────────────
+const fullScreens = ['accommodation','roadtrip','tickets','settings'];
+const mainScreens = ['home','map','planning','discover','meer'];
+
+function nav(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelector('.bottom-nav').style.display =
+    fullScreens.includes(id) ? 'none' : 'flex';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+id);
+  if (navEl) navEl.classList.add('active');
+  // Init screens on first visit
+  if (id === 'planning') initPlanning();
+  if (id === 'home')     initHome();
+}
+
+// ── Toast ─────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Home screen ───────────────────────────────────────────
+function initHome() {
+  const today = new Date();
+  const todayActs = activities.filter(a =>
+    a.date && a.date.toDateString() === today.toDateString() && !a.done
+  ).concat(activities.filter(a =>
+    a.date && a.date.toDateString() === new Date(2026,5,22).toDateString() && !a.done
+  ));
+
+  const items = todayActs.slice(0, 3);
+  const html = items.map((a, i) => {
+    const acc = accs[a.acc];
+    return `
+    <div class="planning-item" onclick="showToast('${a.name}')">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${acc.color};border-radius:16px 0 0 16px"></div>
+      <div style="margin-left:4px"></div>
+      <div class="item-num" style="background:${acc.color}">${i+1}</div>
+      <div class="item-emoji" style="background:${acc.color}22">${a.emoji}</div>
+      <div class="item-info"><div class="item-name">${a.name}</div><div class="item-sub">${a.desc}</div></div>
+      <div class="item-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"></svg></div>
+    </div>`;
+  }).join('');
+  document.getElementById('home-planning').innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px">Geen activiteiten gepland</div>';
+}
+
+// ── Planning screen ───────────────────────────────────────
+let selectedDay = new Date(2026, 5, 22); // default: day 8
+
+function initPlanning() {
+  buildDayTabs();
+  renderDay(selectedDay);
+}
+
+function buildDayTabs() {
+  const tabs = document.getElementById('dayTabs');
+  const weekdays = ['zo','ma','di','wo','do','vr','za'];
+  const months   = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  tabs.innerHTML = '';
+  for (let i = 0; i < 16; i++) {
+    const d   = new Date(2026, 5, 15 + i);
+    const dn  = i + 1;
+    const acc = accForDate(d);
+    const col = acc ? acc.color : 'var(--t3)';
+    const isSel = d.toDateString() === selectedDay.toDateString();
+    const tab = document.createElement('div');
+    tab.className = 'day-tab' + (isSel ? ' active' : '');
+    tab.style.background = isSel ? col : 'var(--bg)';
+    tab.style.borderColor = isSel ? col : 'transparent';
+    tab.innerHTML = `
+      <span class="dn" style="color:${isSel?'rgba(255,255,255,.9)':col}">D${dn}</span>
+      <span class="dd">${d.getDate()}</span>
+      <span class="dm">${months[d.getMonth()]}</span>
+      ${acc ? `<span class="dot" style="background:${isSel?'rgba(255,255,255,.8)':col}"></span>` : ''}
+    `;
+    tab.onclick = () => { selectedDay = d; buildDayTabs(); renderDay(d); };
+    tabs.appendChild(tab);
+  }
+}
+
+function renderDay(d) {
+  const dn   = dayNum(d);
+  const acc  = accForDate(d);
+  const col  = acc ? acc.color : 'var(--t3)';
+  const wdays = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+  const months = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+
+  // Legend
+  document.getElementById('accLegend').innerHTML = acc
+    ? `<span class="acc-dot" style="background:${col}"></span><span style="color:${col};font-weight:700">🏡 ${acc.name}</span>
+       <span style="margin-left:auto;display:flex;gap:5px">${accs.map(a=>`<span class="acc-dot" style="background:${a.color}"></span>`).join('')}</span>`
+    : `<span style="color:var(--t3);font-weight:700">🚗 Reisdag</span>`;
+
+  // Day header
+  document.getElementById('dayHeader').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="padding:5px 10px;background:${col};border-radius:10px;color:white;font-size:13px;font-weight:900">Dag ${dn}</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--t1)">${wdays[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}</div>
+        ${acc ? `<div style="display:flex;align-items:center;gap:5px;margin-top:2px"><span style="width:8px;height:8px;border-radius:50%;background:${col};display:inline-block"></span><span style="font-size:11px;font-weight:600;color:${col}">vanuit ${acc.name}</span></div>` : '<div style="font-size:11px;color:var(--t3)">Reisdag</div>'}
+      </div>
+      ${d.toDateString()===new Date().toDateString()?'<div style="margin-left:auto;padding:4px 8px;background:var(--red-lt);border-radius:8px;font-size:10px;font-weight:800;color:var(--red)">Vandaag</div>':''}
+    </div>`;
+
+  // Items
+  const dayActs = activities.filter(a => a.date && a.date.toDateString() === d.toDateString());
+  let html = '';
+  if (dayActs.length === 0) {
+    html = `<div style="text-align:center;padding:32px;color:var(--t3)">
+      <div style="font-size:48px">📅</div>
+      <div style="font-size:16px;font-weight:800;margin-top:12px;color:var(--t1)">Niets gepland</div>
+      <div style="font-size:13px;margin-top:6px">Voeg activiteiten toe via AI ideeën.</div>
+    </div>`;
+  } else {
+    html = `<div class="card" style="margin-bottom:12px">`;
+    dayActs.forEach((a, i) => {
+      const ac = accs[a.acc];
+      html += `
+        <div class="planning-item" onclick="showToast('${a.name} details')">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${ac.color};border-radius:16px 0 0 16px"></div>
+          <div style="width:4px"></div>
+          <div class="item-num ${a.done?'done':''}" style="background:${a.done?'var(--border)':ac.color}">${i+1}</div>
+          <div class="item-emoji" style="background:${ac.color}20">${a.emoji}</div>
+          <div class="item-info">
+            <div class="item-name ${a.done?'done':''}">${a.name}</div>
+            <div class="item-sub">${a.desc}</div>
+          </div>
+          <div class="item-check ${a.done?'checked':''}" onclick="event.stopPropagation();toggleCheck(this,${activities.indexOf(a)})">
+            ${a.done?'<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>':''}
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+  }
+
+  // Unscheduled for this accommodation
+  const thisAcc = acc;
+  if (thisAcc) {
+    const unsched = activities.filter(a => a.acc === accs.indexOf(thisAcc) && !a.date && !a.done);
+    if (unsched.length > 0) {
+      html += `<div style="font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--t3);text-transform:uppercase;margin:16px 0 8px">Nog niet ingepland</div>
+        <div class="card">`;
+      unsched.forEach(a => {
+        html += `<div class="planning-item" onclick="showToast('${a.name} details')">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${thisAcc.color};border-radius:16px 0 0 16px"></div>
+          <div style="width:4px"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:${thisAcc.color};margin:0 11px 0 7px;flex-shrink:0"></div>
+          <div class="item-emoji" style="background:${thisAcc.color}20">${a.emoji}</div>
+          <div class="item-info">
+            <div class="item-name">${a.name}</div>
+            <div class="item-sub">${a.desc}</div>
+          </div>
+          <div style="padding:2px 7px;background:${thisAcc.color}20;border-radius:6px;font-size:9px;font-weight:800;color:${thisAcc.color};flex-shrink:0">vanuit ${thisAcc.short}</div>
+        </div>`;
+      });
+      html += '</div>';
+    }
+  }
+
+  document.getElementById('planningItems').innerHTML = html;
+}
+
+function toggleCheck(el, idx) {
+  activities[idx].done = !activities[idx].done;
+  renderDay(selectedDay);
+  showToast(activities[idx].done ? '✓ Afgevinkt!' : 'Teruggezet naar gepland');
+}
+
+// ── Discover ──────────────────────────────────────────────
+function initDiscover() {
+  const el = document.getElementById('suggestions');
+  if (!el) return;
+  el.innerHTML = suggestions.map(s => `
+    <div class="suggestion-card" style="margin-bottom:10px">
+      <div class="suggestion-thumb" style="background:${s.color}">${s.emoji}</div>
+      <div class="suggestion-body">
+        <div class="suggestion-name">${s.name}</div>
+        <div class="suggestion-desc">${s.desc}</div>
+        <div class="suggestion-meta">${s.meta}</div>
+        <div class="suggestion-actions">
+          <button class="add-btn" onclick="addToPlanning('${s.name}');event.stopPropagation()">+ Toevoegen</button>
+          <button class="nav-btn" onclick="showToast('Google Maps: ${s.name}');event.stopPropagation()">Navigeer</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function setFilter(el) {
+  document.querySelectorAll('#discover .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  showToast('Filter: ' + el.textContent.trim());
+}
+
+function addToPlanning(name) {
+  showToast('✓ ' + name + ' toegevoegd aan planning');
+}
+
+// ── Map ───────────────────────────────────────────────────
+let mapFullRoute = false;
+function toggleMapView() {
+  mapFullRoute = !mapFullRoute;
+  document.getElementById('mapToggle').textContent = mapFullRoute ? '🌍' : '🇳🇴';
+  showToast(mapFullRoute ? 'Volledige Europa-route' : 'Noorwegen weergave');
+}
+function filterAcc(acc) {
+  showToast('Filter: ' + accs.find(a => a.short.toLowerCase() === acc)?.name || acc);
+}
+
+function showPlace(name, emoji, desc, dayLabel) {
+  const sheet = document.getElementById('placeSheet');
+  document.getElementById('placeContent').innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+      <div style="width:52px;height:52px;background:var(--green-lt);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px">${emoji}</div>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:800;color:var(--t1);letter-spacing:-.2px">${name}</div>
+        ${dayLabel ? `<div style="display:inline-block;padding:2px 8px;background:var(--green);border-radius:6px;font-size:10px;font-weight:900;color:white;margin-top:3px">${dayLabel}</div>` : ''}
+      </div>
+      <button onclick="closePlaceSheet()" style="background:none;border:none;font-size:20px;color:var(--t3);cursor:pointer">✕</button>
+    </div>
+    <p style="font-size:14px;color:var(--t2);line-height:1.6;margin-bottom:16px">${desc}</p>
+    <div style="display:flex;gap:8px">
+      <button class="btn-primary" style="flex:2" onclick="addToPlanning('${name}');closePlaceSheet()">+ Toevoegen aan planning</button>
+      <button class="btn-secondary" style="flex:1" onclick="showToast('Navigatie: ${name}');closePlaceSheet()">Navigeer</button>
+    </div>`;
+  document.getElementById('placeOverlay').classList.add('open');
+}
+
+function closePlaceSheet() {
+  document.getElementById('placeOverlay').classList.remove('open');
+}
+
+// ── Accommodation all stops ───────────────────────────────
+function initAccStops() {
+  const months = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  const html = accs.map((a,i) => {
+    const nights = (a.co - a.ci) / 86400000;
+    const ci = `${a.ci.getDate()} ${months[a.ci.getMonth()]}`;
+    const co = `${a.co.getDate()} ${months[a.co.getMonth()]}`;
+    const isActive = a.name === 'Skjåk Solside';
+    return `
+    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:8px">
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div style="width:28px;height:28px;border-radius:50%;background:${isActive?a.color:'var(--border)'};display:flex;align-items:center;justify-content:center;color:${isActive?'white':'var(--t3)'};font-size:12px;font-weight:900">${i+1}</div>
+        ${i<accs.length-1?`<div style="width:2px;height:44px;background:${a.color}33;margin:2px 0"></div>`:''}
+      </div>
+      <div style="flex:1;padding:12px;border-radius:12px;background:${isActive?a.color+'15':'var(--card)'};border:${isActive?`1.5px solid ${a.color}`:'1px solid var(--border)'};margin-bottom:${i<accs.length-1?'0':'0'}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--t1)">${a.name}</div>
+            <div style="font-size:11px;color:var(--t3)">${ci} – ${co} · ${nights} nachten</div>
+          </div>
+          ${isActive?`<div style="padding:3px 8px;background:${a.color};border-radius:20px;font-size:10px;font-weight:800;color:white">Nu actief</div>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const el = document.getElementById('allStops');
+  if (el) el.innerHTML = html;
+}
+
+// ── Roadtrip today list ───────────────────────────────────
+function initRtToday() {
+  const today = activities.filter(a => a.date && a.date.toDateString() === new Date(2026,5,22).toDateString());
+  const el = document.getElementById('rtTodayList');
+  if (!el) return;
+  el.innerHTML = today.map(a => `
+    <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--card);border-radius:14px;border:1px solid var(--border);margin-bottom:8px">
+      <div style="width:24px;height:24px;border-radius:50%;border:2px solid ${a.done?'var(--action)':'var(--border)'};background:${a.done?'var(--action)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        ${a.done?'<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>':''}
+      </div>
+      <div style="font-size:20px">${a.emoji}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:${a.done?'var(--t3)':'var(--t1)'};text-decoration:${a.done?'line-through':'none'}">${a.name}</div>
+      </div>
+      <button onclick="showToast('Navigatie: ${a.name}')" style="width:32px;height:32px;background:var(--green-lt);border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">🧭</button>
+    </div>`).join('');
+}
+
+// ── Tickets ───────────────────────────────────────────────
+function openAddTicket() {
+  document.getElementById('ticketOverlay').classList.add('open');
+}
+function closeTicketSheet() {
+  document.getElementById('ticketOverlay').classList.remove('open');
+}
+function saveTicket() {
+  const title = document.getElementById('ticketTitle').value.trim();
+  if (!title) { showToast('Voer een naam in'); return; }
+  showToast('✓ Ticket opgeslagen: ' + title);
+  closeTicketSheet();
+}
+
+// ── Settings ──────────────────────────────────────────────
+function selectVehicle(el, type) {
+  document.querySelectorAll('[data-vehicle]').forEach(r => {
+    const check = r.querySelector('.v-check');
+    if (r.dataset.vehicle === type) {
+      check.style.background = 'var(--green)';
+      check.style.borderColor = 'var(--green)';
+      check.innerHTML = '✓';
+      check.style.color = 'white';
+    } else {
+      check.style.background = 'transparent';
+      check.style.borderColor = 'var(--border)';
+      check.innerHTML = '';
+    }
+  });
+  showToast('Voertuig: ' + {ev:'Elektrisch',fuel:'Benzine/Diesel',none:'Geen'}[type]);
+}
+
+function toggleStyle(el) {
+  el.classList.toggle('on');
+  showToast((el.classList.contains('on') ? '✓ ' : '✗ ') + el.textContent.trim());
+}
+
+// ── Init ──────────────────────────────────────────────────
+initHome();
+initDiscover();
+initAccStops();
+initRtToday();
+</script>
+</body>
+</html>
