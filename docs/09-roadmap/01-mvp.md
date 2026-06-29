@@ -1,77 +1,101 @@
 # MVP Roadmap
 
 **Document ID:** TC-ROAD-001
-**Version:** 3.0
-**Status:** In Progress
-**Last Updated:** 2026-06-28
+**Version:** 4.0
+**Status:** Web prototype volledig · Flutter in ontwikkeling
+**Last Updated:** 2026-06-29
 
 ---
 
-# Status per fase
+## Versiehistorie prototype
 
-| Fase | Status |
-|---|---|
-| Phase AI — AI integratie | ✅ Compleet |
-| Phase 1 — Data fundament | ✅ Compleet |
-| Phase 2 — Kernschermen | ✅ Compleet |
-| Phase 3 — Kaart | ✅ Compleet |
-| Phase 4 — Discover & AI | ✅ Compleet |
-| Phase 5 — Energie & Tickets | ✅ Compleet (UI) |
-| Phase 6 — Roadtrip-modus | ✅ **Compleet** |
-| Phase 7 — Instellingen | ✅ **Compleet** |
-| Phase 8 — Polish & Offline | 🟡 Gedeeltelijk |
-
----
-
-# Wat werkt nu
-
-## Alle schermen gebouwd
-Geen enkel scherm is meer een placeholder — elk scherm heeft inhoud en functie.
-
-## Roadtrip-modus (DL-001)
-Het kernscherm is gebouwd. Weerstrip, huidig verblijf, volgende activiteit, voortgang, mini-kaart, snelknoppen, vandaag-lijst. Beschikbaar via /roadtrip en vanuit het Meer-menu.
-
-## Instellingen
-Schrijft echt naar SharedPreferences. Voertuigtype, 8 reisvoorkeur-stijlen (gaan naar AI), AI toggles, taal.
-
-## Tickets
-Werkende + knop met volledig formulier. Barcode uitklapbaar. Seed-ticket (Klimapark) aanwezig.
-
----
-
-# Wat nog ontbreekt voor echte lancering
-
-## Must-have
-1. **ChargingScreen live API** — nu 4 hardcoded stations. Open Charge Map API gratis.
-2. **Ticket DB-tabel** — nu in-memory, verlies bij herstart. Drift-tabel bestaat al, moet alleen gekoppeld worden.
-3. **build_runner uitvoeren** — Freezed + Drift bestanden worden gegenereerd bij eerste `flutter pub get && flutter pub run build_runner build`.
-
-## Nice-to-have
-4. **ProfileScreen** — naam, avatar, reishistorie.
-5. **NotificationsScreen** — check-in herinneringen, weerwaarschuwingen.
-6. **Map date picker** — datum kiezen bij toevoegen aan planning via kaart.
-7. **RegionaleGids** — AI-gegenereerde reisgids per regio (spec: docs/05-features/01-regional-guide.md).
-
----
-
-# Samenvatting voortgang
-
-Van 0 naar vrijwel complete app in één sessie:
-- 14 schermen gebouwd
-- 19 activiteiten met echte coordinates uit index.html
-- 4 verblijven met echte adressen en datums
-- Volledige route Nijmegen–Noorwegen–Nijmegen op kaart
-- Dag-nummering D1–D16 door de hele app
-- Live weer via Open-Meteo
-- AI suggesties via Claude met echte context
-- Offline banner + lokale SQLite database
-
----
-
-# Changelog
-
-| Versie | Datum | Wijziging |
+| Versie | Datum | Wat |
 |---|---|---|
-| 1.0 | 2026-06-10 | Initieel |
-| 2.0 | 2026-06-28 | Fases 1-5 compleet |
-| 3.0 | 2026-06-28 | Roadtrip-modus + Settings gebouwd, alle schermen compleet |
+| v1 | 2026-06-28 | Eerste HTML prototype — navigatie, echte data |
+| v2 | 2026-06-29 | Fjord Cartography — React, Fraunces serif, topo animaties |
+| v3 | 2026-06-29 | **Topografisk** — GPS tracker, acc-switcher, alle state werkend |
+
+**Live:** https://travel-cockpit-virid.vercel.app/
+
+---
+
+## Huidige staat (v3 — Topografisk)
+
+### ✅ Volledig werkend
+
+**Data**
+- Alle 19 activiteiten met echte coördinaten, hoogtes, datums
+- 4 verblijven met adressen, check-in/out tijden, notities
+- Dag-nummering D1–D16 (15–30 jun) door de hele app
+- Accommodatie automatisch bepaald op basis van datum
+
+**Kaart**
+- Volledige route Nijmegen → Hirtshals → Stavanger → Bergen → NO-stops → Kristiansand → Hirtshals → Kolding → Nijmegen
+- Rijden = groene lijn, ferry = blauwe stippellijn — altijd zichtbaar
+- GPS locatie tracker — aan/uit knop, route wordt getekend
+- Activiteiten als summit-driehoeken met dag-labels (D4-1, D8-2)
+- Accommodatie-pins altijd groot, huidige gemarkeerd met oranje stip
+- Filter per verblijf (Sgd/Skj/Val/Gjr)
+
+**Planning**
+- D1–D16 dagtabs met datum, maand, accommodatie-kleur
+- Per dag: geplande activiteiten + beschikbare (niet ingepland)
+- Afvinken werkt — state gedeeld door heel de app
+- Vanuit Discover toevoegen → verschijnt in Planning
+
+**Accommodaties**
+- Switcher: tik op Sgd/Skj/Val/Gjr om te wisselen
+- Actief verblijf gemarkeerd (oranje stipje)
+- Per verblijf: adres, datums, hoogte, coördinaat, notities
+
+**Roadtrip-modus**
+- GPS aan/uit
+- Huidig verblijf en volgend verblijf correct op datum
+- Eerste onafgevinkte activiteit als "Volgende etappe"
+- Afvinken werkt
+
+**Design — Topografisk**
+- Geen AI-design-default (geen warm cream + serif + terracotta)
+- Referentie: Noorse N50 topografische kaart (Statens Kartverk)
+- Archivo Condensed voor labels, Space Mono voor data/coördinaten
+- Summit-driehoeken als signature element (icoon + kaart + planning)
+- UTM-rasterpatroon als achtergrond op dataschermen
+- Hoogte-annotaties (1100m, 1743m) als echte data, niet decoratie
+- App-icoon: topografische bergtop met contourlijnen
+
+**iOS installatie**
+- `apple-mobile-web-app-capable` + `apple-touch-icon` ingesteld
+- Safari → Deel → Zet op beginscherm → opent fullscreen
+
+---
+
+## Nog te doen
+
+### Web prototype
+| Item | Status |
+|---|---|
+| Charging live API | ❌ 4 hardcoded stations |
+| Ticket DB | ❌ In-memory (verloren bij herstart) |
+| Activiteit-detail scherm | ❌ Niet gebouwd |
+
+### Flutter native
+| Item | Status |
+|---|---|
+| Build runner (.freezed/.g) | ❌ Vereist Mac |
+| Compileren naar IPA | ❌ Vereist Mac + Xcode |
+| Supabase cloud database | ❌ Gepland, niet gestart |
+| TestFlight deploy | ❌ Vereist Apple Developer account |
+
+---
+
+## Succescriteria MVP
+
+De web-prototype voldoet aan alle functionele criteria:
+
+1. ✅ Traveller opent app tijdens de reis en ziet echte planning
+2. ✅ Accommodatie wisselt automatisch op basis van datum
+3. ✅ Route volledig zichtbaar op kaart incl. ferry
+4. ✅ GPS positie zichtbaar op kaart
+5. ✅ Activiteiten afvinken werkt en blijft in session
+6. ✅ App installeerbaar op iPhone beginscherm
+7. ✅ Werkt offline (na eerste load)
