@@ -18,7 +18,20 @@ let lastLoadFailed = false;
 function renderDiscoverScreen() {
   const acc = getActiveAccommodation();
   document.getElementById('discover-location').textContent =
-    `⛅ — · ${acc ? acc.short : '—'} · ${acc ? acc.coord : '—'}`;
+    `… · ${acc ? acc.short : '—'} · ${acc ? acc.coord : '—'}`;
+
+  if (acc) {
+    getWeatherForDate(acc.lat, acc.lng, getToday()).then(function(w) {
+      const el = document.getElementById('discover-location');
+      if (!el) return;
+      if (w) {
+        const tempLabel = w.isForecast ? `${w.temperatureMin}°–${w.temperatureMax}°` : `${w.temperature}°`;
+        el.textContent = `${w.emoji} ${tempLabel} · ${acc.short} · ${acc.coord}`;
+      } else {
+        el.textContent = `${acc.short} · ${acc.coord}`;
+      }
+    });
+  }
 
   if (!acc) {
     showEmptyDiscoverState('Geen actief verblijf', 'Suggesties verschijnen zodra je reis begint.');
@@ -86,14 +99,19 @@ async function fetchFreshSuggestions(acc, options) {
     .filter(a => a.accId === acc.id)
     .map(a => a.name);
 
+  // Live weer ophalen voor de AI-context — geen vaste 14°C meer.
+  // Bij falen vallen we terug op een neutrale aanname zodat de
+  // AI-aanroep niet blokkeert op een weer-fout.
+  const liveWeather = await getWeatherForDate(acc.lat, acc.lng, getToday());
+
   const payload = {
     accommodationName: acc.name,
     accommodationLocation: acc.address,
     country: 'Noorwegen',
     today: formatShortDate(getToday()),
-    temperature: 14,
-    weatherCondition: 'licht bewolkt',
-    rainProbability: 10,
+    temperature: liveWeather ? liveWeather.temperature : 12,
+    weatherCondition: liveWeather ? liveWeather.condition : 'onbekend',
+    rainProbability: liveWeather ? liveWeather.rainProbability : 20,
     userPreferences: Array.from(AppState.travelStyles),
     alreadyPlanned: append
       ? alreadyPlannedNames.concat(currentSuggestions.map(function(s){ return s.name; }))
