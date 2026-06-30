@@ -5,6 +5,7 @@
 
 const CHARGING_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 uur — laadstations veranderen zelden
 const chargingCache = new Map();
+let lastChargingError = null; // DIAGNOSE: bewaart de exacte laatste fout
 
 async function fetchChargingStationsNear(lat, lng, distanceKm) {
   const cacheKey = `near:${lat.toFixed(2)},${lng.toFixed(2)}:${distanceKm || 25}`;
@@ -16,13 +17,37 @@ async function fetchChargingStationsNear(lat, lng, distanceKm) {
   try {
     const params = new URLSearchParams({ lat, lng, distanceKm: distanceKm || 25 });
     const response = await fetch(`/api/charging-stations?${params}`);
-    if (!response.ok) throw new Error('Status ' + response.status);
-    const data = await response.json();
+    const bodyText = await response.text();
+
+    if (!response.ok) {
+      lastChargingError = `HTTP ${response.status} — ${bodyText.slice(0, 200)}`;
+      console.error('Laadstations server-fout:', lastChargingError);
+      return null;
+    }
+
+    let data;
+    try {
+      data = JSON.parse(bodyText);
+    } catch (parseErr) {
+      lastChargingError = `Antwoord was geen JSON: ${bodyText.slice(0, 200)}`;
+      console.error('Laadstations parse-fout:', lastChargingError);
+      return null;
+    }
+
+    if (data.error) {
+      lastChargingError = `${data.error}${data.message ? ' — ' + data.message : ''}`;
+      return null;
+    }
+
     chargingCache.set(cacheKey, { stations: data.stations, timestamp: Date.now() });
+    lastChargingError = null;
     return data.stations;
   } catch (err) {
+    // "Failed to fetch" hier betekent meestal dat /api/charging-stations
+    // zelf niet bereikbaar is — bijv. de functie deployt niet correct.
+    lastChargingError = err.message || String(err);
     console.error('Laadstations ophalen mislukt:', err);
-    return null; // null = fout, [] = geen resultaten — caller onderscheidt dit
+    return null;
   }
 }
 
@@ -45,6 +70,7 @@ async function fetchChargingStationsAlongRoute() {
     chargingCache.set(cacheKey, { stations: data.stations, timestamp: Date.now() });
     return data.stations;
   } catch (err) {
+    lastChargingError = err.message || String(err);
     console.error('Laadstations langs route ophalen mislukt:', err);
     return null;
   }
@@ -67,8 +93,8 @@ function renderChargingStationCard(station) {
     </div>`;
 }
 
-// Toont laadstations bij de huidige accommodatie als toast-achtige
-// sheet — gebruikt overal waar nu nog "IONITY 2.3km · Mer 22km" stond.
+// DIAGNOSE: toont nu de ECHTE foutmelding (lastChargingError) ipv
+// de generieke "Kon laadstations niet ophalen" — tijdelijk.
 async function showChargingStationsNearActiveAccommodation() {
   const acc = getActiveAccommodation();
   if (!acc) { showToast('Geen actief verblijf'); return; }
@@ -77,7 +103,7 @@ async function showChargingStationsNearActiveAccommodation() {
   const stations = await fetchChargingStationsNear(acc.lat, acc.lng, 25);
 
   if (stations === null) {
-    showToast('Kon laadstations niet ophalen');
+    showToast(`⚠️ ${lastChargingError || 'Onbekende fout'}`);
     return;
   }
   if (stations.length === 0) {
