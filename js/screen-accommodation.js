@@ -11,6 +11,10 @@ function renderAccommodationScreen(accId) {
 
   document.getElementById('acc-name').textContent = acc.name.toUpperCase();
   document.getElementById('acc-elevation').textContent = `${acc.elevation}m · ${acc.coord}`;
+
+  // Live weer voor deze accommodatie (kan een toekomstig verblijf zijn,
+  // Open-Meteo geeft dan de forecast voor de eerste dag van het verblijf)
+  fillWeatherBadge('acc-weather-badge', acc.lat, acc.lng, acc.checkIn > getToday() ? acc.checkIn : getToday());
   const nights = Math.round((acc.checkOut - acc.checkIn) / 86400000);
   document.getElementById('acc-dates').textContent = `${formatShortDate(acc.checkIn)} – ${formatShortDate(acc.checkOut)} · ${nights} nachten`;
 
