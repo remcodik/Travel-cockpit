@@ -14,6 +14,9 @@ function renderRoadtripScreen() {
   document.getElementById('rt-current-name').textContent = acc ? acc.name : 'Onderweg';
   document.getElementById('rt-checkout').textContent = acc ? `check-out ${formatShortDate(acc.checkOut)} · 11:00` : '—';
 
+  // Live weer voor de huidige positie
+  if (acc) fillRoadtripWeather(acc.lat, acc.lng, today);
+
   const next = acc ? getNextAccommodation(acc.id) : null;
   document.getElementById('rt-next-name').textContent = next ? next.name : 'Einde reis';
   document.getElementById('rt-next-date').textContent = next ? formatShortDate(next.checkIn) : formatShortDate(TRIP_END);
