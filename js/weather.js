@@ -181,7 +181,7 @@ async function showWeatherDetailForActiveAccommodation() {
   showToast('Weer ophalen…');
   const weather = await getWeatherForDate(acc.lat, acc.lng, getToday());
   if (!weather) {
-    showToast(`⚠️ ${lastWeatherError || 'Onbekende fout'}`);
+    showToast(`⚠️ ${lastWeatherError || 'Onbekende fout'}`, 10000);
     return;
   }
 
