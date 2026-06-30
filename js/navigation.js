@@ -48,7 +48,17 @@ function navigateTo(screenId) {
     tickets: renderTicketsScreen,
     trips: renderTripsScreen,
   };
-  if (renderers[screenId]) renderers[screenId]();
+  if (renderers[screenId]) {
+    try {
+      renderers[screenId]();
+    } catch (e) {
+      const b = document.getElementById('debug-banner');
+      if (b) {
+        b.classList.add('show');
+        b.textContent += `❌ FOUT bij scherm "${screenId}": ${e.message}\n${e.stack || ''}\n\n`;
+      }
+    }
+  }
 }
 
 function goBack() {
