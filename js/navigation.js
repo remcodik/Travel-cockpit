@@ -6,13 +6,15 @@ const MAIN_SCREENS = ['home', 'map', 'planning', 'discover', 'meer'];
 let navigationStack = ['home'];
 
 let toastTimer = null;
-function showToast(message) {
+// DIAGNOSE: duration optioneel zodat foutmeldingen langer blijven
+// staan en je ze kunt lezen voordat ze verdwijnen.
+function showToast(message, duration) {
   const el = document.getElementById('toast');
   if (!el) return;
   el.textContent = message;
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+  toastTimer = setTimeout(() => el.classList.remove('show'), duration || 2400);
 }
 
 function navigateTo(screenId) {
@@ -37,7 +39,6 @@ function navigateTo(screenId) {
   const scrollEl = target.querySelector('.scroll');
   if (scrollEl) scrollEl.scrollTop = 0;
 
-  // Roep de juiste render-functie aan voor dit scherm
   const renderers = {
     home: renderHomeScreen,
     planning: renderPlanningScreen,
@@ -78,7 +79,6 @@ function openSheet(sheetId) {
   document.getElementById(sheetId).classList.add('open');
 }
 
-// Sluit sheets bij klik op de achtergrond
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.sheet-backdrop').forEach(bg => {
     bg.addEventListener('click', e => {
