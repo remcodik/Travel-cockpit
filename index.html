@@ -18,8 +18,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
 <link rel="stylesheet" href="css/styles.css"/>
+<style>
+#debug-banner{display:none;position:fixed;top:0;left:0;right:0;background:#A8291F;color:white;padding:10px 14px;font-family:monospace;font-size:11px;z-index:99999;max-height:40vh;overflow-y:auto;white-space:pre-wrap}
+#debug-banner.show{display:block}
+</style>
 </head>
 <body>
+<div id="debug-banner"></div>
+<script>
+  // Tijdelijke diagnostische laag — vangt elke fout op en toont
+  // die zichtbaar in de app, zodat problemen traceerbaar zijn
+  // zonder devtools op een telefoon.
+  window.onerror = function(msg, src, line, col, err) {
+    var b = document.getElementById('debug-banner');
+    b.classList.add('show');
+    b.textContent += '❌ FOUT: ' + msg + '\n   in ' + (src||'?').split('/').pop() + ':' + line + ':' + col + '\n\n';
+    return false;
+  };
+</script>
 
 <!-- ═══════════ HOME ═══════════ -->
 <div id="screen-home" class="screen active">
@@ -492,10 +508,16 @@
 <script src="js/screen-roadtrip.js"></script>
 <script src="js/screen-tickets.js"></script>
 <script>
-  // App-initialisatie
-  initAppState();
-  initAllTopoPanels();
-  renderHomeScreen();
+  // App-initialisatie — met zichtbare foutafvang voor diagnose
+  try {
+    initAppState();
+    initAllTopoPanels();
+    renderHomeScreen();
+  } catch (e) {
+    var b = document.getElementById('debug-banner');
+    b.classList.add('show');
+    b.textContent += '❌ INIT-FOUT: ' + e.message + '\n' + (e.stack || '') + '\n\n';
+  }
 </script>
 </body>
 </html>
