@@ -18,6 +18,11 @@ function renderHomeScreen() {
     ? `${formatShortDate(acc.checkIn)} – ${formatShortDate(acc.checkOut)} · ${nights} nachten`
     : 'reisdag';
 
+  // Live weer — Open-Meteo, geen sleutel nodig
+  if (acc) {
+    fillWeatherBadge('home-weather-badge', acc.lat, acc.lng, today);
+  }
+
   // Statistieken
   const { done, total } = getProgress();
   document.getElementById('stat-todo').textContent = total - done;
