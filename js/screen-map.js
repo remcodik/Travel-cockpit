@@ -16,48 +16,78 @@ function initMap() {
   const loadingEl = document.getElementById('map-loading');
 
   if (leafletMap) {
-    // FIX: kaart bestaat al, maar het scherm was net verborgen (display:none).
+    // Kaart bestaat al, scherm was net verborgen (display:none).
     // Leaflet meet zijn container-grootte verkeerd als die niet zichtbaar was.
-    // invalidateSize() forceert een herberekening zodra het scherm weer toont.
-    requestAnimationFrame(() => {
-      leafletMap.invalidateSize();
+    setTimeout(() => {
+      try {
+        leafletMap.invalidateSize();
+      } catch (e) {
+        reportMapError(e);
+      }
       if (loadingEl) loadingEl.classList.add('hidden');
-    });
+    }, 100);
+    return;
+  }
+
+  if (typeof L === 'undefined') {
+    reportMapError(new Error('Leaflet (L) is niet geladen — controleer netwerkverbinding met cdnjs.cloudflare.com'));
     return;
   }
 
   const container = document.getElementById('leaflet-map');
+  if (!container) {
+    reportMapError(new Error('Kaart-container #leaflet-map niet gevonden in DOM'));
+    return;
+  }
 
-  // FIX: wacht tot het scherm daadwerkelijk zichtbaar is (display:flex)
-  // voordat Leaflet wordt geïnitialiseerd, anders is de containergrootte 0×0.
-  requestAnimationFrame(() => {
-    leafletMap = L.map(container, { zoomControl: false }).setView([61.0, 8.0], 7);
+  // Wacht tot het scherm daadwerkelijk zichtbaar is (display:flex) voordat
+  // Leaflet wordt geïnitialiseerd, anders is de containergrootte 0×0.
+  // setTimeout met 50ms is robuuster dan requestAnimationFrame hiervoor,
+  // omdat het ook na CSS-transities en browser-reflow-vertraging werkt.
+  setTimeout(() => {
+    try {
+      leafletMap = L.map(container, { zoomControl: false }).setView([61.0, 8.0], 7);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
-      maxZoom: 18,
-    }).addTo(leafletMap);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 18,
+      }).addTo(leafletMap);
 
-    L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
+      L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
 
-    DRIVE_PATHS.forEach(path => {
-      L.polyline(path, { color: '#0E3A2E', weight: 2.5, opacity: 0.65 }).addTo(leafletMap);
-    });
-    FERRY_PATHS.forEach(path => {
-      L.polyline(path, { color: '#1B5A8A', weight: 2.5, opacity: 0.7, dashArray: '8,5' }).addTo(leafletMap);
-    });
+      DRIVE_PATHS.forEach(path => {
+        L.polyline(path, { color: '#0E3A2E', weight: 2.5, opacity: 0.65 }).addTo(leafletMap);
+      });
+      FERRY_PATHS.forEach(path => {
+        L.polyline(path, { color: '#1B5A8A', weight: 2.5, opacity: 0.7, dashArray: '8,5' }).addTo(leafletMap);
+      });
 
-    gpsPolyline = L.polyline([], { color: '#C5512B', weight: 3, opacity: 0.85 }).addTo(leafletMap);
+      gpsPolyline = L.polyline([], { color: '#C5512B', weight: 3, opacity: 0.85 }).addTo(leafletMap);
 
-    renderMapMarkers();
+      renderMapMarkers();
 
-    // Nogmaals invalidateSize na de eerste render, voor de zekerheid
-    // (sommige mobiele browsers herberekenen layout met vertraging).
-    setTimeout(() => {
-      leafletMap.invalidateSize();
-      if (loadingEl) loadingEl.classList.add('hidden');
-    }, 150);
-  });
+      // Nogmaals invalidateSize na de eerste render, voor de zekerheid.
+      setTimeout(() => {
+        try { leafletMap.invalidateSize(); } catch (e) { reportMapError(e); }
+        if (loadingEl) loadingEl.classList.add('hidden');
+      }, 200);
+    } catch (e) {
+      reportMapError(e);
+    }
+  }, 50);
+}
+
+function reportMapError(e) {
+  console.error('Kaart-fout:', e);
+  const banner = document.getElementById('debug-banner');
+  if (banner) {
+    banner.classList.add('show');
+    banner.textContent += `❌ KAART-FOUT: ${e.message}\n${e.stack || ''}\n\n`;
+  }
+  const loadingEl = document.getElementById('map-loading');
+  if (loadingEl) {
+    loadingEl.innerHTML = `<p class="mono" style="color:var(--summit);text-align:center;padding:0 20px">Kaart kon niet laden.<br>${e.message}</p>`;
+  }
 }
 
 function renderMapMarkers() {
