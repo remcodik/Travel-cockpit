@@ -103,7 +103,7 @@ async function showChargingStationsNearActiveAccommodation() {
   const stations = await fetchChargingStationsNear(acc.lat, acc.lng, 25);
 
   if (stations === null) {
-    showToast(`⚠️ ${lastChargingError || 'Onbekende fout'}`);
+    showToast(`⚠️ ${lastChargingError || 'Onbekende fout'}`, 10000);
     return;
   }
   if (stations.length === 0) {
