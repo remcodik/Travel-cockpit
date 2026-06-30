@@ -5,9 +5,6 @@
 // Docs: https://api.openchargemap.io/v3/poi/
 //
 // OPENCHARGEMAP_API_KEY staat als Vercel environment variable.
-// Open Charge Map's publieke endpoint werkt ook zonder sleutel
-// met een lager rate-limit — de functie valt daar netjes op terug
-// als de sleutel ontbreekt, zodat de functie nooit hard faalt.
 // ═══════════════════════════════════════════════════════════
 
 export default async function handler(req, res) {
@@ -18,8 +15,11 @@ export default async function handler(req, res) {
   const apiKey = process.env.OPENCHARGEMAP_API_KEY || '';
   const { lat, lng, points, distanceKm } = req.query;
 
+  // DIAGNOSE: log naar Vercel function logs zodat we via "vercel logs"
+  // of het dashboard kunnen zien wat er precies binnenkomt.
+  console.log('charging-stations aangeroepen met:', { lat, lng, points, distanceKm, hasKey: !!apiKey });
+
   try {
-    // Modus 1: rondom één punt (bijv. bij een accommodatie)
     if (lat && lng) {
       const stations = await fetchStationsNear(
         parseFloat(lat),
@@ -30,8 +30,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ stations });
     }
 
-    // Modus 2: langs een route — meerdere lat,lng paren gescheiden door ';'
-    // bijv. ?points=61.21,7.15;61.91,8.27;60.98,9.23
     if (points) {
       const coords = points.split(';').map(p => {
         const [plat, plng] = p.split(',').map(Number);
@@ -41,9 +39,6 @@ export default async function handler(req, res) {
       const allStations = [];
       const seenIds = new Set();
 
-      // Eén aanroep per routepunt, met een kleinere radius zodat we
-      // een verspreide set langs de hele route krijgen ipv alles
-      // rondom één plek.
       for (const point of coords) {
         const stations = await fetchStationsNear(
           point.lat, point.lng,
@@ -63,7 +58,14 @@ export default async function handler(req, res) {
 
     return res.status(400).json({ error: 'Geef lat+lng of points op' });
   } catch (err) {
-    return res.status(500).json({ error: 'Onverwachte fout', message: err.message });
+    // DIAGNOSE: stuur de volledige fout + stack mee in de response,
+    // zodat de browser-toast de echte oorzaak kan tonen.
+    console.error('charging-stations fout:', err);
+    return res.status(500).json({
+      error: 'Onverwachte fout',
+      message: err.message,
+      stack: err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : undefined,
+    });
   }
 }
 
@@ -85,30 +87,57 @@ async function fetchStationsNear(lat, lng, distanceKm, apiKey) {
     headers: { 'User-Agent': 'TravelCockpit/1.0' },
   });
 
+  const bodyText = await response.text();
+
   if (!response.ok) {
-    throw new Error(`Open Charge Map gaf status ${response.status}`);
+    throw new Error(`Open Charge Map gaf HTTP ${response.status}: ${bodyText.slice(0, 200)}`);
   }
 
-  const data = await response.json();
+  let data;
+  try {
+    data = JSON.parse(bodyText);
+  } catch (parseErr) {
+    throw new Error(`Open Charge Map antwoord was geen geldige JSON: ${bodyText.slice(0, 200)}`);
+  }
 
-  // Transformeer naar een compacte, voor de app bruikbare vorm
-  return data.map(poi => {
-    const connections = poi.Connections || [];
-    const maxPowerKw = connections.reduce((max, c) => Math.max(max, c.PowerKW || 0), 0);
-    const connectorTypes = [...new Set(connections.map(c => c.ConnectionType?.Title).filter(Boolean))];
+  // FIX: Open Charge Map kan bij een fout een object teruggeven
+  // ipv een array (bijv. {"error": true, "reason": "..."}).
+  // Zonder deze check crasht data.map() met een onduidelijke
+  // "data.map is not a function" fout.
+  if (!Array.isArray(data)) {
+    throw new Error(`Open Charge Map gaf geen array terug: ${JSON.stringify(data).slice(0, 200)}`);
+  }
 
-    return {
-      id: poi.ID,
-      name: poi.AddressInfo?.Title || 'Laadstation',
-      address: poi.AddressInfo?.AddressLine1 || '',
-      town: poi.AddressInfo?.Town || '',
-      lat: poi.AddressInfo?.Latitude,
-      lng: poi.AddressInfo?.Longitude,
-      operator: poi.OperatorInfo?.Title || 'Onbekende operator',
-      maxPowerKw,
-      connectorTypes,
-      numberOfPoints: poi.NumberOfPoints || connections.length || 1,
-      isOperational: poi.StatusType?.IsOperational !== false,
-    };
-  }).filter(s => s.lat && s.lng);
+  // Transformeer naar een compacte, voor de app bruikbare vorm.
+  // Elke stap is defensief tegen ontbrekende velden, zodat één
+  // vreemde POI niet de hele lijst laat crashen.
+  return data
+    .map(poi => {
+      try {
+        const connections = poi.Connections || [];
+        const maxPowerKw = connections.reduce((max, c) => Math.max(max, c.PowerKW || 0), 0);
+        const connectorTypes = [...new Set(
+          connections.map(c => c.ConnectionType && c.ConnectionType.Title).filter(Boolean)
+        )];
+
+        return {
+          id: poi.ID,
+          name: (poi.AddressInfo && poi.AddressInfo.Title) || 'Laadstation',
+          address: (poi.AddressInfo && poi.AddressInfo.AddressLine1) || '',
+          town: (poi.AddressInfo && poi.AddressInfo.Town) || '',
+          lat: poi.AddressInfo && poi.AddressInfo.Latitude,
+          lng: poi.AddressInfo && poi.AddressInfo.Longitude,
+          operator: (poi.OperatorInfo && poi.OperatorInfo.Title) || 'Onbekende operator',
+          maxPowerKw,
+          connectorTypes,
+          numberOfPoints: poi.NumberOfPoints || connections.length || 1,
+          isOperational: !poi.StatusType || poi.StatusType.IsOperational !== false,
+        };
+      } catch (mapErr) {
+        // Eén kapotte POI mag de rest niet blokkeren
+        console.error('Kon POI niet verwerken:', mapErr, poi && poi.ID);
+        return null;
+      }
+    })
+    .filter(s => s && s.lat && s.lng);
 }
