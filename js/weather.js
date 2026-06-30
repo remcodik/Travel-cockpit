@@ -7,6 +7,7 @@
 
 const WEATHER_CACHE_TTL_MS = 60 * 60 * 1000; // 1 uur, weer verandert traag genoeg
 const weatherCache = new Map(); // key: "lat,lng" → { data, timestamp }
+let lastWeatherError = null; // DIAGNOSE: bewaart de exacte laatste fout
 
 // WMO weathercode → emoji + Nederlandse omschrijving
 // https://open-meteo.com/en/docs#weathervariables
@@ -59,11 +60,20 @@ async function fetchWeatherForLocation(lat, lng) {
 
   try {
     const response = await fetch(url);
-    if (!response.ok) throw new Error('Open-Meteo gaf status ' + response.status);
+    if (!response.ok) {
+      const bodyText = await response.text().catch(() => '');
+      throw new Error(`HTTP ${response.status} — ${bodyText.slice(0, 150)}`);
+    }
     const data = await response.json();
     weatherCache.set(key, { data, timestamp: Date.now() });
+    lastWeatherError = null;
     return data;
   } catch (err) {
+    // DIAGNOSE: bewaar de exacte fout zodat de UI die kan tonen.
+    // err.message bij een geblokkeerd/onbereikbaar verzoek is vaak
+    // "Failed to fetch" — dat wijst op CORS, netwerk, of DNS, niet
+    // op een fout bij Open-Meteo zelf.
+    lastWeatherError = err.message || String(err);
     console.error('Weer ophalen mislukt:', err);
     return null;
   }
@@ -93,7 +103,10 @@ async function getWeatherForDate(lat, lng, date) {
 
   // Zoek de datum in de dagelijkse forecast-array
   const dayIndex = data.daily.time.indexOf(dateStr);
-  if (dayIndex === -1) return null; // buiten het 16-daagse bereik
+  if (dayIndex === -1) {
+    lastWeatherError = `Datum ${dateStr} valt buiten het 16-daagse forecast-bereik`;
+    return null;
+  }
 
   const codeInfo = describeWeatherCode(data.daily.weather_code[dayIndex]);
   const tempMax = data.daily.temperature_2m_max[dayIndex];
@@ -117,34 +130,15 @@ function formatISODate(date) {
   return `${y}-${m}-${d}`;
 }
 
-// ── Render-helper: vult een weer-badge element met live data ──
-// Toont een "…" placeholder tijdens het laden, dan het echte resultaat.
-async function renderWeatherBadge(elementId, lat, lng, date) {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-
-  const weather = await getWeatherForDate(lat, lng, date || getToday());
-  if (!weather) {
-    el.textContent = '— ·';
-    return;
-  }
-
-  if (weather.isForecast) {
-    el.innerHTML = `${weather.emoji} ${weather.temperatureMin}°–${weather.temperatureMax}°`;
-  } else {
-    el.innerHTML = `${weather.emoji} ${weather.temperature}°`;
-  }
-}
-
 // Vult een badge-container (div met daarin een span) — gebruikt op
 // Home, Accommodatie en Roadtrip in plaats van de vaste "14°" tekst.
 async function fillWeatherBadge(containerId, lat, lng, date) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  const span = container.querySelector('span');
 
   const weather = await getWeatherForDate(lat, lng, date || getToday());
   if (!weather) {
+    const span = container.querySelector('span');
     if (span) span.textContent = '—°';
     return;
   }
@@ -175,6 +169,11 @@ async function fillRoadtripWeather(lat, lng, date) {
     : `${weather.temperature}°`;
   condEl.textContent = `${weather.condition} · ${weather.rainProbability}% regen`;
 }
+
+// DIAGNOSE: toont nu de ECHTE foutmelding (lastWeatherError) ipv
+// de generieke "Kon weer niet ophalen" — tijdelijk, om het probleem
+// te vinden. Wordt teruggedraaid naar een vriendelijke tekst zodra
+// de oorzaak bekend is.
 async function showWeatherDetailForActiveAccommodation() {
   const acc = getActiveAccommodation();
   if (!acc) { showToast('Geen actief verblijf'); return; }
@@ -182,7 +181,7 @@ async function showWeatherDetailForActiveAccommodation() {
   showToast('Weer ophalen…');
   const weather = await getWeatherForDate(acc.lat, acc.lng, getToday());
   if (!weather) {
-    showToast('Kon weer niet ophalen');
+    showToast(`⚠️ ${lastWeatherError || 'Onbekende fout'}`);
     return;
   }
 
