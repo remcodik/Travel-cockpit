@@ -1,70 +1,222 @@
 // ═══════════════════════════════════════════════════════════
-// screen-discover.js — AI-ideeën scherm
+// screen-discover.js — AI-ideeën scherm met echte Claude-integratie
+// Volgt docs/04-ai/01-ai-architecture.md:
+// - Roept /api/suggestions aan (Anthropic Claude, server-side)
+// - Cachet per accommodatie, verloopt na 24 uur
+// - Toont "Offline" label en cache bij geen internet
+// - AI voegt nooit zelf iets toe — alleen na expliciete tap
 // ═══════════════════════════════════════════════════════════
 
-let discoverShownCount = {}; // hoeveel suggesties per accId al getoond zijn
+const AI_CACHE_KEY_PREFIX = 'tc_ai_cache_';
+const AI_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 uur, conform documentatie
+
+let currentSuggestions = [];
+let currentCategoryFilter = null;
+let isLoadingSuggestions = false;
+let lastLoadFailed = false;
 
 function renderDiscoverScreen() {
   const acc = getActiveAccommodation();
   document.getElementById('discover-location').textContent =
-    `⛅ 14° · ${acc ? acc.short : '—'} · ${acc ? acc.coord : '—'}`;
+    `⛅ — · ${acc ? acc.short : '—'} · ${acc ? acc.coord : '—'}`;
 
-  if (acc && discoverShownCount[acc.id] === undefined) {
-    discoverShownCount[acc.id] = 2; // toon eerst 2 suggesties
+  if (!acc) {
+    showEmptyDiscoverState('Geen actief verblijf', 'Suggesties verschijnen zodra je reis begint.');
+    return;
   }
 
-  renderDiscoverList();
-  initAllTopoPanels();
+  const cached = readSuggestionCache(acc.id);
+  if (cached) {
+    currentSuggestions = cached.suggestions;
+    renderSuggestionList();
+  } else {
+    showLoadingState();
+  }
+
+  fetchFreshSuggestions(acc, { append: false });
 }
 
-function renderDiscoverList() {
-  const acc = getActiveAccommodation();
-  if (!acc) {
-    document.getElementById('discover-list').innerHTML = `
-      <div class="empty-state">
-        <p class="row-title">Geen actief verblijf</p>
-        <p class="mono" style="margin-top:6px">Suggesties verschijnen zodra je reis begint.</p>
-      </div>`;
+function cacheKey(accId) {
+  return AI_CACHE_KEY_PREFIX + accId;
+}
+
+function readSuggestionCache(accId) {
+  try {
+    const raw = localStorage.getItem(cacheKey(accId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.timestamp > AI_CACHE_TTL_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeSuggestionCache(accId, suggestions) {
+  try {
+    localStorage.setItem(cacheKey(accId), JSON.stringify({
+      suggestions,
+      timestamp: Date.now(),
+    }));
+  } catch {
+    // localStorage kan vol zijn of geblokkeerd — niet kritisch
+  }
+}
+
+async function fetchFreshSuggestions(acc, options) {
+  const append = options && options.append;
+  if (isLoadingSuggestions) return;
+  isLoadingSuggestions = true;
+  lastLoadFailed = false;
+  updateRefreshButtonState();
+
+  if (!navigator.onLine) {
+    isLoadingSuggestions = false;
+    lastLoadFailed = true;
+    updateRefreshButtonState();
+    if (currentSuggestions.length === 0) {
+      showOfflineState();
+    } else {
+      showToast('Offline · suggesties uit cache');
+    }
     return;
   }
 
-  const allSuggestions = AI_SUGGESTIONS[acc.id] || [];
-  const shownCount = Math.min(discoverShownCount[acc.id] || 2, allSuggestions.length);
-  const visible = allSuggestions.slice(0, shownCount);
+  const alreadyPlannedNames = AppState.activities
+    .filter(a => a.accId === acc.id)
+    .map(a => a.name);
 
-  if (visible.length === 0) {
-    document.getElementById('discover-list').innerHTML = `
-      <div class="empty-state">
-        <p class="row-title">Nog geen suggesties voor ${escapeHtml(acc.name)}</p>
-      </div>`;
-    return;
+  const payload = {
+    accommodationName: acc.name,
+    accommodationLocation: acc.address,
+    country: 'Noorwegen',
+    today: formatShortDate(getToday()),
+    temperature: 14,
+    weatherCondition: 'licht bewolkt',
+    rainProbability: 10,
+    userPreferences: Array.from(AppState.travelStyles),
+    alreadyPlanned: append
+      ? alreadyPlannedNames.concat(currentSuggestions.map(function(s){ return s.name; }))
+      : alreadyPlannedNames,
+    categoryFilter: currentCategoryFilter,
+    language: 'nl',
+  };
+
+  try {
+    const response = await fetch('/api/suggestions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Onbekende fout bij ophalen suggesties');
+    }
+
+    const newSuggestions = (data.suggestions || []).map(function(s) {
+      return Object.assign({}, s, { accId: acc.id });
+    });
+
+    currentSuggestions = append ? currentSuggestions.concat(newSuggestions) : newSuggestions;
+    writeSuggestionCache(acc.id, currentSuggestions);
+    renderSuggestionList();
+    showToast(append ? `✓ ${newSuggestions.length} nieuwe ideeën` : 'Ideeën bijgewerkt');
+  } catch (err) {
+    console.error('AI-suggesties ophalen mislukt:', err);
+    lastLoadFailed = true;
+    if (currentSuggestions.length === 0) {
+      showErrorState(err.message);
+    } else {
+      showToast('Kon geen nieuwe ideeën ophalen — toont cache');
+    }
+  } finally {
+    isLoadingSuggestions = false;
+    updateRefreshButtonState();
   }
+}
 
-  document.getElementById('discover-list').innerHTML = visible.map(s => renderSuggestionCard(s, acc)).join('');
-
-  // "Meer ideeën" knop: uitschakelen als alles al getoond is
+function updateRefreshButtonState() {
   const moreBtn = document.getElementById('discover-more-btn');
-  if (moreBtn) {
-    const allShown = shownCount >= allSuggestions.length;
-    moreBtn.disabled = allShown;
-    moreBtn.textContent = allShown ? 'Alle ideeën getoond' : '↻ Meer ideeën';
+  if (!moreBtn) return;
+  moreBtn.disabled = isLoadingSuggestions;
+  moreBtn.textContent = isLoadingSuggestions ? 'Laden…' : '↻ Meer ideeën';
+}
+
+function showLoadingState() {
+  document.getElementById('discover-list').innerHTML = `
+    <div class="empty-state">
+      <div class="spinner" style="margin-bottom:14px"></div>
+      <p class="mono">AI-suggesties laden…</p>
+    </div>`;
+}
+
+function showOfflineState() {
+  document.getElementById('discover-list').innerHTML = `
+    <div class="empty-state">
+      <p class="row-title">Offline</p>
+      <p class="mono" style="margin-top:6px">Geen internetverbinding. Suggesties laden zodra je weer online bent.</p>
+    </div>`;
+}
+
+function showErrorState(message) {
+  document.getElementById('discover-list').innerHTML = `
+    <div class="empty-state">
+      <p class="row-title" style="color:var(--summit)">Kon ideeën niet laden</p>
+      <p class="mono" style="margin-top:6px;margin-bottom:16px">${escapeHtml(message)}</p>
+      <button onclick="retryLoadSuggestions()" class="btn btn-primary" style="width:auto;padding:10px 20px">Opnieuw proberen</button>
+    </div>`;
+}
+
+function showEmptyDiscoverState(title, sub) {
+  document.getElementById('discover-list').innerHTML = `
+    <div class="empty-state">
+      <p class="row-title">${escapeHtml(title)}</p>
+      <p class="mono" style="margin-top:6px">${escapeHtml(sub)}</p>
+    </div>`;
+}
+
+function retryLoadSuggestions() {
+  const acc = getActiveAccommodation();
+  if (acc) fetchFreshSuggestions(acc, { append: false });
+}
+
+function renderSuggestionList() {
+  const acc = getActiveAccommodation();
+  if (!acc || currentSuggestions.length === 0) {
+    showEmptyDiscoverState('Nog geen suggesties', 'Tik op vernieuwen om ideeën te laden.');
+    return;
   }
+  document.getElementById('discover-list').innerHTML =
+    currentSuggestions.map(function(s) { return renderSuggestionCard(s, acc); }).join('');
+  updateRefreshButtonState();
 }
 
 function renderSuggestionCard(suggestion, acc) {
   const key = acc.short + '-' + suggestion.name;
   const isAdded = AppState.discoveredAdded.has(key);
+  const categoryEmojis = { activity: '🏔️', restaurant: '🍽️', cafe: '☕', viewpoint: '🌄' };
+  const categoryEmoji = categoryEmojis[suggestion.category] || '📍';
+  let durationLabel = '';
+  if (suggestion.duration_minutes) {
+    durationLabel = suggestion.duration_minutes >= 60
+      ? Math.round(suggestion.duration_minutes / 60) + ' u'
+      : suggestion.duration_minutes + ' min';
+  }
+
   return `
-    <div class="card" style="display:flex;overflow:hidden;cursor:pointer" onclick="showToast('${escapeHtml(suggestion.name)} · ${suggestion.distance} · ${suggestion.duration}')">
+    <div class="card" style="display:flex;overflow:hidden;cursor:pointer" onclick="showToast('${escapeHtml(suggestion.name)}')">
       <div style="width:84px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:${acc.color};padding:12px 0">
-        <span style="font-size:30px">${suggestion.emoji}</span>
-        <span class="mono" style="color:rgba(255,255,255,.85);font-weight:700;margin-top:3px">${suggestion.elevation}m</span>
+        <span style="font-size:30px">${categoryEmoji}</span>
+        ${suggestion.distance_km ? `<span class="mono" style="color:rgba(255,255,255,.85);font-weight:700;margin-top:3px">${suggestion.distance_km} km</span>` : ''}
       </div>
       <div style="flex:1;padding:12px;min-width:0">
         <div class="from-acc-badge" style="background:${acc.color}18;color:${acc.color};display:inline-block;margin-bottom:6px">VANUIT ${acc.short.toUpperCase()}</div>
         <p style="font-weight:800;font-size:15px;letter-spacing:-0.2px">${escapeHtml(suggestion.name)}</p>
-        <p style="font-size:12px;color:var(--ink-mid);margin-top:2px">${escapeHtml(suggestion.sub)}</p>
-        <p class="mono" style="margin-top:4px">${suggestion.distance} · ${suggestion.duration}</p>
+        <p style="font-size:12px;color:var(--ink-mid);margin-top:2px">${escapeHtml(suggestion.description || '')}</p>
+        ${suggestion.why_recommended ? `<p class="mono" style="margin-top:5px;font-style:italic">💡 ${escapeHtml(suggestion.why_recommended)}</p>` : ''}
+        <p class="mono" style="margin-top:4px">${durationLabel}${suggestion.difficulty ? ' · ' + suggestion.difficulty : ''}</p>
         <div style="display:flex;gap:8px;margin-top:10px">
           <button onclick="event.stopPropagation();handleAddSuggestion('${escapeHtml(suggestion.name).replace(/'/g, "\\'")}', ${acc.id})"
             style="padding:6px 14px;background:${isAdded ? 'var(--slope)' : 'var(--spruce)'};color:white;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">
@@ -80,29 +232,28 @@ function renderSuggestionCard(suggestion, acc) {
 }
 
 function handleAddSuggestion(name, accId) {
-  const acc = ACCOMMODATIONS.find(a => a.id === accId);
+  const acc = ACCOMMODATIONS.find(function(a) { return a.id === accId; });
   const key = acc.short + '-' + name;
   if (AppState.discoveredAdded.has(key)) { showToast('Al toegevoegd aan planning'); return; }
-  addActivity({ name, accId, date: null, emoji: '📍' });
+  addActivity({ name: name, accId: accId, date: null, emoji: '📍' });
   AppState.discoveredAdded.add(key);
   showToast(`✓ ${name} toegevoegd aan planning`);
-  renderDiscoverList();
+  renderSuggestionList();
 }
 
-// FIX: "Meer ideeën" toonde voorheen alleen een nepmelding.
-// Nu telt het echt het aantal getoonde suggesties op en herrendert de lijst.
 function handleLoadMoreSuggestions() {
   const acc = getActiveAccommodation();
   if (!acc) return;
-  const total = (AI_SUGGESTIONS[acc.id] || []).length;
-  const current = discoverShownCount[acc.id] || 2;
-  if (current >= total) { showToast('Geen nieuwe ideeën meer voor dit verblijf'); return; }
-  discoverShownCount[acc.id] = Math.min(current + 2, total);
-  renderDiscoverList();
-  showToast('Nieuwe ideeën geladen');
+  fetchFreshSuggestions(acc, { append: true });
 }
 
-function setDiscoverFilter(chipEl) {
-  document.querySelectorAll('#screen-discover .chip').forEach(c => c.classList.remove('on'));
+function setDiscoverFilter(chipEl, category) {
+  document.querySelectorAll('#screen-discover .chip').forEach(function(c) { c.classList.remove('on'); });
   chipEl.classList.add('on');
+  currentCategoryFilter = category;
+  const acc = getActiveAccommodation();
+  if (acc) {
+    showLoadingState();
+    fetchFreshSuggestions(acc, { append: false });
+  }
 }
