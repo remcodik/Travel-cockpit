@@ -68,29 +68,9 @@ const ACTIVITIES = [
   { id: 19, name: 'Tvedestrand', emoji: '⛵', accId: 4, status: 'todo', date: null, distance: '—', duration: '1–2 u', level: 'Makkelijk', elevation: 8, lat: 58.623, lng: 8.934, desc: 'Knus havenstadje aan de Skagerrak.' },
 ];
 
-// ── AI-suggesties per accommodatie ────────────────────────
-// Elke suggestie is gekoppeld aan een accId zodat de gebruiker
-// altijd ziet vanuit welk verblijf deze bereikbaar is.
-const AI_SUGGESTIONS = {
-  1: [ // Sogndal
-    { name: 'Hodlekve', emoji: '🚠', sub: 'Kabelbaan en zomerskigebied', distance: '20 km', duration: '2–3 u', elevation: 1380 },
-    { name: 'Kaupanger Stavkyrkje', emoji: '⛪', sub: 'Grootste staafkerk van Sogn', distance: '15 km', duration: '1 u', elevation: 40 },
-  ],
-  2: [ // Skjåk
-    { name: 'Breheimsenteret', emoji: '🏔️', sub: 'Gletsjercentrum Jostedalsbreen', distance: '3.2 km', duration: '2–3 u', elevation: 300 },
-    { name: 'Grotli uitzichtpunt', emoji: '🌄', sub: 'Panorama over Skjåkdal', distance: '8 km', duration: '30 min', elevation: 900 },
-    { name: 'Pollfoss Café', emoji: '☕', sub: 'Rustig café langs Rv15', distance: '12 km', duration: 'koffie', elevation: 600 },
-    { name: 'Sognefjellet (Rv55)', emoji: '🚗', sub: 'Hoogste bergpas Noord-Europa', distance: '35 km', duration: '+1 u', elevation: 1434 },
-  ],
-  3: [ // Valdres
-    { name: 'Valdresflye', emoji: '🌄', sub: 'Hoogvlakte met rendieren', distance: '18 km', duration: '2 u rijden', elevation: 1389 },
-    { name: 'Tyinkrysset', emoji: '🏔️', sub: 'Bergpas richting Jotunheimen', distance: '25 km', duration: '1 u', elevation: 1080 },
-  ],
-  4: [ // Gjerstad
-    { name: 'Gjerstad Stasjon', emoji: '🚂', sub: 'Historisch spoorwegmuseum', distance: '2 km', duration: '1 u', elevation: 80 },
-    { name: 'Lyngør', emoji: '⛵', sub: 'Autovrij eilanddorpje', distance: '22 km', duration: '2–3 u', elevation: 2 },
-  ],
-};
+// AI-suggesties komen niet meer uit een vaste lijst — zie js/screen-discover.js
+// en api/suggestions.js. Dat roept de Anthropic Claude API aan, conform
+// docs/04-ai/01-ai-architecture.md.
 
 // ── Volledige route Nijmegen → Noorwegen → Nijmegen ───────
 const ROUTE = [
