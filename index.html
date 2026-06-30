@@ -7,182 +7,36 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Cockpit"/>
 <meta name="theme-color" content="#0E3A2E"/>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
 <title>Travel Cockpit · Noorwegen 2026</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<style>
-/* ═══════════════════════════════════════════════════
-   DESIGN SYSTEM — Topografisk
-   Reference: Norwegian N50 topographic maps
-   ═══════════════════════════════════════════════════ */
-:root{
-  --spruce:#0E3A2E; --spruce-deep:#081F18; --spruce-light:#1B5240;
-  --slope:#5B8C7B; --slope-light:#EDF2EC;
-  --summit:#C5512B; --summit-light:#F7E4DC;
-  --water:#1B5A8A; --water-light:#E1ECF4;
-  --contour:#9A8C6D;
-  --paper:#E4E9E2; --paper-warm:#F0F2EE;
-  --white:#FFFFFF;
-  --ink:#14201A; --ink-mid:#3A4D44; --ink-faint:#6E8278;
-  --line:#C8D2C9; --line-soft:#DCE3DD;
-  --sgd:#2d6a4f; --skj:#1565c0; --val:#ef6c00; --gjr:#6a1b9a;
-  --shadow-sm:0 1px 3px rgba(14,58,46,0.08), 0 1px 2px rgba(14,58,46,0.06);
-  --shadow-md:0 4px 14px rgba(14,58,46,0.10), 0 2px 4px rgba(14,58,46,0.06);
-  --shadow-lg:0 12px 32px rgba(14,58,46,0.16), 0 4px 8px rgba(14,58,46,0.08);
-  --shadow-dark:0 8px 24px rgba(0,0,0,0.28);
-}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html{-webkit-text-size-adjust:100%}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  background:var(--paper);
-  color:var(--ink);
-  max-width:430px;margin:0 auto;min-height:100dvh;overflow-x:hidden;
-  -webkit-font-smoothing:antialiased;
-}
-::-webkit-scrollbar{display:none}
 
-/* ─── Layout primitives ─── */
-.screen{display:none;flex-direction:column;min-height:100dvh;padding-bottom:74px}
-.screen.active{display:flex}
-.scroll{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
-.px16{padding-left:16px;padding-right:16px}
-.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}.mt24{margin-top:24px}
-.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}
-
-/* ─── Typography roles ─── */
-.eyebrow{font-size:10px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--ink-faint)}
-.eyebrow-light{color:rgba(228,233,226,0.62)}
-.mono{font-family:'SF Mono','Courier New',monospace;font-size:10px;color:var(--ink-faint);letter-spacing:-0.2px}
-.h-page{font-size:25px;font-weight:800;letter-spacing:-0.6px;color:var(--ink)}
-.h-card{font-size:22px;font-weight:800;letter-spacing:-0.5px;line-height:1.05}
-.h-row{font-weight:700;font-size:14.5px;color:var(--ink)}
-.sub{font-size:12.5px;color:var(--ink-mid)}
-
-/* ─── Topographic texture (the signature element) ─── */
-.topo{position:relative;overflow:hidden;background:var(--spruce)}
-.topo-lines{position:absolute;inset:-30%;width:160%;height:160%;opacity:0.5;pointer-events:none}
-.topo-grad{position:absolute;inset:0;background:linear-gradient(150deg,transparent 25%,rgba(8,31,24,0.88) 100%)}
-.topo-grad-soft{position:absolute;inset:0;background:linear-gradient(150deg,transparent 40%,rgba(8,31,24,0.7) 100%)}
-
-/* ─── Cards ─── */
-.card{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm)}
-.card-row{display:flex;align-items:center;padding:13px 15px;gap:12px;border-bottom:1px solid var(--line-soft);cursor:pointer;transition:background .12s}
-.card-row:active{background:var(--paper-warm)}
-.card-row:last-child{border-bottom:none}
-.icon-box{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
-.chevron{color:var(--line);font-size:16px}
-
-/* ─── Hero panels (the signature surface) ─── */
-.hero-panel{
-  border-radius:18px;position:relative;overflow:hidden;cursor:pointer;border:none;
-  text-align:left;display:block;width:100%;box-shadow:var(--shadow-lg);
-  transform:translateZ(0); transition:transform .15s, box-shadow .15s;
-}
-.hero-panel:active{transform:scale(0.985);box-shadow:var(--shadow-md)}
-
-/* ─── Stat strip ─── */
-.stat-strip{display:flex;background:var(--white);border-radius:14px;border:1px solid var(--line);overflow:hidden;box-shadow:var(--shadow-sm)}
-.stat-cell{flex:1;display:flex;flex-direction:column;align-items:center;padding:14px 4px;background:none;border:none;cursor:pointer;transition:background .12s}
-.stat-cell:active{background:var(--paper-warm)}
-.stat-cell+.stat-cell{border-left:1px solid var(--line-soft)}
-.stat-num{font-family:'SF Mono','Courier New',monospace;font-size:24px;font-weight:700;color:var(--ink);line-height:1}
-.stat-label{font-size:8.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:var(--ink-faint);margin-top:5px}
-
-/* ─── Pills / Chips ─── */
-.chip{
-  display:inline-flex;align-items:center;gap:5px;flex-shrink:0;
-  padding:6px 13px;border-radius:20px;font-size:11px;font-weight:700;
-  text-transform:uppercase;letter-spacing:0.3px;
-  border:1.5px solid var(--line);background:var(--white);color:var(--ink-mid);
-  cursor:pointer;white-space:nowrap;transition:all .15s;
-}
-.chip.on{background:var(--spruce);border-color:var(--spruce);color:var(--white);box-shadow:var(--shadow-sm)}
-.hscroll{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-
-/* ─── Buttons ─── */
-.btn{width:100%;padding:14px;border-radius:13px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;border:none;cursor:pointer;transition:all .15s}
-.btn-primary{background:var(--spruce);color:var(--white);box-shadow:var(--shadow-sm)}
-.btn-primary:active{background:var(--spruce-deep)}
-.btn-outline{background:var(--white);border:1.5px solid var(--line);color:var(--ink-mid)}
-.btn-outline:active{background:var(--paper-warm)}
-
-/* ─── Day tabs ─── */
-.day-tab{flex-shrink:0;width:58px;padding:8px 4px 6px;border-radius:13px;display:flex;flex-direction:column;align-items:center;background:var(--white);border:1.5px solid var(--line);cursor:pointer;transition:all .15s}
-.day-tab.sel{box-shadow:var(--shadow-md)}
-
-/* ─── Summit marker (signature icon) ─── */
-.tri{width:0;height:0;display:inline-block}
-.tri-md{border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid var(--summit)}
-.tri-lg{border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:17px solid var(--summit)}
-.elev-tag{display:inline-flex;align-items:center;gap:4px;font-family:'SF Mono','Courier New',monospace;font-weight:700;font-size:10.5px}
-
-/* ─── Progress ─── */
-.prog-track{height:7px;background:var(--slope-light);border-radius:4px;overflow:hidden}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(--spruce),var(--slope));border-radius:4px;transition:width .7s cubic-bezier(.16,1,.3,1)}
-
-/* ─── Bottom nav ─── */
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--spruce-deep);display:flex;padding-bottom:env(safe-area-inset-bottom,0);z-index:1000;box-shadow:0 -4px 20px rgba(0,0,0,0.2)}
-.nav button{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 2px 11px;background:none;border:none;cursor:pointer;gap:4px;color:rgba(228,233,226,0.42);font-size:9px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;position:relative;transition:color .15s}
-.nav button.active{color:var(--white)}
-.nav button.active::before{content:'';position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:22px;height:3px;border-radius:0 0 3px 3px;background:var(--summit)}
-.nav svg{transition:transform .15s}
-.nav button.active svg{transform:translateY(-1px)}
-
-/* ─── Activity row ─── */
-.act-row{display:flex;align-items:center;gap:11px;padding:12px 15px;position:relative;cursor:pointer;transition:background .12s}
-.act-row:active{background:var(--paper-warm)}
-.act-band{position:absolute;left:0;top:0;bottom:0;width:4px}
-.act-thumb{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
-.act-check{width:25px;height:25px;border-radius:8px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s}
-
-/* ─── Sheets ─── */
-.sbg{display:none;position:fixed;inset:0;background:rgba(8,31,24,0.6);z-index:2000;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
-.sbg.open{display:flex;animation:fadeIn .2s}
-.sht{width:100%;max-width:430px;background:var(--paper-warm);border-radius:20px 20px 0 0;border-top:3px solid var(--summit);padding:18px 20px 40px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-dark);animation:slideUp .25s cubic-bezier(.16,1,.3,1)}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes slideUp{from{transform:translateY(30px);opacity:0.6}to{transform:translateY(0);opacity:1}}
-
-/* ─── Inputs ─── */
-input,select{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:14.5px;background:var(--white);outline:none;margin-bottom:11px;font-family:inherit;color:var(--ink);transition:border-color .15s}
-input:focus,select:focus{border-color:var(--spruce)}
-input::placeholder{color:var(--ink-faint)}
-
-/* ─── Map ─── */
-#map-c{flex:1;min-height:300px;position:relative}
-#lmap{width:100%;height:100%}
-.map-controls{position:absolute;top:0;left:0;right:0;z-index:500;padding:10px 14px 0}
-.map-search{display:flex;align-items:center;gap:9px;padding:11px 16px;background:rgba(255,255,255,0.96);border-radius:24px;box-shadow:var(--shadow-md);backdrop-filter:blur(8px)}
-
-/* ─── Toast ─── */
-#toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:var(--spruce-deep);color:var(--white);padding:11px 20px;border-radius:12px;border-left:3px solid var(--summit);font-size:12.5px;font-weight:600;white-space:nowrap;z-index:9999;opacity:0;transition:opacity .25s, transform .25s;pointer-events:none;box-shadow:var(--shadow-dark)}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
-
-/* ─── Misc ─── */
-.divider{height:1px;background:var(--line-soft)}
-.acc-dot{border-radius:50%;display:inline-block;flex-shrink:0}
-.switch{width:48px;height:28px;border-radius:14px;position:relative;border:none;cursor:pointer;transition:background .2s}
-.switch-knob{position:absolute;top:3px;width:22px;height:22px;background:white;border-radius:50%;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,0.25)}
-.fab{position:absolute;width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;font-size:17px;transition:all .15s}
-.fab:active{transform:scale(0.92)}
-</style>
+<link rel="stylesheet" href="css/styles.css"/>
 </head>
 <body>
-<div id="s-home" class="screen active">
-  <div class="px16" style="padding-top:14px;padding-bottom:12px;border-bottom:1px solid var(--line-soft);background:var(--white)">
-    <p class="eyebrow" id="h-day">Dag — · — jun</p>
+
+<!-- ═══════════ HOME ═══════════ -->
+<div id="screen-home" class="screen active">
+  <div class="px" style="padding-top:14px;padding-bottom:12px;border-bottom:1px solid var(--line-soft);background:var(--white)">
+    <p class="eyebrow" id="home-day">Dag — · — jun</p>
     <div style="display:flex;align-items:baseline;gap:9px;margin-top:5px">
-      <span class="h-page">NOORWEGEN</span>
+      <span class="page-title">NOORWEGEN</span>
       <span class="mono" style="color:var(--summit);font-size:13px;font-weight:700">2026</span>
     </div>
-    <p class="mono" id="h-coord" style="margin-top:3px">15.06 – 30.06</p>
+    <p class="mono" id="home-coord" style="margin-top:3px">15.06 – 30.06</p>
   </div>
 
   <div class="scroll">
-    <!-- Hero accommodation -->
-    <button onclick="nav('accommodation')" class="hero-panel topo px16" id="h-hero" style="width:calc(100% - 32px);margin:16px;height:188px;padding:0">
-      <svg class="topo-lines" id="topo-home" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
-      <div class="topo-grad"></div>
+    <button onclick="navigateTo('accommodation')" class="hero-panel topo-panel px" data-topo="1"
+      style="width:calc(100% - 32px);margin:16px;height:188px;padding:0">
+      <svg class="topo-svg" data-topo="1" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
+      <div class="topo-overlay"></div>
       <div style="position:relative;z-index:1;height:100%;padding:16px;display:flex;flex-direction:column;justify-content:space-between">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <p class="eyebrow eyebrow-light">Huidig verblijf</p>
@@ -192,11 +46,11 @@ input::placeholder{color:var(--ink-faint)}
         </div>
         <div>
           <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
-            <span class="tri tri-md"></span>
-            <span class="elev-tag" style="color:var(--summit)" id="h-elev">—m</span>
+            <span class="summit-tri summit-tri-md"></span>
+            <span class="elevation-tag" style="color:var(--summit)" id="home-acc-elevation">—m</span>
           </div>
-          <h2 class="h-card" style="color:var(--white)" id="h-name">—</h2>
-          <p class="mono" style="color:rgba(228,233,226,0.62);margin-top:6px" id="h-dates">—</p>
+          <h2 class="hero-title" style="color:var(--white)" id="home-acc-name">—</h2>
+          <p class="mono" style="color:rgba(232,228,217,0.62);margin-top:6px" id="home-acc-dates">—</p>
         </div>
       </div>
       <div style="position:absolute;bottom:14px;right:14px;z-index:1;padding:7px 13px;background:rgba(255,255,255,0.16);border:1px solid rgba(255,255,255,0.22);border-radius:11px">
@@ -204,76 +58,79 @@ input::placeholder{color:var(--ink-faint)}
       </div>
     </button>
 
-    <!-- Stats -->
-    <div class="stat-strip px16" style="margin:0 16px;width:calc(100% - 32px)">
-      <button onclick="nav('planning')" class="stat-cell"><span class="stat-num" id="s-todo">—</span><span class="stat-label">Te doen</span></button>
-      <button onclick="nav('planning')" class="stat-cell"><span class="stat-num" id="s-done">—</span><span class="stat-label">Gedaan</span></button>
-      <button onclick="nav('tickets')" class="stat-cell"><span class="stat-num" id="s-tick">1</span><span class="stat-label">Tickets</span></button>
-      <button onclick="nav('map')" class="stat-cell"><span class="stat-num">04</span><span class="stat-label">Laders</span></button>
+    <div class="stat-strip" style="margin:0 16px;width:calc(100% - 32px)">
+      <button onclick="navigateTo('planning')" class="stat-cell"><span class="stat-num" id="stat-todo">—</span><span class="stat-label">Te doen</span></button>
+      <button onclick="navigateTo('planning')" class="stat-cell"><span class="stat-num" id="stat-done">—</span><span class="stat-label">Gedaan</span></button>
+      <button onclick="navigateTo('tickets')" class="stat-cell"><span class="stat-num" id="stat-tickets">1</span><span class="stat-label">Tickets</span></button>
+      <button onclick="navigateTo('map')" class="stat-cell"><span class="stat-num">04</span><span class="stat-label">Laders</span></button>
     </div>
 
-    <!-- Today -->
-    <div class="px16 mt24 mb8" style="display:flex;align-items:center;justify-content:space-between">
-      <p style="font-size:17px;font-weight:800;letter-spacing:-0.3px">Vandaag</p>
-      <button onclick="nav('planning')" style="font-size:11px;font-weight:700;color:var(--summit);background:none;border:none;cursor:pointer;text-transform:uppercase;letter-spacing:0.4px">Alles →</button>
+    <div class="px" style="margin-top:24px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+      <p style="font-family:var(--font-display);font-size:18px;font-weight:800;letter-spacing:-0.3px">Vandaag</p>
+      <button onclick="navigateTo('planning')" style="font-size:11px;font-weight:700;color:var(--summit);background:none;border:none;cursor:pointer;text-transform:uppercase;letter-spacing:0.4px">Alles →</button>
     </div>
-    <div class="card" style="margin:0 16px;width:calc(100% - 32px);overflow:hidden" id="h-today"></div>
+    <div class="card" style="margin:0 16px;width:calc(100% - 32px);overflow:hidden" id="home-today-list"></div>
 
-    <!-- AI card -->
-    <button onclick="nav('discover')" class="hero-panel topo px16" style="width:calc(100% - 32px);margin:16px;padding:0">
-      <svg class="topo-lines" id="topo-ai" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" style="opacity:.35"></svg>
+    <button onclick="navigateTo('discover')" class="hero-panel topo-panel px" data-topo="2" style="width:calc(100% - 32px);margin:16px;padding:0">
+      <svg class="topo-svg" data-topo="2" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" style="opacity:.35"></svg>
       <div style="position:relative;z-index:1;display:flex;align-items:center;gap:13px;padding:16px">
         <div style="width:46px;height:46px;background:rgba(197,81,43,0.2);border:1.5px solid rgba(197,81,43,0.45);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:23px;flex-shrink:0">◎</div>
         <div style="flex:1">
           <p style="font-weight:700;color:var(--white);font-size:15.5px">Wat ligt er voor je?</p>
-          <p class="mono" style="color:rgba(228,233,226,0.55);margin-top:4px">AI-suggesties voor vandaag</p>
+          <p class="mono" style="color:rgba(232,228,217,0.55);margin-top:4px">AI-suggesties voor je verblijf</p>
         </div>
         <span style="color:var(--summit);font-size:19px;margin-left:auto">→</span>
       </div>
     </button>
 
-    <!-- Progress -->
-    <div class="card px16" style="margin:0 16px 18px;width:calc(100% - 32px);padding:16px">
+    <div class="card px" style="margin:0 16px 18px;width:calc(100% - 32px);padding:16px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
         <span class="eyebrow">Voortgang reis</span>
-        <span class="mono" style="font-size:12px;font-weight:700;color:var(--ink)" id="h-prog-lbl">0/19</span>
+        <span class="mono" style="font-size:12px;font-weight:700;color:var(--ink)" id="home-progress-label">0/19</span>
       </div>
-      <div class="prog-track"><div class="prog-fill" id="h-prog" style="width:0%"></div></div>
-      <div style="display:flex;gap:5px;margin-top:12px" id="h-acc-bars"></div>
+      <div class="progress-track"><div class="progress-fill" id="home-progress-fill" style="width:0%"></div></div>
+      <div style="display:flex;gap:5px;margin-top:12px" id="home-acc-bars"></div>
     </div>
   </div>
 </div>
 
-<div id="s-map" class="screen">
-  <div style="background:var(--white);border-bottom:1px solid var(--line-soft);padding:11px 16px 9px;box-shadow:0 1px 0 var(--line-soft)">
+<!-- ═══════════ MAP ═══════════ -->
+<div id="screen-map" class="screen">
+  <div style="background:var(--white);border-bottom:1px solid var(--line-soft);padding:11px 16px 9px">
     <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">
-      <p style="font-size:19px;font-weight:800;letter-spacing:-0.4px;flex:1">KAART</p>
-      <button onclick="tgGPS()" id="gps-btn" class="chip" style="border-color:var(--line)">📍 GPS</button>
-      <button onclick="tgRoute()" class="chip" id="r-btn">NO</button>
+      <p style="font-family:var(--font-display);font-size:19px;font-weight:800;letter-spacing:-0.4px;flex:1">KAART</p>
+      <button onclick="toggleGPS()" id="gps-toggle-btn" class="chip">📍 GPS</button>
+      <button onclick="toggleFullRoute()" class="chip" id="route-toggle-btn">NO</button>
     </div>
     <div class="hscroll">
-      <button onclick="fMap(null)" id="fc-all" class="chip on">Alles</button>
-      <button onclick="fMap('sgd')" id="fc-sgd" class="chip" style="border-color:var(--sgd);color:var(--sgd)">▲ Sgd</button>
-      <button onclick="fMap('skj')" id="fc-skj" class="chip" style="border-color:var(--skj);color:var(--skj)">▲ Skj</button>
-      <button onclick="fMap('val')" id="fc-val" class="chip" style="border-color:var(--val);color:var(--val)">▲ Val</button>
-      <button onclick="fMap('gjr')" id="fc-gjr" class="chip" style="border-color:var(--gjr);color:var(--gjr)">▲ Gjr</button>
+      <button data-filter-chip="all" onclick="setMapFilter(null)" class="chip on">Alles</button>
+      <button data-filter-chip="1" onclick="setMapFilter(1)" class="chip" style="border-color:var(--acc-1);color:var(--acc-1)">▲ Sgd</button>
+      <button data-filter-chip="2" onclick="setMapFilter(2)" class="chip" style="border-color:var(--acc-2);color:var(--acc-2)">▲ Skj</button>
+      <button data-filter-chip="3" onclick="setMapFilter(3)" class="chip" style="border-color:var(--acc-3);color:var(--acc-3)">▲ Val</button>
+      <button data-filter-chip="4" onclick="setMapFilter(4)" class="chip" style="border-color:var(--acc-4);color:var(--acc-4)">▲ Gjr</button>
     </div>
   </div>
-  <div id="map-c"><div id="lmap"></div></div>
-  <div style="background:var(--white);border-top:1px solid var(--line-soft);padding:10px 0 0;box-shadow:0 -2px 12px rgba(14,58,46,0.06)">
+  <div id="map-container">
+    <div id="leaflet-map"></div>
+    <div class="map-loading" id="map-loading">
+      <div class="spinner"></div>
+      <p class="mono">Kaart laden…</p>
+    </div>
+  </div>
+  <div style="background:var(--white);border-top:1px solid var(--line-soft);padding:10px 0 0">
     <div style="display:flex;justify-content:space-between;padding:0 16px 7px">
       <span class="eyebrow">Route</span>
       <span class="mono">━ rij &nbsp;┅ ferry</span>
     </div>
-    <div class="hscroll" style="padding:0 16px 9px">
+    <div class="hscroll px" style="padding-bottom:9px">
       <div class="chip" style="border-left:3px solid var(--summit)">🏠 Nijmegen · 15 jun</div>
       <div class="chip" style="border-left:3px solid var(--water)">⚓ Hirtshals · ferry</div>
       <div class="chip" style="border-left:3px solid var(--water)">🌊 Stavanger · stop</div>
       <div class="chip" style="border-left:3px solid var(--water)">⚓ Bergen · 16 jun</div>
-      <div class="chip" style="border-left:3px solid var(--sgd)">▲ Sogndal · 16–19</div>
-      <div class="chip" style="border-left:3px solid var(--skj)">▲ Skjåk · 19–23</div>
-      <div class="chip" style="border-left:3px solid var(--val)">▲ Valdres · 23–27</div>
-      <div class="chip" style="border-left:3px solid var(--gjr)">▲ Gjerstad · 27–29</div>
+      <div class="chip" style="border-left:3px solid var(--acc-1)">▲ Sogndal · 16–19</div>
+      <div class="chip" style="border-left:3px solid var(--acc-2)">▲ Skjåk · 19–23</div>
+      <div class="chip" style="border-left:3px solid var(--acc-3)">▲ Valdres · 23–27</div>
+      <div class="chip" style="border-left:3px solid var(--acc-4)">▲ Gjerstad · 27–29</div>
       <div class="chip" style="border-left:3px solid var(--water)">⚓ Kristiansand · ferry</div>
       <div class="chip" style="border-left:3px solid var(--water)">⚓ Hirtshals · aankomst</div>
       <div class="chip" style="border-left:3px solid #795548">🏨 Kolding · 29–30</div>
@@ -282,180 +139,190 @@ input::placeholder{color:var(--ink-faint)}
   </div>
 </div>
 
-<div id="s-planning" class="screen">
-  <div class="px16" style="padding-top:14px;padding-bottom:9px;border-bottom:1px solid var(--line-soft);background:var(--white);display:flex;align-items:center">
-    <span class="h-page" style="flex:1">PLANNING</span>
-    <button onclick="oAddAct()" class="fab" style="position:static;background:var(--spruce);color:white">+</button>
+<!-- ═══════════ PLANNING ═══════════ -->
+<div id="screen-planning" class="screen">
+  <div class="px" style="padding-top:14px;padding-bottom:9px;border-bottom:1px solid var(--line-soft);background:var(--white);display:flex;align-items:center">
+    <span class="page-title" style="flex:1">PLANNING</span>
+    <button onclick="openAddActivitySheet()" class="fab" style="background:var(--spruce);color:white">+</button>
   </div>
-  <div id="d-tabs" class="hscroll px16" style="padding-top:9px;padding-bottom:9px;background:var(--white);border-bottom:1px solid var(--line-soft)"></div>
-  <div id="d-hdr" class="px16" style="background:var(--white);padding-top:11px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:11px;box-shadow:0 2px 8px rgba(14,58,46,0.04)"></div>
-  <div class="scroll px16" style="padding-top:13px">
-    <div id="p-items"></div>
-    <div style="margin:10px 0 24px"><button onclick="oAddAct()" class="btn btn-outline">+ Activiteit toevoegen</button></div>
+  <div id="day-tabs" class="hscroll px" style="padding-top:9px;padding-bottom:9px;background:var(--white);border-bottom:1px solid var(--line-soft)"></div>
+  <div id="day-header" class="px" style="background:var(--white);padding-top:11px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:11px"></div>
+  <div class="scroll px" style="padding-top:13px">
+    <div id="planning-items"></div>
+    <div style="margin:10px 0 24px"><button onclick="openAddActivitySheet()" class="btn btn-outline">+ Activiteit toevoegen</button></div>
   </div>
 </div>
 
-<div id="s-discover" class="screen">
-  <div class="topo" style="position:relative">
-    <svg class="topo-lines" id="topo-disc" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
-    <div class="topo-grad-soft"></div>
+<!-- ═══════════ DISCOVER ═══════════ -->
+<div id="screen-discover" class="screen">
+  <div class="topo-panel" data-topo="3" style="position:relative">
+    <svg class="topo-svg" data-topo="3" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
+    <div class="topo-overlay-soft"></div>
     <div style="position:relative;z-index:1;display:flex;align-items:center;gap:13px;padding:14px 16px">
       <div style="width:46px;height:46px;background:rgba(197,81,43,0.2);border:1.5px solid rgba(197,81,43,0.45);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:23px;flex-shrink:0">◎</div>
-      <div style="flex:1"><p style="font-weight:700;color:var(--white);font-size:15.5px">Wat ligt er voor je?</p><p class="mono" style="color:rgba(228,233,226,0.55);margin-top:4px" id="d-loc">laden…</p></div>
-      <button onclick="toast('Vernieuwd!')" style="background:none;border:none;color:rgba(228,233,226,0.55);font-size:19px;cursor:pointer">↻</button>
+      <div style="flex:1"><p style="font-weight:700;color:var(--white);font-size:15.5px">Wat ligt er voor je?</p><p class="mono" style="color:rgba(232,228,217,0.55);margin-top:4px" id="discover-location">laden…</p></div>
+      <button onclick="handleLoadMoreSuggestions()" style="background:none;border:none;color:rgba(232,228,217,0.55);font-size:19px;cursor:pointer">↻</button>
     </div>
   </div>
-  <div class="hscroll px16" style="padding-top:11px;padding-bottom:11px;background:var(--white);border-bottom:1px solid var(--line-soft)">
-    <button onclick="sfilt(this)" class="chip on">Alles</button>
-    <button onclick="sfilt(this)" class="chip">Wandeling</button>
-    <button onclick="sfilt(this)" class="chip">Eten</button>
-    <button onclick="sfilt(this)" class="chip">Uitzicht</button>
+  <div class="hscroll px" style="padding-top:11px;padding-bottom:11px;background:var(--white);border-bottom:1px solid var(--line-soft)">
+    <button onclick="setDiscoverFilter(this)" class="chip on">Alles</button>
+    <button onclick="setDiscoverFilter(this)" class="chip">Wandeling</button>
+    <button onclick="setDiscoverFilter(this)" class="chip">Eten</button>
+    <button onclick="setDiscoverFilter(this)" class="chip">Uitzicht</button>
   </div>
   <div class="scroll">
-    <div id="d-list" style="display:flex;flex-direction:column;gap:11px;padding:14px 16px 16px"></div>
-    <div class="px16" style="padding-bottom:24px"><button onclick="toast('Meer ideeën geladen!')" class="btn btn-outline">↻ Meer ideeën</button></div>
+    <div id="discover-list" style="display:flex;flex-direction:column;gap:11px;padding:14px 16px 16px"></div>
+    <div class="px" style="padding-bottom:24px"><button id="discover-more-btn" onclick="handleLoadMoreSuggestions()" class="btn btn-outline">↻ Meer ideeën</button></div>
   </div>
 </div>
 
-<div id="s-meer" class="screen">
-  <div class="px16" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center">
-    <span class="h-page" style="flex:1">MEER</span><span class="mono">v3.0</span>
+<!-- ═══════════ MEER ═══════════ -->
+<div id="screen-meer" class="screen">
+  <div class="px" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center">
+    <span class="page-title" style="flex:1">MEER</span><span class="mono">v6.0</span>
   </div>
   <div class="scroll">
-    <button onclick="nav('roadtrip')" class="hero-panel topo px16" style="width:calc(100% - 32px);margin:16px;padding:0">
-      <svg class="topo-lines" id="topo-rt-card" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
-      <div class="topo-grad-soft"></div>
+    <button onclick="navigateTo('roadtrip')" class="hero-panel topo-panel px" data-topo="4" style="width:calc(100% - 32px);margin:16px;padding:0">
+      <svg class="topo-svg" data-topo="4" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
+      <div class="topo-overlay-soft"></div>
       <div style="position:relative;z-index:1;display:flex;align-items:center;gap:14px;padding:17px">
-        <div style="width:48px;height:48px;background:rgba(228,233,226,0.12);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:27px;flex-shrink:0">◉</div>
-        <div style="flex:1"><p style="font-size:18px;font-weight:800;color:var(--white);letter-spacing:-0.3px">ROADTRIP-MODUS</p><p class="mono" style="color:rgba(228,233,226,0.55);margin-top:4px">Live navigatie onderweg</p></div>
+        <div style="width:48px;height:48px;background:rgba(232,228,217,0.12);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:27px;flex-shrink:0">◉</div>
+        <div style="flex:1"><p style="font-size:18px;font-weight:800;color:var(--white);letter-spacing:-0.3px;font-family:var(--font-display)">ROADTRIP-MODUS</p><p class="mono" style="color:rgba(232,228,217,0.55);margin-top:4px">Live navigatie onderweg</p></div>
         <span style="color:var(--summit);font-size:19px">→</span>
       </div>
     </button>
-    <div class="px16 mb8"><span class="eyebrow">Mijn route</span></div>
+
+    <div class="px" style="margin-bottom:8px"><span class="eyebrow">Mijn route</span></div>
     <div class="card" style="margin:0 16px;width:calc(100% - 32px)">
-      <div class="card-row" onclick="nav('accommodation')"><div class="icon-box" style="background:var(--slope-light);color:var(--spruce)">▲</div><div style="flex:1"><p class="h-row">Accommodaties</p><p class="sub">4 verblijven · wisselen per datum</p></div><span class="chevron">›</span></div>
-      <div class="card-row" onclick="nav('trips')"><div class="icon-box" style="background:var(--slope-light)">✈️</div><div style="flex:1"><p class="h-row">Mijn reizen</p><p class="sub">Noorwegen 2026 · actief</p></div><span class="chevron">›</span></div>
-      <div class="card-row" onclick="nav('tickets')"><div class="icon-box" style="background:var(--slope-light)">🎟️</div><div style="flex:1"><p class="h-row">Tickets</p><p class="sub" id="m-tickets">1 ticket</p></div><span class="chevron">›</span></div>
+      <div class="card-row" onclick="navigateTo('accommodation')"><div class="icon-box" style="background:var(--slope-light);color:var(--spruce)">▲</div><div style="flex:1"><p class="row-title">Accommodaties</p><p class="row-sub">4 verblijven · wisselen per datum</p></div><span class="chevron">›</span></div>
+      <div class="card-row" onclick="navigateTo('trips')"><div class="icon-box" style="background:var(--slope-light)">✈️</div><div style="flex:1"><p class="row-title">Mijn reizen</p><p class="row-sub">Noorwegen 2026 · actief</p></div><span class="chevron">›</span></div>
+      <div class="card-row" onclick="navigateTo('tickets')"><div class="icon-box" style="background:var(--slope-light)">🎟️</div><div style="flex:1"><p class="row-title">Tickets</p><p class="row-sub" id="meer-tickets-sub">1 ticket</p></div><span class="chevron">›</span></div>
     </div>
-    <div class="px16 mb8 mt20"><span class="eyebrow">Onderweg</span></div>
+
+    <div class="px" style="margin-bottom:8px;margin-top:20px"><span class="eyebrow">Onderweg</span></div>
     <div class="card" style="margin:0 16px;width:calc(100% - 32px)">
-      <div class="card-row" onclick="nav('map')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">◈</div><div style="flex:1"><p class="h-row">Kaart</p><p class="sub">OpenStreetMap + GPS tracker</p></div><span class="chevron">›</span></div>
-      <div class="card-row" onclick="nav('discover')"><div class="icon-box" style="background:var(--summit-light);color:var(--summit)">◎</div><div style="flex:1"><p class="h-row">AI-ideeën</p><p class="sub">Op locatie en dag</p></div><span class="chevron">›</span></div>
-      <div class="card-row" onclick="toast('IONITY 2.3km · Mer 22km')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div><div style="flex:1"><p class="h-row">Laadstations</p><p class="sub">4 binnen 25 km</p></div><span class="chevron">›</span></div>
+      <div class="card-row" onclick="navigateTo('map')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">◈</div><div style="flex:1"><p class="row-title">Kaart</p><p class="row-sub">OpenStreetMap + GPS-tracker</p></div><span class="chevron">›</span></div>
+      <div class="card-row" onclick="navigateTo('discover')"><div class="icon-box" style="background:var(--summit-light);color:var(--summit)">◎</div><div style="flex:1"><p class="row-title">AI-ideeën</p><p class="row-sub">Op locatie en verblijf</p></div><span class="chevron">›</span></div>
+      <div class="card-row" onclick="showToast('IONITY 2.3km · Mer 22km')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div><div style="flex:1"><p class="row-title">Laadstations</p><p class="row-sub">4 binnen 25 km</p></div><span class="chevron">›</span></div>
     </div>
-    <div class="px16 mb8 mt20"><span class="eyebrow">Systeem</span></div>
-    <div class="card mb16" style="margin:0 16px 16px;width:calc(100% - 32px)">
-      <div class="card-row" onclick="nav('settings')"><div class="icon-box" style="background:var(--slope-light)">⚙️</div><div style="flex:1"><p class="h-row">Instellingen</p><p class="sub">Voertuig · voorkeuren · taal</p></div><span class="chevron">›</span></div>
+
+    <div class="px" style="margin-bottom:8px;margin-top:20px"><span class="eyebrow">Systeem</span></div>
+    <div class="card" style="margin:0 16px 16px;width:calc(100% - 32px)">
+      <div class="card-row" onclick="navigateTo('settings')"><div class="icon-box" style="background:var(--slope-light)">⚙️</div><div style="flex:1"><p class="row-title">Instellingen</p><p class="row-sub">Voertuig · voorkeuren · taal</p></div><span class="chevron">›</span></div>
     </div>
   </div>
 </div>
-<div id="s-accommodation" class="screen" style="padding-bottom:0">
-  <div class="topo" id="a-hero" style="height:222px;flex-shrink:0;position:relative">
-    <svg class="topo-lines" id="topo-acc" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
-    <div class="topo-grad"></div>
+
+<!-- ═══════════ ACCOMMODATIE ═══════════ -->
+<div id="screen-accommodation" class="screen" style="padding-bottom:0">
+  <div class="topo-panel" data-topo="5" style="height:222px;flex-shrink:0;position:relative">
+    <svg class="topo-svg" data-topo="5" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
+    <div class="topo-overlay"></div>
     <button onclick="goBack()" class="fab" style="position:absolute;top:calc(env(safe-area-inset-top,12px) + 8px);left:14px;background:rgba(0,0,0,0.32);color:white;z-index:10">‹</button>
     <div style="position:absolute;top:calc(env(safe-area-inset-top,12px) + 8px);right:14px;display:flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.18);border-radius:20px;z-index:10"><span style="font-size:14px">⛅</span><span class="mono" style="color:white;font-size:13px;font-weight:700">14°</span></div>
     <div style="position:absolute;bottom:16px;left:16px;right:16px;z-index:1">
-      <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px"><span class="tri tri-md"></span><span class="elev-tag" style="color:var(--summit)" id="a-elev">—</span></div>
-      <h2 class="h-card" style="color:white" id="a-name">—</h2>
-      <p class="mono" style="color:rgba(228,233,226,0.6);margin-top:6px" id="a-dates">—</p>
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px"><span class="summit-tri summit-tri-md"></span><span class="elevation-tag" style="color:var(--summit)" id="acc-elevation">—</span></div>
+      <h2 class="hero-title" style="color:white" id="acc-name">—</h2>
+      <p class="mono" style="color:rgba(232,228,217,0.6);margin-top:6px" id="acc-dates">—</p>
     </div>
   </div>
-  <div id="a-chips" class="hscroll px16" style="padding-top:11px;padding-bottom:11px;background:var(--white);border-bottom:1px solid var(--line-soft);flex-shrink:0"></div>
+  <div id="acc-chips" class="hscroll px" style="padding-top:11px;padding-bottom:11px;background:var(--white);border-bottom:1px solid var(--line-soft);flex-shrink:0"></div>
   <div style="display:flex;background:var(--white);border-bottom:1px solid var(--line-soft);flex-shrink:0">
-    <button onclick="oMaps()" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">◈</span><span class="eyebrow" style="font-size:8px">Route</span></button>
-    <button onclick="nav('map')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">⊕</span><span class="eyebrow" style="font-size:8px">Kaart</span></button>
-    <button onclick="toast('Weer: ⛅ 14°C, licht bewolkt')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">☀</span><span class="eyebrow" style="font-size:8px">Weer</span></button>
-    <button onclick="toast('Bellen: geen nummer opgeslagen')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;cursor:pointer"><span style="font-size:20px;color:var(--spruce)">☎</span><span class="eyebrow" style="font-size:8px">Bel</span></button>
+    <button onclick="openMapsForAccommodation(AppState.viewingAccommodationId)" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">◈</span><span class="eyebrow" style="font-size:8px">Route</span></button>
+    <button onclick="navigateTo('map')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">⊕</span><span class="eyebrow" style="font-size:8px">Kaart</span></button>
+    <button onclick="showToast('Weer: ⛅ 14°C, licht bewolkt')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">☀</span><span class="eyebrow" style="font-size:8px">Weer</span></button>
+    <button onclick="showToast('Geen telefoonnummer opgeslagen voor dit verblijf')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;cursor:pointer"><span style="font-size:20px;color:var(--spruce)">☎</span><span class="eyebrow" style="font-size:8px">Bel</span></button>
   </div>
   <div class="scroll">
-    <div class="px16" style="padding-top:16px;display:flex;flex-direction:column;gap:13px">
-      <div class="card" id="a-info"></div>
-      <div style="padding:13px 15px;background:var(--slope-light);border-left:3px solid var(--slope);border-radius:0 12px 12px 0;font-size:13px;line-height:1.65;color:var(--spruce)" id="a-notes"></div>
+    <div class="px" style="padding-top:16px;display:flex;flex-direction:column;gap:13px">
+      <div class="card" id="acc-info" style="overflow:hidden"></div>
+      <div style="padding:13px 15px;background:var(--slope-light);border-left:3px solid var(--slope);border-radius:0 12px 12px 0;font-size:13px;line-height:1.65;color:var(--spruce)" id="acc-notes"></div>
       <span class="eyebrow">Vanaf hier</span>
       <div class="card">
-        <div class="card-row" onclick="nav('planning')"><div class="icon-box" style="background:var(--slope-light)">▲</div><span style="flex:1" class="h-row">Geplande activiteiten</span><span class="chevron">›</span></div>
-        <div class="card-row" onclick="nav('discover')"><div class="icon-box" style="background:var(--summit-light);color:var(--summit)">◎</div><span style="flex:1" class="h-row">AI-ideeën nabij</span><span class="chevron">›</span></div>
-        <div class="card-row" onclick="toast('IONITY 2.3km · Mer 22km')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div><span style="flex:1" class="h-row">Laadstations</span><span class="chevron">›</span></div>
-        <div class="card-row" onclick="nav('tickets')"><div class="icon-box" style="background:var(--slope-light)">🎟️</div><span style="flex:1" class="h-row">Tickets</span><span class="chevron">›</span></div>
-        <div class="card-row" onclick="nav('map')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">◈</div><span style="flex:1" class="h-row">Bekijk op kaart</span><span class="chevron">›</span></div>
+        <div class="card-row" onclick="navigateTo('planning')"><div class="icon-box" style="background:var(--slope-light)">▲</div><span style="flex:1" class="row-title">Geplande activiteiten</span><span class="chevron">›</span></div>
+        <div class="card-row" onclick="navigateTo('discover')"><div class="icon-box" style="background:var(--summit-light);color:var(--summit)">◎</div><span style="flex:1" class="row-title">AI-ideeën nabij</span><span class="chevron">›</span></div>
+        <div class="card-row" onclick="showToast('IONITY 2.3km · Mer 22km')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div><span style="flex:1" class="row-title">Laadstations</span><span class="chevron">›</span></div>
+        <div class="card-row" onclick="navigateTo('tickets')"><div class="icon-box" style="background:var(--slope-light)">🎟️</div><span style="flex:1" class="row-title">Tickets</span><span class="chevron">›</span></div>
+        <div class="card-row" onclick="navigateTo('map')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">◈</div><span style="flex:1" class="row-title">Bekijk op kaart</span><span class="chevron">›</span></div>
       </div>
       <span class="eyebrow">Alle verblijven</span>
-      <div id="a-stops" style="display:flex;flex-direction:column;gap:7px"></div>
+      <div id="acc-stops" style="display:flex;flex-direction:column;gap:7px"></div>
     </div>
     <div style="height:32px"></div>
   </div>
 </div>
 
-<div id="s-roadtrip" class="screen" style="padding-bottom:0">
-  <div style="background:var(--spruce-deep);padding:9px 16px 11px;padding-top:calc(env(safe-area-inset-top,12px) + 9px);box-shadow:0 2px 10px rgba(0,0,0,0.2)">
+<!-- ═══════════ ROADTRIP ═══════════ -->
+<div id="screen-roadtrip" class="screen" style="padding-bottom:0">
+  <div style="background:var(--spruce-deep);padding:9px 16px 11px;padding-top:calc(env(safe-area-inset-top,12px) + 9px)">
     <div style="display:flex;align-items:center;gap:12px">
-      <button onclick="goBack()" style="color:rgba(228,233,226,0.6);font-size:21px;background:none;border:none;cursor:pointer">‹</button>
-      <div style="flex:1"><p style="font-size:17px;font-weight:800;color:white;letter-spacing:-0.3px">ROADTRIP-MODUS</p><p class="mono" style="color:rgba(228,233,226,0.4);margin-top:2px" id="rt-pos">positie onbekend</p></div>
-      <button onclick="tgGPSrt()" id="rt-gps" style="display:flex;align-items:center;gap:6px;padding:6px 11px;background:rgba(228,233,226,0.1);border:1px solid rgba(228,233,226,0.2);border-radius:20px;cursor:pointer">
-        <span id="rt-dot" style="width:6px;height:6px;border-radius:50%;background:rgba(228,233,226,0.4)"></span>
-        <span class="mono" style="color:rgba(228,233,226,0.6);font-size:9px;font-weight:700" id="rt-gps-lbl">GPS UIT</span>
+      <button onclick="goBack()" style="color:rgba(232,228,217,0.6);font-size:21px;background:none;border:none;cursor:pointer">‹</button>
+      <div style="flex:1"><p style="font-size:17px;font-weight:800;color:white;letter-spacing:-0.3px;font-family:var(--font-display)">ROADTRIP-MODUS</p><p class="mono" style="color:rgba(232,228,217,0.4);margin-top:2px" id="rt-position">positie onbekend</p></div>
+      <button onclick="toggleRoadtripGPS()" style="display:flex;align-items:center;gap:6px;padding:6px 11px;background:rgba(232,228,217,0.1);border:1px solid rgba(232,228,217,0.2);border-radius:20px;cursor:pointer">
+        <span id="rt-gps-dot" style="width:6px;height:6px;border-radius:50%;background:rgba(232,228,217,0.4)"></span>
+        <span class="mono" style="color:rgba(232,228,217,0.6);font-size:9px;font-weight:700" id="rt-gps-label">GPS UIT</span>
       </button>
     </div>
   </div>
   <div class="scroll" style="background:var(--paper)">
     <div style="display:flex;flex-direction:column;gap:13px;padding:16px">
-      <div class="topo" style="border-radius:16px;position:relative;box-shadow:var(--shadow-md)">
-        <svg class="topo-lines" id="topo-weather" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" style="opacity:.4"></svg>
+      <div class="topo-panel" data-topo="6" style="border-radius:16px;position:relative;box-shadow:var(--shadow-md)">
+        <svg class="topo-svg" data-topo="6" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" style="opacity:.4"></svg>
         <div style="position:relative;z-index:1;display:flex;align-items:center;gap:15px;padding:16px">
           <span style="font-size:42px">⛅</span>
-          <div style="flex:1"><p class="mono" style="font-size:38px;font-weight:700;color:white;line-height:1">14°</p><p class="mono" style="color:rgba(228,233,226,0.6);margin-top:5px">Licht bewolkt · 8% regen</p></div>
-          <div style="text-align:right"><span class="tri tri-md"></span><p class="mono" style="color:rgba(228,233,226,0.5);margin-top:5px" id="rt-short">—</p></div>
+          <div style="flex:1"><p class="mono" style="font-size:38px;font-weight:700;color:white;line-height:1">14°</p><p class="mono" style="color:rgba(232,228,217,0.6);margin-top:5px">Licht bewolkt · 8% regen</p></div>
+          <div style="text-align:right"><span class="summit-tri summit-tri-md"></span><p class="mono" style="color:rgba(232,228,217,0.5);margin-top:5px" id="rt-acc-short">—</p></div>
         </div>
       </div>
       <div class="card">
         <div style="display:flex;align-items:center;gap:13px;padding:14px 15px">
-          <span class="tri tri-lg" style="border-bottom-color:var(--skj);flex-shrink:0"></span>
-          <div style="flex:1"><span class="eyebrow">Huidig verblijf</span><p class="h-row" style="font-size:15.5px;margin-top:3px" id="rt-curr">—</p><p class="mono" id="rt-cout">—</p></div>
-          <button onclick="oMaps()" class="fab" style="position:static;background:var(--spruce);color:white;width:42px;height:42px">◈</button>
+          <span class="summit-tri summit-tri-lg" style="border-bottom-color:var(--water);flex-shrink:0"></span>
+          <div style="flex:1"><span class="eyebrow">Huidig verblijf</span><p class="row-title" style="font-size:15.5px;margin-top:3px" id="rt-current-name">—</p><p class="mono" id="rt-checkout">—</p></div>
+          <button onclick="openMapsForAccommodation(AppState.viewingAccommodationId)" class="fab" style="background:var(--spruce);color:white;width:42px;height:42px">◈</button>
         </div>
         <div class="divider"></div>
         <div style="display:flex;align-items:center;gap:9px;padding:9px 15px">
-          <span class="mono" style="font-size:13px;color:var(--ink-faint)">↓</span><span class="mono">volgende:</span>
-          <span style="font-weight:700;font-size:12.5px;flex:1" id="rt-next">—</span>
-          <span class="mono" id="rt-ndate">—</span>
+          <span class="mono" style="font-size:13px">↓</span><span class="mono">volgende:</span>
+          <span class="row-title" style="font-size:12.5px;flex:1" id="rt-next-name">—</span>
+          <span class="mono" id="rt-next-date">—</span>
         </div>
       </div>
-      <div class="hero-panel topo" id="rt-act-card" style="padding:0">
-        <svg class="topo-lines" id="topo-next-act" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
-        <div class="topo-grad-soft"></div>
+      <div class="hero-panel topo-panel" data-topo="7" id="rt-activity-card" style="padding:0">
+        <svg class="topo-svg" data-topo="7" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
+        <div class="topo-overlay-soft"></div>
         <div style="position:relative;z-index:1;display:flex;align-items:center;gap:13px;padding:15px">
-          <div style="width:54px;height:54px;background:rgba(228,233,226,0.1);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:29px;flex-shrink:0" id="rt-aemoji">🗺️</div>
-          <div style="flex:1"><span class="eyebrow eyebrow-light">Volgende etappe</span><p style="font-size:19px;font-weight:800;color:white;margin-top:3px;letter-spacing:-0.3px" id="rt-aname">—</p><p class="mono" style="color:rgba(228,233,226,0.6);margin-top:3px" id="rt-ameta">—</p></div>
-          <div style="width:44px;height:44px;background:rgba(228,233,226,0.13);border-radius:13px;display:flex;align-items:center;justify-content:center;color:white;font-size:21px">◈</div>
+          <div style="width:54px;height:54px;background:rgba(232,228,217,0.1);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:29px;flex-shrink:0" id="rt-activity-emoji">🗺️</div>
+          <div style="flex:1"><span class="eyebrow eyebrow-light">Volgende etappe</span><p style="font-size:19px;font-weight:800;color:white;margin-top:3px;letter-spacing:-0.3px;font-family:var(--font-display)" id="rt-activity-name">—</p><p class="mono" style="color:rgba(232,228,217,0.6);margin-top:3px" id="rt-activity-meta">—</p></div>
+          <div style="width:44px;height:44px;background:rgba(232,228,217,0.13);border-radius:13px;display:flex;align-items:center;justify-content:center;color:white;font-size:21px">◈</div>
         </div>
       </div>
       <div class="card" style="padding:14px 15px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span class="eyebrow">Voortgang</span><span class="mono" style="font-size:12px;font-weight:700;color:var(--ink)" id="rt-prog-l">0/19</span></div>
-        <div class="prog-track"><div class="prog-fill" id="rt-prog" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span class="eyebrow">Voortgang</span><span class="mono" style="font-size:12px;font-weight:700;color:var(--ink)" id="rt-progress-label">0/19</span></div>
+        <div class="progress-track"><div class="progress-fill" id="rt-progress-fill" style="width:0%"></div></div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px">
-        <button onclick="oMaps()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--spruce);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--spruce)">◈</span><span class="eyebrow" style="font-size:8px">Navigeer</span></button>
-        <button onclick="toast('IONITY 2.3km · Mer 22km')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--skj);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--skj)">⚡</span><span class="eyebrow" style="font-size:8px">Laden</span></button>
-        <button onclick="nav('discover')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--slope);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--slope)">◎</span><span class="eyebrow" style="font-size:8px">Ideeën</span></button>
-        <button onclick="toast('Shell 18km · Circle K 28km')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--contour);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--contour)">⛽</span><span class="eyebrow" style="font-size:8px">Tanken</span></button>
+        <button onclick="openMapsForAccommodation(AppState.viewingAccommodationId)" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--spruce);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--spruce)">◈</span><span class="eyebrow" style="font-size:8px">Navigeer</span></button>
+        <button onclick="showToast('IONITY 2.3km · Mer 22km')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--water);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--water)">⚡</span><span class="eyebrow" style="font-size:8px">Laden</span></button>
+        <button onclick="navigateTo('discover')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--slope);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--slope)">◎</span><span class="eyebrow" style="font-size:8px">Ideeën</span></button>
+        <button onclick="showToast('Shell 18km · Circle K 28km')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--contour);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--contour)">⛽</span><span class="eyebrow" style="font-size:8px">Tanken</span></button>
       </div>
-      <span class="eyebrow" id="rt-dl">Vandaag</span>
-      <div class="card" id="rt-list"></div>
+      <span class="eyebrow" id="rt-today-label">Vandaag</span>
+      <div class="card" id="rt-today-list" style="overflow:hidden"></div>
     </div>
     <div style="height:24px"></div>
   </div>
 </div>
 
-<div id="s-tickets" class="screen" style="padding-bottom:0">
-  <div class="px16" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+<!-- ═══════════ TICKETS ═══════════ -->
+<div id="screen-tickets" class="screen" style="padding-bottom:0">
+  <div class="px" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
-    <span class="h-page" style="flex:1">TICKETS</span>
-    <button onclick="oAddTick()" class="fab" style="position:static;background:var(--spruce);color:white">+</button>
+    <span class="page-title" style="flex:1">TICKETS</span>
+    <button onclick="openAddTicketSheet()" class="fab" style="background:var(--spruce);color:white">+</button>
   </div>
-  <div class="scroll px16" style="padding-top:15px">
+  <div class="scroll px" style="padding-top:15px">
     <span class="eyebrow" style="display:block;margin-bottom:9px">Gearchiveerd</span>
-    <div class="card mb16" style="border-left:3px solid var(--line);opacity:.72">
+    <div class="card" style="border-left:3px solid var(--line);opacity:.72;margin-bottom:16px;overflow:hidden">
       <div style="padding:15px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div style="flex:1"><p style="font-weight:800;font-size:15.5px">Klimapark 2469</p><p class="mono" style="margin-top:5px">IJstunnel · 2 personen · 1841m</p></div>
@@ -464,68 +331,70 @@ input::placeholder{color:var(--ink-faint)}
         <div style="display:flex;gap:15px;margin-top:11px" class="mono"><span>◷ 21 jun 2026</span><span>· 10:00</span></div>
       </div>
     </div>
-    <span class="eyebrow" id="nt-lbl" style="display:none;margin-bottom:9px">Actief</span>
-    <div id="t-list"></div>
-    <button onclick="oAddTick()" class="btn btn-outline mt8">+ Ticket toevoegen</button>
+    <span class="eyebrow" id="tickets-active-label" style="display:none;margin-bottom:9px">Actief</span>
+    <div id="tickets-list"></div>
+    <button onclick="openAddTicketSheet()" class="btn btn-outline" style="margin-top:8px">+ Ticket toevoegen</button>
   </div>
 </div>
 
-<div id="s-trips" class="screen" style="padding-bottom:0">
-  <div class="px16" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+<!-- ═══════════ MIJN REIZEN ═══════════ -->
+<div id="screen-trips" class="screen" style="padding-bottom:0">
+  <div class="px" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
-    <span class="h-page" style="flex:1">MIJN REIZEN</span>
-    <button onclick="oAddTrip()" class="fab" style="position:static;background:var(--spruce);color:white">+</button>
+    <span class="page-title" style="flex:1">MIJN REIZEN</span>
+    <button onclick="openAddTripSheet()" class="fab" style="background:var(--spruce);color:white">+</button>
   </div>
-  <div class="scroll px16" style="padding-top:15px">
+  <div class="scroll px" style="padding-top:15px">
     <span class="eyebrow" style="display:block;margin-bottom:9px">Actief</span>
-    <div class="card mb16" style="border-left:3px solid var(--spruce)">
+    <div class="card" style="border-left:3px solid var(--spruce);margin-bottom:16px;overflow:hidden">
       <div style="padding:16px;display:flex;align-items:flex-start;gap:13px">
         <span style="font-size:34px">🇳🇴</span>
         <div style="flex:1"><p style="font-weight:800;font-size:17px">Noorwegen 2026</p><p class="mono" style="margin-top:4px">15–30 jun · 16 dagen · 19 activiteiten</p>
           <div style="display:flex;gap:7px;margin-top:11px">
-            <button onclick="toast('Noorwegen 2026 is al actief')" style="padding:7px 14px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">✓ Actief</button>
-            <button onclick="nav('planning')" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Planning</button>
+            <button onclick="showToast('Noorwegen 2026 is al actief')" style="padding:7px 14px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">✓ Actief</button>
+            <button onclick="navigateTo('planning')" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Planning</button>
           </div>
         </div>
       </div>
     </div>
-    <button onclick="oAddTrip()" class="card" style="width:100%;padding:17px;display:flex;align-items:center;gap:13px;border:2px dashed var(--line);background:white;cursor:pointer;text-align:left;box-shadow:none">
+    <button onclick="openAddTripSheet()" class="card" style="width:100%;padding:17px;display:flex;align-items:center;gap:13px;border:2px dashed var(--line);background:white;cursor:pointer;text-align:left;box-shadow:none">
       <span style="font-size:30px;color:var(--spruce)">+</span>
       <div><p style="font-weight:700;font-size:15px">Reis toevoegen</p><p class="mono">Naam, land, datums</p></div>
     </button>
-    <div id="ex-trips"></div>
+    <div id="extra-trips-list"></div>
   </div>
 </div>
 
-<div id="s-settings" class="screen" style="padding-bottom:0">
-  <div class="px16" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+<!-- ═══════════ INSTELLINGEN ═══════════ -->
+<div id="screen-settings" class="screen" style="padding-bottom:0">
+  <div class="px" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
-    <span class="h-page">INSTELLINGEN</span>
+    <span class="page-title">INSTELLINGEN</span>
   </div>
-  <div class="scroll px16" style="padding-top:16px">
+  <div class="scroll px" style="padding-top:16px">
     <span class="eyebrow" style="display:block;margin-bottom:9px">Voertuig</span>
-    <div class="card mb20">
-      <div class="card-row" onclick="selVeh('ev')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div><div style="flex:1"><p class="h-row">Elektrisch</p><p class="sub">Laadstations + EV-routes</p></div><span id="v-ev" style="color:var(--spruce);font-size:19px">✓</span></div>
-      <div class="card-row" onclick="selVeh('fuel')"><div class="icon-box" style="background:var(--paper-warm)">⛽</div><div style="flex:1"><p class="h-row">Benzine</p><p class="sub">Tankstations</p></div><span id="v-fuel" style="color:transparent">✓</span></div>
-      <div class="card-row" onclick="selVeh('none')"><div class="icon-box" style="background:var(--paper-warm)">🚶</div><div style="flex:1"><p class="h-row">Geen</p><p class="sub">OV en wandelen</p></div><span id="v-none" style="color:transparent">✓</span></div>
+    <div class="card" style="margin-bottom:20px;overflow:hidden">
+      <div class="card-row" onclick="selectVehicleType('ev')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div><div style="flex:1"><p class="row-title">Elektrisch</p><p class="row-sub">Laadstations + EV-routes</p></div><span id="vehicle-check-ev" style="color:var(--spruce);font-size:19px;transition:opacity .15s">✓</span></div>
+      <div class="card-row" onclick="selectVehicleType('fuel')"><div class="icon-box" style="background:var(--paper-warm)">⛽</div><div style="flex:1"><p class="row-title">Benzine</p><p class="row-sub">Tankstations</p></div><span id="vehicle-check-fuel" style="color:var(--spruce);font-size:19px;opacity:0;transition:opacity .15s">✓</span></div>
+      <div class="card-row" onclick="selectVehicleType('none')"><div class="icon-box" style="background:var(--paper-warm)">🚶</div><div style="flex:1"><p class="row-title">Geen</p><p class="row-sub">OV en wandelen</p></div><span id="vehicle-check-none" style="color:var(--spruce);font-size:19px;opacity:0;transition:opacity .15s">✓</span></div>
     </div>
     <span class="eyebrow" style="display:block;margin-bottom:7px">Reisvoorkeur · voor AI</span>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
-      <button onclick="tgStyle(this)" class="chip on">🏔️ Natuur</button>
-      <button onclick="tgStyle(this)" class="chip on">🥾 Wandelen</button>
-      <button onclick="tgStyle(this)" class="chip">📸 Fotografie</button>
-      <button onclick="tgStyle(this)" class="chip">🍽️ Eten</button>
-      <button onclick="tgStyle(this)" class="chip">🏛️ Cultuur</button>
-      <button onclick="tgStyle(this)" class="chip">🛶 Water</button>
+      <button onclick="toggleTravelStyle(this,'natuur')" class="chip on">🏔️ Natuur</button>
+      <button onclick="toggleTravelStyle(this,'wandelen')" class="chip on">🥾 Wandelen</button>
+      <button onclick="toggleTravelStyle(this,'fotografie')" class="chip">📸 Fotografie</button>
+      <button onclick="toggleTravelStyle(this,'eten')" class="chip">🍽️ Eten</button>
+      <button onclick="toggleTravelStyle(this,'cultuur')" class="chip">🏛️ Cultuur</button>
+      <button onclick="toggleTravelStyle(this,'water')" class="chip">🛶 Water</button>
     </div>
     <span class="eyebrow" style="display:block;margin-bottom:9px">AI-ideeën</span>
-    <div class="card mb20" style="padding:13px 15px;display:flex;align-items:center;gap:13px">
-      <div style="flex:1"><p class="h-row">AI-suggesties</p><p class="sub">Via Claude · Anthropic</p></div>
-      <button onclick="tgAI(this)" class="switch" style="background:var(--spruce)" data-on="true"><span class="switch-knob" style="left:calc(100% - 25px)"></span></button>
+    <div class="card" style="margin-bottom:20px;padding:13px 15px;display:flex;align-items:center;gap:13px">
+      <div style="flex:1"><p class="row-title">AI-suggesties</p><p class="row-sub">Per accommodatie, op locatie</p></div>
+      <button onclick="toggleAiEnabled(this)" class="switch" style="background:var(--spruce)"><span class="switch-knob" style="left:calc(100% - 25px)"></span></button>
     </div>
     <span class="eyebrow" style="display:block;margin-bottom:9px">App info</span>
-    <div class="card mb24">
-      <div class="card-row" style="cursor:default"><span style="flex:1;font-weight:600;font-size:14px">Versie</span><span class="mono">v3.0</span></div>
+    <div class="card" style="margin-bottom:24px;overflow:hidden">
+      <div class="card-row" style="cursor:default"><span style="flex:1;font-weight:600;font-size:14px">Versie</span><span class="mono">v6.0</span></div>
       <div class="card-row" style="cursor:default"><span style="flex:1;font-weight:600;font-size:14px">Kaart</span><span class="mono">OpenStreetMap</span></div>
       <div class="card-row" style="cursor:default"><span style="flex:1;font-weight:600;font-size:14px">Weer</span><span class="mono">Open-Meteo</span></div>
       <div class="card-row" style="cursor:default"><span style="flex:1;font-weight:600;font-size:14px">AI</span><span class="mono">Claude</span></div>
@@ -533,499 +402,100 @@ input::placeholder{color:var(--ink-faint)}
   </div>
 </div>
 
-<div class="sbg" id="sh-ticket"><div class="sht" onclick="event.stopPropagation()">
-  <div style="width:38px;height:4px;background:var(--line);margin:0 auto 18px;border-radius:2px"></div>
-  <p style="font-size:19px;font-weight:800;margin-bottom:18px;letter-spacing:-0.3px">TICKET TOEVOEGEN</p>
-  <input id="ti-n" placeholder="Naam activiteit"/>
-  <input id="ti-v" placeholder="Locatie"/>
-  <input id="ti-c" placeholder="Boekingscode"/>
-  <div style="display:flex;gap:10px;margin-bottom:18px">
-    <input id="ti-d" type="date" value="2026-06-22" style="margin-bottom:0"/>
-    <input id="ti-t" type="time" value="10:00" style="margin-bottom:0"/>
+<!-- ═══════════ SHEETS ═══════════ -->
+<div class="sheet-backdrop" id="sheet-ticket">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">TICKET TOEVOEGEN</p>
+    <input id="ticket-name-input" placeholder="Naam activiteit"/>
+    <input id="ticket-venue-input" placeholder="Locatie"/>
+    <input id="ticket-code-input" placeholder="Boekingscode"/>
+    <div style="display:flex;gap:10px;margin-bottom:11px">
+      <input id="ticket-date-input" type="date" value="2026-06-22" style="margin-bottom:0"/>
+      <input id="ticket-time-input" type="time" value="10:00" style="margin-bottom:0"/>
+    </div>
+    <label class="file-upload" id="ticket-file-upload" for="ticket-file-input">
+      <div class="file-upload-icon">📎</div>
+      <div class="file-upload-text">
+        <p class="file-upload-label">Ticket toevoegen</p>
+        <p class="file-upload-hint">Foto of PDF, max 8MB</p>
+      </div>
+      <input type="file" id="ticket-file-input" accept="image/*,application/pdf" onchange="handleTicketFileSelect(this)"/>
+    </label>
+    <button onclick="saveTicket()" class="btn btn-primary" style="margin-top:7px">Opslaan</button>
+    <button onclick="closeSheet('sheet-ticket')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
   </div>
-  <button onclick="saveTick()" class="btn btn-primary">Opslaan</button>
-  <button onclick="closeSh('sh-ticket')" class="btn btn-outline mt8">Annuleer</button>
-</div></div>
+</div>
 
-<div class="sbg" id="sh-trip"><div class="sht" onclick="event.stopPropagation()">
-  <div style="width:38px;height:4px;background:var(--line);margin:0 auto 18px;border-radius:2px"></div>
-  <p style="font-size:19px;font-weight:800;margin-bottom:18px;letter-spacing:-0.3px">REIS TOEVOEGEN</p>
-  <input id="tr-n" placeholder="Naam (bijv. Italië 2027)"/>
-  <select id="tr-c"><option>🇳🇴 Noorwegen</option><option>🇮🇹 Italië</option><option>🇫🇷 Frankrijk</option><option>🇩🇪 Duitsland</option><option>🇪🇸 Spanje</option><option>🇵🇹 Portugal</option><option>🇦🇹 Oostenrijk</option><option>🇨🇭 Zwitserland</option><option>🇭🇷 Kroatië</option><option>🇬🇷 Griekenland</option><option>🇮🇸 IJsland</option><option>🇸🇪 Zweden</option></select>
-  <div style="display:flex;gap:10px;margin-bottom:18px">
-    <div style="flex:1"><p class="eyebrow" style="margin-bottom:5px">Van</p><input id="tr-f" type="date" style="margin-bottom:0"/></div>
-    <div style="flex:1"><p class="eyebrow" style="margin-bottom:5px">Tot</p><input id="tr-t" type="date" style="margin-bottom:0"/></div>
+<div class="sheet-backdrop" id="sheet-trip">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">REIS TOEVOEGEN</p>
+    <input id="trip-name-input" placeholder="Naam (bijv. Italië 2027)"/>
+    <select id="trip-country-select"><option>🇳🇴 Noorwegen</option><option>🇮🇹 Italië</option><option>🇫🇷 Frankrijk</option><option>🇩🇪 Duitsland</option><option>🇪🇸 Spanje</option><option>🇵🇹 Portugal</option><option>🇦🇹 Oostenrijk</option><option>🇨🇭 Zwitserland</option><option>🇭🇷 Kroatië</option><option>🇬🇷 Griekenland</option><option>🇮🇸 IJsland</option><option>🇸🇪 Zweden</option></select>
+    <div style="display:flex;gap:10px;margin-bottom:18px">
+      <div style="flex:1"><p class="eyebrow" style="margin-bottom:5px">Van</p><input id="trip-from-input" type="date" style="margin-bottom:0"/></div>
+      <div style="flex:1"><p class="eyebrow" style="margin-bottom:5px">Tot</p><input id="trip-to-input" type="date" style="margin-bottom:0"/></div>
+    </div>
+    <button onclick="saveTrip()" class="btn btn-primary">Reis toevoegen</button>
+    <button onclick="closeSheet('sheet-trip')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
   </div>
-  <button onclick="saveTrip()" class="btn btn-primary">Reis toevoegen</button>
-  <button onclick="closeSh('sh-trip')" class="btn btn-outline mt8">Annuleer</button>
-</div></div>
+</div>
 
-<div class="sbg" id="sh-act"><div class="sht" onclick="event.stopPropagation()">
-  <div style="width:38px;height:4px;background:var(--line);margin:0 auto 18px;border-radius:2px"></div>
-  <p style="font-size:19px;font-weight:800;margin-bottom:18px;letter-spacing:-0.3px">ACTIVITEIT TOEVOEGEN</p>
-  <input id="ac-n" placeholder="Naam activiteit"/>
-  <select id="ac-d"></select>
-  <select id="ac-a" style="margin-bottom:18px">
-    <option value="1">Sogndal (16–19 jun)</option>
-    <option value="2">Skjåk Solside (19–23 jun)</option>
-    <option value="3">Valdres / Noord-Aurdal (23–27 jun)</option>
-    <option value="4">Gjerstad (27–29 jun)</option>
-  </select>
-  <button onclick="saveAct()" class="btn btn-primary">Toevoegen</button>
-  <button onclick="closeSh('sh-act')" class="btn btn-outline mt8">Annuleer</button>
-</div></div>
+<div class="sheet-backdrop" id="sheet-activity">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">ACTIVITEIT TOEVOEGEN</p>
+    <input id="activity-name-input" placeholder="Naam activiteit"/>
+    <select id="activity-day-select"></select>
+    <select id="activity-acc-select" style="margin-bottom:18px">
+      <option value="1">Sogndal (16–19 jun)</option>
+      <option value="2">Skjåk Solside (19–23 jun)</option>
+      <option value="3">Valdres / Noord-Aurdal (23–27 jun)</option>
+      <option value="4">Gjerstad (27–29 jun)</option>
+    </select>
+    <button onclick="saveActivity()" class="btn btn-primary">Toevoegen</button>
+    <button onclick="closeSheet('sheet-activity')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
+  </div>
+</div>
 
-<nav class="nav">
-  <button onclick="nav('home')" id="n-home" class="active">
+<!-- ═══════════ NAVIGATIE ═══════════ -->
+<nav class="bottom-nav">
+  <button onclick="navigateTo('home')" id="nav-home" class="active">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>Vandaag
   </button>
-  <button onclick="nav('map')" id="n-map">
+  <button onclick="navigateTo('map')" id="nav-map">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3l6 2 5-2v16l-5 2-6-2-5 2V5z M9 3v16 M15 5v16"/></svg>Kaart
   </button>
-  <button onclick="nav('planning')" id="n-planning">
+  <button onclick="navigateTo('planning')" id="nav-planning">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M5 9h14 M9 4v5 M15 4v5"/></svg>Planning
   </button>
-  <button onclick="nav('discover')" id="n-discover">
+  <button onclick="navigateTo('discover')" id="nav-discover">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 016 6c0 2.5-1.5 4-3 5.5V17H9v-2.5C7.5 13 6 11.5 6 9a6 6 0 016-6z M9 20h6"/></svg>Ideeën
   </button>
-  <button onclick="nav('meer')" id="n-meer">
+  <button onclick="navigateTo('meer')" id="nav-meer">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16 M4 12h16 M4 17h16"/></svg>Meer
   </button>
 </nav>
 <div id="toast"></div>
+
+<!-- ═══════════ SCRIPTS ═══════════ -->
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/topo.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/screen-home.js"></script>
+<script src="js/screen-map.js"></script>
+<script src="js/screen-planning.js"></script>
+<script src="js/screen-discover.js"></script>
+<script src="js/screen-accommodation.js"></script>
+<script src="js/screen-roadtrip.js"></script>
+<script src="js/screen-tickets.js"></script>
 <script>
-const TS=new Date(2026,5,15)
-const MN=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec']
-const WD=['zo','ma','di','wo','do','vr','za']
-const ACCS=[
-  {id:1,name:'Sogndal',short:'Sgd',m:'#2d6a4f',ci:new Date(2026,5,16),co:new Date(2026,5,19),addr:'Årøyvegen 202, 6857 Sogndal',elev:12,coord:'61.23°N 7.10°E',lat:61.2289,lng:7.1003,notes:'Fjorddorp aan de Lustrafjord. Basis voor Molden, Urnes en Bøyabreen.'},
-  {id:2,name:'Skjåk Solside',short:'Skj',m:'#1565c0',ci:new Date(2026,5,19),co:new Date(2026,5,23),addr:'Skjåk Solside 799, 2690 Skjåk',elev:1100,coord:'61.88°N 8.27°E',lat:61.8786,lng:8.2733,notes:'Droog bergdal. Basis voor Lom, Dønfoss en Klimapark 2469.'},
-  {id:3,name:'Valdres / Noord-Aurdal',short:'Val',m:'#ef6c00',ci:new Date(2026,5,23),co:new Date(2026,5,27),addr:'Førsøddin 30, 2920 Leira i Valdres',elev:520,coord:'60.99°N 9.24°E',lat:60.9856,lng:9.2361,notes:'Rustige vallei. Basis voor Besseggen, Bygdin en Mjølkevegen.'},
-  {id:4,name:'Gjerstad',short:'Gjr',m:'#6a1b9a',ci:new Date(2026,5,27),co:new Date(2026,5,29),addr:'Løyteveien 14, 4980 Gjerstad',elev:155,coord:'58.88°N 9.02°E',lat:58.880,lng:9.020,notes:'Kust en bos. Basis voor Risør, Tvedestrand en Solhomfjell.'},
-]
-let ACTS=[
-  {id:1,name:'Molden',e:'🥾',ai:1,s:'done',d:new Date(2026,5,18),dst:'7 km',t:'3–4 u',lv:'Gemiddeld',el:1116,lat:61.259,lng:7.182},
-  {id:2,name:'Solvorn',e:'🏘️',ai:1,s:'done',d:new Date(2026,5,19),dst:'—',t:'1–2 u',lv:'Makkelijk',el:10,lat:61.298,lng:7.228},
-  {id:3,name:'Urnes Stavkyrkje',e:'⛪',ai:1,s:'done',d:new Date(2026,5,19),dst:'—',t:'1–2 u',lv:'Makkelijk',el:120,lat:61.300,lng:7.328},
-  {id:4,name:'Bøyabreen',e:'🧊',ai:1,s:'done',d:new Date(2026,5,19),dst:'1 km',t:'30 m',lv:'Makkelijk',el:160,lat:61.669,lng:6.823},
-  {id:5,name:'Lom sentrum',e:'🏕️',ai:2,s:'done',d:new Date(2026,5,20),dst:'—',t:'1 u',lv:'Makkelijk',el:382,lat:61.838,lng:8.567},
-  {id:6,name:'Bakeriet i Lom',e:'☕',ai:2,s:'done',d:new Date(2026,5,20),dst:'—',t:'koffie',lv:'—',el:382,lat:61.838,lng:8.568},
-  {id:7,name:'Lom Stavkyrkje',e:'⛪',ai:2,s:'done',d:new Date(2026,5,20),dst:'—',t:'45 m',lv:'Makkelijk',el:390,lat:61.839,lng:8.567},
-  {id:8,name:'Klimapark 2469',e:'🧊',ai:2,s:'done',d:new Date(2026,5,21),dst:'—',t:'3 u',lv:'Begeleid',el:1841,lat:61.676,lng:8.344},
-  {id:9,name:'Vegaskjelet',e:'🥾',ai:2,s:'done',d:new Date(2026,5,21),dst:'5 km',t:'2 u',lv:'Gemiddeld',el:900,lat:61.820,lng:8.600},
-  {id:10,name:'Dønfoss',e:'🌊',ai:2,s:'planned',d:new Date(2026,5,22),dst:'1 km',t:'45 m',lv:'Makkelijk',el:560,lat:61.893,lng:8.403},
-  {id:11,name:'Gjelbrue',e:'🥾',ai:2,s:'planned',d:new Date(2026,5,22),dst:'4 km',t:'1–2 u',lv:'Gemiddeld',el:650,lat:61.913,lng:8.275},
-  {id:12,name:'Besseggen',e:'🏔️',ai:3,s:'todo',d:null,dst:'16 km',t:'6–8 u',lv:'Zwaar',el:1743,lat:61.517,lng:8.650},
-  {id:13,name:'M/S Bitihorn',e:'🚢',ai:3,s:'todo',d:null,dst:'—',t:'2–4 u',lv:'Makkelijk',el:1060,lat:61.380,lng:8.800},
-  {id:14,name:'Mjølkevegen',e:'🚴',ai:3,s:'todo',d:null,dst:'—',t:'½ dag',lv:'Gemiddeld',el:900,lat:60.900,lng:9.100},
-  {id:15,name:'Snøhetta (Gomobu)',e:'🏔️',ai:3,s:'planned',d:new Date(2026,5,24),dst:'8 km',t:'2–3 u',lv:'Gemiddeld',el:1127,lat:62.340,lng:9.167},
-  {id:16,name:'Syndin',e:'🏞️',ai:3,s:'planned',d:new Date(2026,5,24),dst:'—',t:'2–4 u',lv:'Makkelijk',el:920,lat:60.900,lng:9.300},
-  {id:17,name:'Solhomfjell',e:'🌲',ai:4,s:'todo',d:null,dst:'11 km',t:'3 u',lv:'Gemiddeld',el:670,lat:58.930,lng:9.040},
-  {id:18,name:'Risør',e:'⚓',ai:4,s:'todo',d:null,dst:'—',t:'2–3 u',lv:'Makkelijk',el:5,lat:58.718,lng:9.233},
-  {id:19,name:'Tvedestrand',e:'⛵',ai:4,s:'todo',d:null,dst:'—',t:'1–2 u',lv:'Makkelijk',el:8,lat:58.623,lng:8.934},
-]
-const SUGG=[
-  {name:'Breheimsenteret',e:'🏔️',sub:'Gletsjercentrum Jostedalsbreen',dst:'3.2 km',t:'2–3 u',el:300,ai:1},
-  {name:'Grotli uitzichtpunt',e:'🌄',sub:'Panorama over Skjåkdal',dst:'8 km',t:'30 min',el:900,ai:2},
-  {name:'Pollfoss Café',e:'☕',sub:'Rustig café langs Rv15',dst:'12 km',t:'koffie',el:600,ai:2},
-  {name:'Sognefjellet (Rv55)',e:'🚗',sub:'Hoogste bergpas Noord-Europa',dst:'35 km',t:'+1 u',el:1434,ai:1},
-]
-let tickets=[],extraTrips=[],discAdded=new Set()
-let selDay=new Date(2026,5,22),viewAId=2,lmap=null,gWid=null,gMkr=null,gTrk=[],gPoly=null,accMkrs=[],actMkrs=[],mFilt=null,rtWid=null
-
-function td(){const n=new Date();const inT=n>=new Date(2026,5,15)&&n<=new Date(2026,5,30);return inT?n:new Date(2026,5,22)}
-function aAcc(){const d=td();const dt=new Date(d.getFullYear(),d.getMonth(),d.getDate());return ACCS.find(a=>dt>=a.ci&&dt<a.co)||null}
-function aFD(d){const dt=new Date(d.getFullYear(),d.getMonth(),d.getDate());return ACCS.find(a=>dt>=a.ci&&dt<a.co)||null}
-function dN(d){return Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-TS)/86400000)+1}
-function fmt(d){return d.getDate()+' '+MN[d.getMonth()]}
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2200)}
-
-const MAIN=['home','map','planning','discover','meer']
-let stk=['home']
-function nav(id){
-  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')})
-  document.getElementById('s-'+id).classList.add('active')
-  document.querySelectorAll('.nav button').forEach(function(b){b.classList.remove('active')})
-  const nb=document.getElementById('n-'+id);if(nb)nb.classList.add('active')
-  document.querySelector('.nav').style.display=MAIN.indexOf(id)>=0?'flex':'none'
-  if(MAIN.indexOf(id)>=0){stk=[id]}else{stk.push(id)}
-  const s=document.getElementById('s-'+id);if(s)s.scrollTop=0
-  const sc=s?s.querySelector('.scroll'):null;if(sc)sc.scrollTop=0
-  if(id==='home')rHome()
-  if(id==='planning')rPlan()
-  if(id==='discover')rDisc()
-  if(id==='accommodation')rAcc(viewAId)
-  if(id==='roadtrip')rRT()
-  if(id==='map')iMap()
-}
-function goBack(){if(stk.length>1){stk.pop();nav(stk[stk.length-1])}else{nav('meer')}}
-
-function rHome(){
-  const d=td(),dn=dN(d),acc=aAcc()
-  document.getElementById('h-day').textContent='Dag '+dn+' · '+fmt(d)
-  document.getElementById('h-coord').textContent=acc?acc.coord:'15.06–30.06'
-  document.getElementById('h-name').textContent=acc?acc.name.toUpperCase():'ONDERWEG'
-  document.getElementById('h-elev').textContent=acc?acc.elev+'m':'—m'
-  document.getElementById('h-dates').textContent=acc?(fmt(acc.ci)+'–'+fmt(acc.co)+' · '+((acc.co-acc.ci)/86400000)+' nachten'):'reisdag'
-  const done=ACTS.filter(function(a){return a.s==='done'}).length,total=ACTS.length
-  document.getElementById('s-todo').textContent=total-done
-  document.getElementById('s-done').textContent=done
-  document.getElementById('s-tick').textContent=1+tickets.length
-  document.getElementById('h-prog-lbl').textContent=done+'/'+total
-  document.getElementById('h-prog').style.width=Math.round(done/total*100)+'%'
-  const ta=ACTS.filter(function(a){return a.d&&a.d.toDateString()===d.toDateString()})
-  const el=document.getElementById('h-today')
-  if(!ta.length){el.innerHTML='<div style="padding:20px;text-align:center;color:#6E8278;font-size:13px">Niets gepland · <button onclick="nav(\'discover\')" style="color:#C5512B;background:none;border:none;cursor:pointer;font-size:13px">plan via AI</button></div>';return}
-  let html=''
-  ta.forEach(function(a,i){
-    const ac=ACCS.find(function(x){return x.id===a.ai})
-    html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;position:relative;'+(i<ta.length-1?'border-bottom:1px solid #EDF0EC':'')+'">'
-    html+='<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:'+ac.m+'"></div>'
-    html+='<span style="font-size:10px;font-weight:700;color:'+(a.s==='done'?'#9CA3AF':ac.m)+';width:20px;text-align:center;font-family:monospace">'+(i+1)+'</span>'
-    html+='<div style="width:38px;height:38px;background:'+ac.m+'18;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+a.e+'</div>'
-    html+='<div style="flex:1;min-width:0"><p style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(a.s==='done'?'color:#9CA3AF;text-decoration:line-through':'')+'">'+a.name+'</p><p style="font-size:10px;color:#6E8278;font-family:monospace;margin-top:1px">'+a.el+'m · '+a.dst+' · '+a.t+'</p></div>'
-    html+='<button onclick="tAct('+a.id+')" style="width:24px;height:24px;border-radius:3px;border:2px solid '+(a.s==='done'?ac.m:'#C8D2C9')+';background:'+(a.s==='done'?ac.m:'transparent')+';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(a.s==='done'?'<svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>':'')+'</button></div>'
-  })
-  el.innerHTML=html
-}
-function tAct(id){
-  const a=ACTS.find(function(x){return x.id===id});if(!a)return
-  a.s=a.s==='done'?'planned':'done'
-  toast(a.s==='done'?'✓ Voltooid':'Heropend')
-  rHome()
-  if(document.getElementById('s-planning').classList.contains('active'))rPlan()
-  if(document.getElementById('s-roadtrip').classList.contains('active'))rRT()
-}
-
-const DR=[[[51.8125,5.8372],[52.3676,4.9041],[53.2194,6.5665],[55.4768,8.4497],[57.5879,9.9580]],[[60.3913,5.3221],[60.6,5.7],[60.86,6.4],[61.05,6.8],[61.219,7.158]],[[61.219,7.158],[61.4,7.5],[61.564,8.0],[61.837,8.567],[61.913,8.275]],[[61.913,8.275],[61.5,8.8],[60.985,9.236]],[[60.985,9.236],[59.7,9.7],[58.88,9.02]],[[58.88,9.02],[58.5,8.5],[58.145,7.989]],[[57.5879,9.9580],[57.0,9.8],[55.49,9.472]],[[55.49,9.472],[53.55,9.99],[51.8125,5.8372]]]
-const FR=[[[57.5879,9.9580],[57.9,7.5],[58.97,5.7331],[60.3913,5.3221]],[[58.145,7.989],[57.9,8.5],[57.5879,9.9580]]]
-function iMap(){
-  if(lmap)return
-  const el=document.getElementById('lmap')
-  lmap=L.map(el,{zoomControl:false}).setView([61.0,8.0],7)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:18}).addTo(lmap)
-  L.control.zoom({position:'bottomright'}).addTo(lmap)
-  DR.forEach(function(p){L.polyline(p,{color:'#0E3A2E',weight:2.5,opacity:0.65}).addTo(lmap)})
-  FR.forEach(function(p){L.polyline(p,{color:'#1B5A8A',weight:2.5,opacity:0.7,dashArray:'8,5'}).addTo(lmap)})
-  gPoly=L.polyline([],{color:'#C5512B',weight:3,opacity:0.85}).addTo(lmap)
-  rMapMkrs()
-}
-function rMapMkrs(){
-  if(!lmap)return
-  accMkrs.forEach(function(m){m.remove()});actMkrs.forEach(function(m){m.remove()});accMkrs=[];actMkrs=[]
-  const ca=aAcc()
-  ACCS.forEach(function(acc){
-    const isA=ca&&ca.id===acc.id
-    const html='<div style="text-align:center"><div style="background:'+acc.m+';width:'+(isA?50:42)+'px;height:'+(isA?50:42)+'px;border-radius:50%;border:'+(isA?3:2.5)+'px solid white;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px '+acc.m+'55;position:relative;margin:0 auto"><span style="font-size:'+(isA?22:18)+'px">🏡</span>'+(isA?'<div style="position:absolute;top:-4px;right:-4px;width:12px;height:12px;background:#C5512B;border-radius:50%;border:2px solid white"></div>':'')+'</div><div style="background:'+acc.m+';color:white;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;text-align:center;margin-top:2px;white-space:nowrap">'+acc.short+'</div></div>'
-    const ico=L.divIcon({html:html,className:'',iconSize:[54,64],iconAnchor:[27,64]})
-    accMkrs.push(L.marker([acc.lat,acc.lng],{icon:ico}).addTo(lmap).on('click',function(){viewAId=acc.id;nav('accommodation')}))
-  })
-  const fa=mFilt?ACTS.filter(function(a){const ac=ACCS.find(function(x){return x.id===a.ai});return ac&&ac.short.toLowerCase()===mFilt}):ACTS.filter(function(a){return a.lat&&a.lng})
-  fa.filter(function(a){return a.lat&&a.lng}).forEach(function(a){
-    const ac=ACCS.find(function(x){return x.id===a.ai});if(!ac)return
-    const dn=a.d?('D'+dN(a.d)):''
-    const op=a.s==='done'?0.5:1
-    const html='<div style="opacity:'+op+';text-align:center"><div style="background:'+ac.m+';width:36px;height:36px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px '+ac.m+'44;margin:0 auto">'+a.e+'</div>'+(dn?'<div style="background:'+ac.m+';color:white;font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;text-align:center;margin-top:2px">'+dn+'</div>':'')+'</div>'
-    const ico=L.divIcon({html:html,className:'',iconSize:[36,dn?50:40],iconAnchor:[18,dn?50:40]})
-    actMkrs.push(L.marker([a.lat,a.lng],{icon:ico}).addTo(lmap).on('click',function(){toast(a.name+' · '+a.dst+' · '+a.lv+' · '+a.el+'m')}))
-  })
-}
-function fMap(f){
-  mFilt=f
-  document.querySelectorAll('[id^=fc-]').forEach(function(c){
-    c.classList.remove('on')
-    const on=(!f&&c.id==='fc-all')||(f&&c.id==='fc-'+f)
-    if(on)c.classList.add('on')
-  })
-  rMapMkrs()
-}
-function tgRoute(){
-  const b=document.getElementById('r-btn');const full=b.textContent==='EU'
-  b.textContent=full?'NO':'EU'
-  if(lmap)lmap.setView(full?[61.0,8.0]:[55.0,7.5],full?7:5)
-}
-function tgGPS(){
-  if(gWid){
-    navigator.geolocation.clearWatch(gWid);gWid=null;gTrk=[]
-    if(gMkr){gMkr.remove();gMkr=null}
-    if(gPoly)gPoly.setLatLngs([])
-    const b=document.getElementById('gps-btn');b.textContent='📍 GPS';b.style.background='white'
-    toast('GPS gestopt')
-  }else{
-    if(!navigator.geolocation){toast('GPS niet beschikbaar');return}
-    const b=document.getElementById('gps-btn');b.textContent='📍 Actief';b.style.background='#EDF2EC'
-    gWid=navigator.geolocation.watchPosition(function(p){
-      const ll=[p.coords.latitude,p.coords.longitude]
-      gTrk.push(ll);if(gTrk.length>200)gTrk.shift()
-      if(gPoly)gPoly.setLatLngs(gTrk)
-      if(gMkr){gMkr.setLatLng(ll)}else{gMkr=L.circleMarker(ll,{radius:8,color:'#C5512B',fillColor:'#C5512B',fillOpacity:1,weight:3}).addTo(lmap);lmap.panTo(ll)}
-    },function(e){toast('GPS: '+e.message)},{enableHighAccuracy:true,maximumAge:5000})
-    toast('📍 GPS gestart')
-  }
-}
-
-function rPlan(){bDTabs();rDItems()}
-function bDTabs(){
-  const t=document.getElementById('d-tabs');t.innerHTML=''
-  for(let i=0;i<16;i++){
-    const d=new Date(2026,5,15+i),dn=i+1,acc=aFD(d),col=acc?acc.m:'#9CA3AF',iS=d.toDateString()===selDay.toDateString()
-    const b=document.createElement('button');b.className='dtab'
-    b.style.background=iS?col:'white';b.style.borderColor=iS?col:'#C8D2C9'
-    b.innerHTML='<span style="font-size:10px;font-weight:700;color:'+(iS?'rgba(255,255,255,.85)':col)+';font-family:monospace">D'+dn+'</span><span style="font-size:17px;font-weight:800;color:'+(iS?'white':'#14201A')+';line-height:1.1">'+d.getDate()+'</span><span style="font-size:8px;color:'+(iS?'rgba(255,255,255,.55)':'#6E8278')+'">'+MN[d.getMonth()]+'</span>'+(acc?'<span style="width:5px;height:5px;border-radius:50%;background:'+(iS?'rgba(255,255,255,.8)':acc.m)+';display:block;margin-top:2px"></span>':'')
-    b.onclick=(function(dd){return function(){selDay=dd;bDTabs();rDItems()}})(d)
-    t.appendChild(b)
-  }
-  setTimeout(function(){const idx=Math.floor((selDay-TS)/86400000);t.scrollLeft=Math.max(0,(idx-2)*62)},50)
-}
-function rDItems(){
-  const d=selDay,dn=dN(d),acc=aFD(d)
-  document.getElementById('d-hdr').innerHTML='<div style="background:'+(acc?acc.m:'#9CA3AF')+';border-radius:4px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;flex-shrink:0"><span style="font-size:8px;color:rgba(255,255,255,.65);font-weight:700;text-transform:uppercase;letter-spacing:1px">DAG</span><span style="font-size:20px;font-weight:800;color:white;line-height:1">'+dn+'</span></div><div style="flex:1"><p style="font-weight:700;font-size:15px">'+WD[d.getDay()]+' '+d.getDate()+' '+MN[d.getMonth()]+'</p>'+(acc?'<div style="display:flex;align-items:center;gap:6px;margin-top:2px"><span style="width:8px;height:8px;border-radius:50%;background:'+acc.m+'"></span><span style="font-size:10px;font-weight:700;color:'+acc.m+';font-family:monospace">vanuit '+acc.name+'</span></div>':'<p style="font-size:10px;color:#6E8278;font-family:monospace;margin-top:2px">reisdag</p>')+'</div>'+(acc?'<div style="display:flex;align-items:center;gap:3px"><span style="width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:7px solid '+acc.m+'"></span><span style="font-size:9px;font-weight:700;color:'+acc.m+';font-family:monospace">'+acc.elev+'m</span></div>':'')
-  const da=ACTS.filter(function(a){return a.d&&a.d.toDateString()===d.toDateString()})
-  const un=acc?ACTS.filter(function(a){return a.ai===acc.id&&!a.d&&a.s!=='done'}):[]
-  const el=document.getElementById('p-items')
-  if(!da.length&&!un.length){el.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;padding:40px;text-align:center"><p style="font-weight:800;font-size:16px;margin-bottom:6px">Niets gepland</p><p style="font-size:13px;color:#6E8278;margin-bottom:16px">Voeg activiteiten toe.</p></div>';return}
-  let h=''
-  if(da.length){
-    h+='<div class="card" style="margin-bottom:12px">'
-    da.forEach(function(a,i){
-      const ac=ACCS.find(function(x){return x.id===a.ai})
-      h+='<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;position:relative;'+(i<da.length-1?'border-bottom:1px solid #EDF0EC':'')+'"><div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:'+ac.m+'"></div><span style="font-size:10px;font-weight:700;color:'+(a.s==='done'?'#9CA3AF':ac.m)+';width:20px;text-align:center;font-family:monospace">'+(i+1)+'</span><div style="width:38px;height:38px;background:'+ac.m+'18;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+a.e+'</div><div style="flex:1;min-width:0"><p style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(a.s==='done'?'color:#9CA3AF;text-decoration:line-through':'')+'">'+a.name+'</p><p style="font-size:10px;color:#6E8278;font-family:monospace;margin-top:1px">'+a.el+'m · '+a.dst+' · '+a.lv+'</p></div><button onclick="tAct('+a.id+')" style="width:24px;height:24px;border-radius:3px;border:2px solid '+(a.s==='done'?ac.m:'#C8D2C9')+';background:'+(a.s==='done'?ac.m:'transparent')+';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(a.s==='done'?'<svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>':'')+'</button></div>'
-    })
-    h+='</div>'
-  }
-  if(un.length){
-    h+='<p class="ey" style="margin-bottom:8px">Beschikbaar vanuit '+(acc?acc.short:'')+'</p><div class="card" style="margin-bottom:12px">'
-    un.forEach(function(a,i){
-      const ac=ACCS.find(function(x){return x.id===a.ai})
-      h+='<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;position:relative;cursor:pointer;'+(i<un.length-1?'border-bottom:1px solid #EDF0EC':'')+'"><div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:'+ac.m+'"></div><div style="width:38px;height:38px;background:'+ac.m+'18;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+a.e+'</div><div style="flex:1;min-width:0"><p style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+a.name+'</p><p style="font-size:10px;color:#6E8278;font-family:monospace;margin-top:1px">'+a.el+'m · '+a.lv+'</p></div><span style="font-size:9px;font-weight:700;padding:2px 6px;background:'+ac.m+'20;color:'+ac.m+';border-radius:3px;flex-shrink:0">niet ingepland</span></div>'
-    })
-    h+='</div>'
-  }
-  el.innerHTML=h
-}
-
-function rDisc(){
-  const acc=aAcc();document.getElementById('d-loc').textContent='⛅ 14° · '+(acc?acc.short:'—')+' · '+(acc?acc.coord:'—')
-  let h=''
-  SUGG.forEach(function(s){
-    const ac=ACCS.find(function(a){return a.id===s.ai})
-    const isA=discAdded.has(s.name)
-    h+='<div style="display:flex;border:1px solid #C8D2C9;border-radius:4px;overflow:hidden;background:white"><div style="width:84px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:'+ac.m+';padding:12px 0"><span style="font-size:30px">'+s.e+'</span><span style="font-size:9px;color:rgba(255,255,255,.85);font-weight:700;font-family:monospace;margin-top:3px">'+s.el+'m</span></div><div style="flex:1;padding:12px;min-width:0"><p style="font-weight:800;font-size:15px;letter-spacing:-.2px">'+s.name+'</p><p style="font-size:12px;color:#3A4D44;margin-top:2px">'+s.sub+'</p><p style="font-size:10px;color:#6E8278;font-family:monospace;margin-top:4px">'+s.dst+' · '+s.t+'</p><div style="display:flex;gap:8px;margin-top:10px"><button onclick="addPlan(\''+s.name+'\','+s.ai+')" style="padding:6px 14px;background:'+(isA?'#5B8C7B':'#0E3A2E')+';color:white;border-radius:4px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">'+(isA?'✓ Gepland':'+ Plan')+'</button><button onclick="oMapsC(0,0,\''+s.name+'\')" style="padding:6px 12px;border:1px solid #C8D2C9;background:white;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:#3A4D44">Route</button></div></div></div>'
-  })
-  document.getElementById('d-list').innerHTML=h
-}
-function addPlan(name,ai){
-  if(discAdded.has(name)){toast('Al toegevoegd');return}
-  const id=Math.max.apply(null,ACTS.map(function(a){return a.id}))+1
-  ACTS.push({id:id,name:name,e:'📍',ai:ai,s:'planned',d:null,dst:'—',t:'—',lv:'Makkelijk',el:0,lat:0,lng:0})
-  discAdded.add(name)
-  toast('✓ '+name+' toegevoegd')
-  rDisc()
-}
-function sfilt(el){document.querySelectorAll('#s-discover button.chip').forEach(function(c){c.classList.remove('on')});el.classList.add('on')}
-
-function rAcc(id){
-  viewAId=id;const acc=ACCS.find(function(a){return a.id===id});if(!acc)return;const ca=aAcc()
-  document.getElementById('a-name').textContent=acc.name.toUpperCase()
-  document.getElementById('a-elev').textContent=acc.elev+'m · '+acc.coord
-  document.getElementById('a-dates').textContent=fmt(acc.ci)+'–'+fmt(acc.co)+' · '+((acc.co-acc.ci)/86400000)+' nachten'
-  let ch=''
-  ACCS.forEach(function(a){
-    const iV=a.id===id,iA=ca&&a.id===ca.id
-    ch+='<button onclick="rAcc('+a.id+')" style="padding:6px 14px;border:1.5px solid '+a.m+';border-radius:4px;background:'+(iV?a.m:'white')+';color:'+(iV?'white':a.m)+';font-size:11px;font-weight:700;text-transform:uppercase;cursor:pointer;position:relative;flex-shrink:0">'+a.short+(iA&&!iV?'<span style="position:absolute;top:-4px;right:-4px;width:8px;height:8px;background:#C5512B;border-radius:50%;border:1.5px solid white"></span>':'')+'</button>'
-  })
-  document.getElementById('a-chips').innerHTML=ch
-  const rows=[{l:'Check-in',v:fmt(acc.ci)+' · vanaf 15:00'},{l:'Check-out',v:fmt(acc.co)+' · voor 11:00'},{l:'Nachten',v:String((acc.co-acc.ci)/86400000)},{l:'Adres',v:acc.addr,a:true},{l:'Coördinaten',v:acc.coord}]
-  let info=''
-  rows.forEach(function(r,i){
-    info+='<div style="display:flex;align-items:center;padding:11px 14px;'+(i<rows.length-1?'border-bottom:1px solid #EDF0EC':'')+'"><div style="flex:1;min-width:0"><p style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6E8278">'+r.l+'</p><p style="font-weight:700;font-size:14px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.v+'</p></div>'+(r.a?'<button onclick="oMapsC('+acc.lat+','+acc.lng+',\''+acc.addr+'\')" style="padding:5px 12px;background:#EDF2EC;color:#0E3A2E;border-radius:4px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;flex-shrink:0;margin-left:8px">Maps</button>':'')+'</div>'
-  })
-  document.getElementById('a-info').innerHTML=info
-  document.getElementById('a-notes').textContent=acc.notes
-  let stops=''
-  ACCS.forEach(function(a,i){
-    const n=(a.co-a.ci)/86400000,iA=ca&&a.id===ca.id,iV=a.id===id
-    stops+='<button onclick="rAcc('+a.id+')" style="display:flex;align-items:stretch;gap:10px;width:100%;background:none;border:none;cursor:pointer;text-align:left;padding:0"><div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0"><div style="width:28px;height:28px;background:'+(iV?a.m:'white')+';border:1.5px solid '+(iV?a.m:'#C8D2C9')+';border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+(iV?'white':'#6E8278')+';font-family:monospace">'+(i+1)+'</div>'+(i<ACCS.length-1?'<div style="width:1px;flex:1;background:#C8D2C9;margin:2px 0;min-height:16px"></div>':'')+'</div><div style="flex:1;padding:8px 12px;border:1px solid '+(iV?a.m:'#C8D2C9')+';border-left:3px solid '+a.m+';border-radius:0 4px 4px 0;background:'+(iV?a.m+'0D':'white')+';margin-bottom:'+(i<ACCS.length-1?'4px':'0')+'"><div style="display:flex;align-items:start;justify-content:space-between"><div><p style="font-weight:800;font-size:14px">'+a.name+'</p><p style="font-size:10px;color:#6E8278;font-family:monospace;margin-top:2px">'+fmt(a.ci)+'–'+fmt(a.co)+' · '+n+'n · '+a.elev+'m</p></div>'+(iA?'<span style="font-size:9px;font-weight:700;padding:2px 6px;background:'+a.m+';color:white;border-radius:3px;flex-shrink:0;margin-left:8px">ACTIEF</span>':'')+'</div></div></button>'
-  })
-  document.getElementById('a-stops').innerHTML=stops
-}
-function oMaps(){const acc=ACCS.find(function(a){return a.id===viewAId});if(acc)oMapsC(acc.lat,acc.lng,acc.addr)}
-function oMapsC(lat,lng,lbl){
-  const q=(lat&&lng)?(lat+','+lng):encodeURIComponent(lbl)
-  window.open('https://www.google.com/maps/dir/?api=1&destination='+q,'_blank')
-}
-
-function rRT(){
-  const ca=aAcc(),d=td(),dn=dN(d),done=ACTS.filter(function(a){return a.s==='done'}).length,total=ACTS.length
-  document.getElementById('rt-short').textContent=ca?ca.short:'—'
-  document.getElementById('rt-curr').textContent=ca?ca.name:'Onderweg'
-  document.getElementById('rt-cout').textContent=ca?('check-out '+fmt(ca.co)+' · 11:00'):'—'
-  const ci=ca?ACCS.findIndex(function(a){return a.id===ca.id}):-1
-  const na=(ci>=0&&ci+1<ACCS.length)?ACCS[ci+1]:null
-  document.getElementById('rt-next').textContent=na?na.name:'Einde reis'
-  document.getElementById('rt-ndate').textContent=na?fmt(na.ci):'30 jun'
-  const ta=ACTS.filter(function(a){return a.d&&a.d.toDateString()===d.toDateString()})
-  const nx=ta.find(function(a){return a.s!=='done'})
-  document.getElementById('rt-aemoji').textContent=nx?nx.e:'✅'
-  document.getElementById('rt-aname').textContent=nx?nx.name.toUpperCase():'ALLES GEDAAN'
-  document.getElementById('rt-ameta').textContent=nx?(nx.el+'m · '+nx.dst+' · '+nx.t):'Goed gedaan!'
-  document.getElementById('rt-act-card').onclick=nx?function(){oMapsC(nx.lat,nx.lng,nx.name)}:null
-  document.getElementById('rt-prog-l').textContent=done+'/'+total+' · '+Math.round(done/total*100)+'%'
-  document.getElementById('rt-prog').style.width=(done/total*100)+'%'
-  document.getElementById('rt-dl').textContent='Dag '+dn+' · vandaag'
-  const rl=document.getElementById('rt-list')
-  if(!ta.length){rl.innerHTML='<div style="padding:16px;text-align:center;color:#6E8278;font-size:13px">Niets gepland vandaag</div>';return}
-  let h=''
-  ta.forEach(function(a,i){
-    const ac=ACCS.find(function(x){return x.id===a.ai})
-    h+='<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;'+(i<ta.length-1?'border-bottom:1px solid #EDF0EC':'')+'" onclick="tAct('+a.id+')"><div style="width:24px;height:24px;border-radius:3px;border:2px solid '+(a.s==='done'?'#5B8C7B':'#C8D2C9')+';background:'+(a.s==='done'?'#5B8C7B':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(a.s==='done'?'<svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>':'')+'</div><span style="font-size:20px;flex-shrink:0">'+a.e+'</span><p style="flex:1;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(a.s==='done'?'color:#9CA3AF;text-decoration:line-through':'')+'">'+a.name+'</p><button onclick="event.stopPropagation();oMapsC('+a.lat+','+a.lng+',\''+a.name+'\')" style="width:32px;height:32px;background:#EDF2EC;border:none;border-radius:4px;cursor:pointer;font-size:16px;flex-shrink:0">◈</button></div>'
-  })
-  rl.innerHTML=h
-}
-function tgGPSrt(){
-  const btn=document.getElementById('rt-gps'),dot=document.getElementById('rt-dot'),lbl=document.getElementById('rt-gps-lbl')
-  if(rtWid){
-    navigator.geolocation.clearWatch(rtWid);rtWid=null
-    dot.style.background='rgba(228,233,226,.4)';lbl.textContent='GPS UIT'
-    document.getElementById('rt-pos').textContent='positie onbekend'
-    toast('GPS gestopt')
-  }else{
-    if(!navigator.geolocation){toast('GPS niet beschikbaar');return}
-    dot.style.background='#C5512B';lbl.textContent='GPS AAN'
-    rtWid=navigator.geolocation.watchPosition(function(p){
-      document.getElementById('rt-pos').textContent=p.coords.latitude.toFixed(4)+'°N '+p.coords.longitude.toFixed(4)+'°E'
-    },function(e){toast('GPS: '+e.message)},{enableHighAccuracy:true,maximumAge:5000})
-    toast('📍 GPS gestart')
-  }
-}
-
-function oAddTick(){
-  document.getElementById('ti-n').value=''
-  document.getElementById('ti-v').value=''
-  document.getElementById('ti-c').value=''
-  document.getElementById('sh-ticket').classList.add('open')
-}
-function saveTick(){
-  const name=document.getElementById('ti-n').value.trim()
-  if(!name){toast('Naam invoeren');return}
-  const date=document.getElementById('ti-d').value,time=document.getElementById('ti-t').value
-  const venue=document.getElementById('ti-v').value.trim(),code=document.getElementById('ti-c').value.trim()
-  tickets.push({name:name,date:date,time:time,venue:venue,code:code})
-  closeSh('sh-ticket')
-  toast('✓ '+name+' opgeslagen')
-  rTick()
-}
-function rTick(){
-  const el=document.getElementById('t-list'),lbl=document.getElementById('nt-lbl')
-  if(!tickets.length){el.innerHTML='';lbl.style.display='none';return}
-  lbl.style.display='block'
-  document.getElementById('s-tick').textContent=1+tickets.length
-  document.getElementById('m-tickets').textContent=(1+tickets.length)+' tickets'
-  let h=''
-  tickets.forEach(function(t,i){
-    h+='<div class="card" style="border-left:3px solid #0E3A2E;margin-bottom:10px"><div style="padding:14px"><div style="display:flex;justify-content:space-between;align-items:start"><p style="font-weight:800;font-size:15px;flex:1">'+t.name+'</p><button onclick="rmTick('+i+')" style="background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:16px;margin-left:8px">✕</button></div>'+(t.venue?'<p style="font-size:12px;color:#3A4D44;margin-top:3px">'+t.venue+'</p>':'')+'<div style="display:flex;gap:14px;margin-top:8px;font-family:monospace;font-size:10px;color:#6E8278">'+(t.date?'<span>◷ '+t.date+'</span>':'')+(t.time?'<span>· '+t.time+'</span>':'')+'</div>'+(t.code?'<p style="font-family:monospace;font-size:10px;color:#0E3A2E;margin-top:6px;padding:4px 8px;background:#EDF2EC;border-radius:3px">'+t.code+'</p>':'')+'</div></div>'
-  })
-  el.innerHTML=h
-}
-function rmTick(i){tickets.splice(i,1);toast('Ticket verwijderd');rTick();rHome()}
-
-function oAddTrip(){document.getElementById('tr-n').value='';document.getElementById('sh-trip').classList.add('open')}
-function saveTrip(){
-  const name=document.getElementById('tr-n').value.trim()
-  if(!name){toast('Naam invoeren');return}
-  const country=document.getElementById('tr-c').value,from=document.getElementById('tr-f').value,to=document.getElementById('tr-t').value
-  extraTrips.push({name:name,country:country,from:from,to:to})
-  closeSh('sh-trip')
-  toast('✓ '+name+' toegevoegd')
-  rExTrips()
-}
-function rExTrips(){
-  const el=document.getElementById('ex-trips')
-  if(!extraTrips.length){el.innerHTML='';return}
-  let h='<div class="ey" style="margin:16px 0 8px">Overige reizen</div>'
-  extraTrips.forEach(function(t,i){
-    h+='<div class="card" style="margin-bottom:10px"><div style="padding:14px;display:flex;align-items:start;gap:12px"><span style="font-size:28px">'+t.country.split(' ')[0]+'</span><div style="flex:1"><p style="font-weight:800;font-size:15px">'+t.name+'</p><p class="mo" style="margin-top:3px">'+(t.from||'—')+' – '+(t.to||'—')+'</p></div><button onclick="extraTrips.splice('+i+',1);rExTrips();toast(\'Reis verwijderd\')" style="background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:16px">✕</button></div></div>'
-  })
-  el.innerHTML=h
-}
-
-function selVeh(type){
-  ['ev','fuel','none'].forEach(function(v){
-    document.getElementById('v-'+v).style.color=(v===type)?'#0E3A2E':'transparent'
-  })
-  const labels={ev:'Elektrisch',fuel:'Benzine',none:'Geen'}
-  toast('Voertuig: '+labels[type])
-}
-function tgStyle(el){el.classList.toggle('on');toast((el.classList.contains('on')?'+ ':'− ')+el.textContent.trim())}
-function tgAI(btn){
-  const on=btn.style.background==='rgb(14, 58, 46)'||btn.style.background==='#0E3A2E'
-  btn.style.background=on?'#C8D2C9':'#0E3A2E'
-  const dot=btn.querySelector('span')
-  dot.style.left=on?'3px':'calc(100% - 23px)'
-  toast(on?'AI uitgeschakeld':'AI ingeschakeld')
-}
-
-function closeSh(id){document.getElementById(id).classList.remove('open')}
-document.querySelectorAll('.sbg').forEach(function(bg){
-  bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open')})
-})
-
-function oAddAct(){
-  const sel=document.getElementById('ac-d');sel.innerHTML=''
-  for(let i=0;i<16;i++){
-    const d=new Date(2026,5,15+i)
-    const opt=document.createElement('option')
-    opt.value=d.toISOString()
-    opt.textContent='Dag '+(i+1)+' · '+WD[d.getDay()]+' '+fmt(d)
-    sel.appendChild(opt)
-  }
-  document.getElementById('ac-n').value=''
-  document.getElementById('sh-act').classList.add('open')
-}
-function saveAct(){
-  const name=document.getElementById('ac-n').value.trim()
-  if(!name){toast('Naam invoeren');return}
-  const dateStr=document.getElementById('ac-d').value
-  const accId=parseInt(document.getElementById('ac-a').value)
-  const id=Math.max.apply(null,ACTS.map(function(a){return a.id}))+1
-  const date=dateStr?new Date(dateStr):null
-  ACTS.push({id:id,name:name,e:'📍',ai:accId,s:'planned',d:date,dst:'—',t:'—',lv:'Makkelijk',el:0,lat:0,lng:0})
-  closeSh('sh-act')
-  toast('✓ '+name+' toegevoegd')
-  if(date){selDay=date;rPlan()}
-  rHome()
-}
-
-viewAId=(aAcc()||ACCS[0]).id
-
-// ── Topographic contour line generator (the signature visual) ──
-function genTopoSVG(seed) {
-  let svg = ''
-  const rand = (function(s){ let x = s; return function(){ x = (x*9301+49297)%233280; return x/233280 } })(seed)
-  for (let i = 0; i < 7; i++) {
-    const cx = 200 + (rand()-0.5)*80
-    const cy = 150 + (rand()-0.5)*50
-    const rx = (40 + i*32) * 1.45
-    const ry = (40 + i*32)
-    const isAccent = i === 2
-    const stroke = isAccent ? '#C5512B' : '#E4E9E2'
-    const sw = isAccent ? 1.6 : 0.8
-    const op = isAccent ? 0.55 : (0.85 - i*0.1)
-    svg += '<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="none" stroke="'+stroke+'" stroke-width="'+sw+'" opacity="'+op+'"/>'
-  }
-  return svg
-}
-function initTopo() {
-  const ids = ['topo-home','topo-ai','topo-disc','topo-rt-card','topo-acc','topo-weather','topo-next-act']
-  ids.forEach(function(id, i) {
-    const el = document.getElementById(id)
-    if (el) el.innerHTML = genTopoSVG(i*7+3)
-  })
-}
-
-viewAId=(aAcc()||ACCS[0]).id
-initTopo()
-rHome()
+  // App-initialisatie
+  initAppState();
+  initAllTopoPanels();
+  renderHomeScreen();
 </script>
 </body>
 </html>
