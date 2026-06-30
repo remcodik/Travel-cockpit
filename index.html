@@ -181,10 +181,10 @@
     </div>
   </div>
   <div class="hscroll px" style="padding-top:11px;padding-bottom:11px;background:var(--white);border-bottom:1px solid var(--line-soft)">
-    <button onclick="setDiscoverFilter(this)" class="chip on">Alles</button>
-    <button onclick="setDiscoverFilter(this)" class="chip">Wandeling</button>
-    <button onclick="setDiscoverFilter(this)" class="chip">Eten</button>
-    <button onclick="setDiscoverFilter(this)" class="chip">Uitzicht</button>
+    <button onclick="setDiscoverFilter(this, null)" class="chip on">Alles</button>
+    <button onclick="setDiscoverFilter(this, 'activity')" class="chip">Wandeling</button>
+    <button onclick="setDiscoverFilter(this, 'restaurant')" class="chip">Eten</button>
+    <button onclick="setDiscoverFilter(this, 'viewpoint')" class="chip">Uitzicht</button>
   </div>
   <div class="scroll">
     <div id="discover-list" style="display:flex;flex-direction:column;gap:11px;padding:14px 16px 16px"></div>
