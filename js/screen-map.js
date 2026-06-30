@@ -138,9 +138,61 @@ function renderMapMarkers() {
       </div>`;
     const icon = L.divIcon({ html, className: '', iconSize: [36, dayLabel ? 50 : 40], iconAnchor: [18, dayLabel ? 50 : 40] });
     const marker = L.marker([act.lat, act.lng], { icon }).addTo(leafletMap);
-    marker.on('click', () => showToast(`${act.name} · ${act.distance} · ${act.level} · ${act.elevation}m`));
+    marker.on('click', () => openPlaceDetailSheet(act, acc));
     activityMarkers.push(marker);
   });
+}
+
+// ── Detail-sheet bij tik op een activiteit-pin op de kaart ──
+let placeDetailContext = null; // { act, acc }
+
+function openPlaceDetailSheet(act, acc) {
+  placeDetailContext = { act, acc };
+
+  const thumb = document.getElementById('pd-thumb');
+  thumb.textContent = act.emoji;
+  thumb.style.background = acc.color + '20';
+
+  document.getElementById('pd-name').textContent = act.name;
+
+  const metaParts = [];
+  if (act.elevation) metaParts.push(`▲ ${act.elevation}m`);
+  if (act.distance && act.distance !== '—') metaParts.push(act.distance);
+  if (act.duration && act.duration !== '—') metaParts.push(act.duration);
+  if (act.level && act.level !== '—') metaParts.push(act.level);
+  document.getElementById('pd-meta').textContent = metaParts.join(' · ') || 'Geen details bekend';
+
+  document.getElementById('pd-desc').textContent = act.desc || `Activiteit vanuit ${acc.name}.`;
+
+  const alreadyPlanned = act.status === 'done' || act.date !== null;
+  const addBtn = document.getElementById('pd-add-btn');
+  addBtn.textContent = alreadyPlanned ? '✓ Al gepland' : '+ Plan';
+  addBtn.disabled = alreadyPlanned;
+  addBtn.style.opacity = alreadyPlanned ? '0.5' : '1';
+
+  openSheet('sheet-place-detail');
+}
+
+function handlePlaceDetailAdd() {
+  if (!placeDetailContext) return;
+  const { act } = placeDetailContext;
+  if (act.status !== 'done' && act.date === null) {
+    act.status = 'planned';
+    showToast(`✓ ${act.name} ingepland`);
+    closeSheet('sheet-place-detail');
+    if (document.getElementById('screen-home').classList.contains('active')) renderHomeScreen();
+    if (document.getElementById('screen-planning').classList.contains('active')) renderPlanningScreen();
+  }
+}
+
+function handlePlaceDetailRoute() {
+  if (!placeDetailContext) return;
+  const { act } = placeDetailContext;
+  if (act.lat && act.lng) {
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${act.lat},${act.lng}`, '_blank');
+  } else {
+    showToast('Geen coördinaten bekend voor deze plek');
+  }
 }
 
 function setMapFilter(accId) {
