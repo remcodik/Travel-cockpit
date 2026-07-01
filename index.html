@@ -34,7 +34,7 @@
 
 <!-- ═══════════ HOME ═══════════ -->
 <div id="screen-home" class="screen active">
-  <div class="px" class="safe-top" style="padding-bottom:12px;border-bottom:1px solid var(--line-soft);background:var(--white)">
+  <div class="px safe-top" style="padding-bottom:12px;border-bottom:1px solid var(--line-soft);background:var(--white)">
     <p class="eyebrow" id="home-day">Dag — · — jun</p>
     <div style="display:flex;align-items:baseline;gap:9px;margin-top:5px">
       <span class="page-title">NOORWEGEN</span>
@@ -152,15 +152,18 @@
 
 <!-- ═══════════ PLANNING ═══════════ -->
 <div id="screen-planning" class="screen">
-  <div class="px" style="padding-top:14px;padding-bottom:9px;border-bottom:1px solid var(--line-soft);background:var(--white);display:flex;align-items:center">
+  <div class="px" class="safe-top" style="padding-bottom:9px;border-bottom:1px solid var(--line-soft);background:var(--white);display:flex;align-items:center">
     <span class="page-title" style="flex:1">PLANNING</span>
-    <button onclick="openAddActivitySheet()" class="fab" style="background:var(--spruce);color:white">+</button>
+    <div style="display:flex;gap:7px">
+      <button onclick="togglePlanningFilter(this)" id="planning-filter-btn" class="chip" style="font-size:10px;padding:5px 10px">Alle</button>
+      <button onclick="openAddActivitySheetForCurrentDay()" class="fab" style="background:var(--spruce);color:white">+</button>
+    </div>
   </div>
   <div id="day-tabs" class="hscroll px" style="padding-top:9px;padding-bottom:9px;background:var(--white);border-bottom:1px solid var(--line-soft)"></div>
   <div id="day-header" class="px" style="background:var(--white);padding-top:11px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:11px"></div>
   <div class="scroll px" style="padding-top:13px">
     <div id="planning-items"></div>
-    <div style="margin:10px 0 24px"><button onclick="openAddActivitySheet()" class="btn btn-outline">+ Activiteit toevoegen</button></div>
+    <div style="margin:10px 0 24px"><button onclick="openAddActivitySheetForCurrentDay()" class="btn btn-outline">+ Activiteit toevoegen</button></div>
   </div>
 </div>
 
@@ -192,7 +195,7 @@
 
 <!-- ═══════════ MEER ═══════════ -->
 <div id="screen-meer" class="screen">
-  <div class="px" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center">
+  <div class="px" class="safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center">
     <span class="page-title" style="flex:1">MEER</span><span class="mono">v6.0</span>
   </div>
   <div class="scroll">
@@ -330,7 +333,7 @@
 
 <!-- ═══════════ TICKETS ═══════════ -->
 <div id="screen-tickets" class="screen" style="padding-bottom:0">
-  <div class="px" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+  <div class="px" class="safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <span class="page-title" style="flex:1">TICKETS</span>
     <button onclick="openAddTicketSheet()" class="fab" style="background:var(--spruce);color:white">+</button>
@@ -354,7 +357,7 @@
 
 <!-- ═══════════ MIJN REIZEN ═══════════ -->
 <div id="screen-trips" class="screen" style="padding-bottom:0">
-  <div class="px" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+  <div class="px" class="safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <span class="page-title" style="flex:1">MIJN REIZEN</span>
     <button onclick="openAddTripSheet()" class="fab" style="background:var(--spruce);color:white">+</button>
@@ -382,7 +385,7 @@
 
 <!-- ═══════════ INSTELLINGEN ═══════════ -->
 <div id="screen-settings" class="screen" style="padding-bottom:0">
-  <div class="px" style="padding-top:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+  <div class="px" class="safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <span class="page-title">INSTELLINGEN</span>
   </div>
@@ -487,10 +490,12 @@
       <button onclick="closeSheet('sheet-place-detail')" style="background:none;border:none;font-size:20px;color:var(--ink-faint);cursor:pointer;padding:4px">✕</button>
     </div>
     <p id="pd-desc" class="row-sub" style="margin-bottom:18px;line-height:1.5"></p>
-    <div style="display:flex;gap:10px">
+    <div style="display:flex;gap:10px;margin-bottom:9px">
       <button id="pd-add-btn" onclick="handlePlaceDetailAdd()" class="btn btn-primary" style="flex:1">+ Plan</button>
-      <button id="pd-route-btn" onclick="handlePlaceDetailRoute()" class="btn btn-outline" style="flex:1">Route</button>
+      <button id="pd-route-btn" onclick="handlePlaceDetailRoute()" class="btn btn-outline" style="flex:1">◈ Route</button>
     </div>
+    <div id="pd-extra-actions"></div>
+    <button onclick="closeSheet('sheet-place-detail')" class="btn btn-outline" style="margin-top:8px">Sluiten</button>
   </div>
 </div>
 
