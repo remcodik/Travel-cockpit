@@ -159,7 +159,14 @@ This changes the practical picture: **Android and Flutter Web builds do not requ
 
 **Update (2026-07-01) — build verified:** A full `flutter pub get` / `build_runner` / `flutter analyze` pass was run against `lib/` for the first time. It found ~15 real compile errors (never caught before because the code had never been built) — mostly mechanical: stray `\$` characters instead of `$`, Drift DAOs whose custom `update`/`delete` methods shadowed the framework's own methods, a few missing imports and one naming mismatch. All were fixed; `flutter analyze` now reports 0 errors and 0 warnings. A Linux desktop build was attempted as an end-to-end check and compiled all Dart code successfully, stopping only at a native SQLite C-library download blocked by this sandbox's network policy — an environment limitation, not a code defect.
 
-**Status:** The Flutter codebase is now verified buildable. Next concrete step is a real Android build (via this cloud environment or a CI service) — the first target that would let the app be genuinely installed and run, without needing a Mac.
+**Update (2026-07-01) — first real Android APK built:** A GitHub Actions workflow (`.github/workflows/flutter-android-build.yml`) now builds an installable debug APK on every push to `main`, with normal internet access unlike the restricted sandbox above. It took four iterations to get green, each a real, separate root cause:
+1. `flutter analyze` failing the whole job on 93 optional style lints (not errors) — made non-blocking.
+2. `geolocator_android < 5.0.0` incompatible with the modern declarative Flutter Gradle Plugin — bumped `geolocator` to `^14.0.0`.
+3. The actual root cause of the persisting Gradle error ("Could not get unknown property 'flutter'"): the workflow's Flutter SDK (3.24.5) was too old — `flutter_plugin_android_lifecycle` requires Flutter ≥3.27 regardless of `geolocator`'s own version ([flutter/flutter#164362](https://github.com/flutter/flutter/issues/164362)). Fixed by upgrading to Flutter 3.44.4 and fully regenerating `android/` with it (Kotlin DSL, AGP 9.0.1, Gradle 9.1.0).
+
+Run succeeded: a working `app-debug.apk` (~88MB) is now a downloadable workflow artifact. This is the first time any build target of this codebase has produced a real, installable artifact.
+
+**Status:** Native app has a working Android build. Since the only available test device is an iPhone, trying the APK requires either a cloud Android emulator (e.g. Appetize.io — upload the APK, get a shareable browser link) or a borrowed Android device. Real iOS installation still requires a Mac (or cloud Mac CI) plus an Apple Developer Program membership — unchanged from earlier in this decision.
 
 ---
 
