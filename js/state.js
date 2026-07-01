@@ -1,30 +1,25 @@
 // ═══════════════════════════════════════════════════════════
-// state.js — Applicatiestatus en datum/accommodatie-logica
+// state.js — Applicatiestatus, datum-logica en Firebase-sync
 // ═══════════════════════════════════════════════════════════
 
 const AppState = {
-  activities: ACTIVITIES.map(a => ({ ...a })), // mutable kopie
+  activities: ACTIVITIES.map(a => ({ ...a })),
   tickets: [],
   extraTrips: [],
   discoveredAdded: new Set(),
-  selectedPlanningDay: null, // wordt gezet bij init
-  viewingAccommodationId: null, // wordt gezet bij init — NOOIT hardcoded
+  selectedPlanningDay: null,
+  viewingAccommodationId: null,
   vehicleType: 'ev',
   travelStyles: new Set(['natuur', 'wandelen']),
   aiEnabled: true,
+  dbUnsubscribers: [], // voor realtime listeners
 };
 
 // ── Datum / "vandaag" logica ──────────────────────────────
-// Als de echte datum binnen de reis valt, gebruik die.
-// Anders: toon de laatste dag van de reis (niet een willekeurige
-// demo-dag) zodat de gebruiker na de reis nog steeds een logisch
-// "huidig" verblijf ziet — het laatst bezochte.
 function getToday() {
   const now = new Date();
   const inTrip = now >= TRIP_START && now <= TRIP_END;
   if (inTrip) return now;
-  // Buiten de reisperiode: gebruik de laatste reisdag als referentie
-  // zodat er altijd een zinnig "huidig verblijf" getoond kan worden.
   return new Date(TRIP_END.getFullYear(), TRIP_END.getMonth(), TRIP_END.getDate() - 1);
 }
 
@@ -38,14 +33,10 @@ function getAccommodationForDate(date) {
   return ACCOMMODATIONS.find(acc => d >= acc.checkIn && d < acc.checkOut) || null;
 }
 
-// Het "actieve" verblijf — gebaseerd op echte datumlogica, nooit hardcoded.
-// Valt terug op de laatste accommodatie als de datum precies op de
-// check-out dag van de laatste valt (edge case: laatste reisdag).
 function getActiveAccommodation() {
   const today = getToday();
   const direct = getAccommodationForDate(today);
   if (direct) return direct;
-  // Edge case: als vandaag na de laatste check-out valt, toon de laatste.
   const last = ACCOMMODATIONS[ACCOMMODATIONS.length - 1];
   if (today >= last.checkOut) return last;
   return ACCOMMODATIONS[0];
@@ -73,29 +64,51 @@ function getNextAccommodation(currentAccId) {
 
 // ── Activiteiten helpers ──────────────────────────────────
 function getActivitiesForDate(date) {
-  return AppState.activities.filter(a => a.date && a.date.toDateString() === date.toDateString());
+  return AppState.activities.filter(a =>
+    a.date && a.date.toDateString() === date.toDateString()
+  );
 }
 
 function getUnscheduledForAccommodation(accId) {
-  return AppState.activities.filter(a => a.accId === accId && !a.date && a.status !== 'done');
+  return AppState.activities.filter(a =>
+    a.accId === accId && !a.date && a.status !== 'done'
+  );
 }
 
-function toggleActivityStatus(id) {
+async function toggleActivityStatus(id) {
   const act = AppState.activities.find(a => a.id === id);
   if (!act) return null;
   act.status = act.status === 'done' ? 'planned' : 'done';
+  await dbSaveActivity(act);
   return act;
 }
 
-function addActivity({ name, accId, date, emoji = '📍' }) {
-  const newId = Math.max(...AppState.activities.map(a => a.id), 0) + 1;
+async function addActivity({ name, accId, date, emoji = '📍', desc = '', level = 'Makkelijk' }) {
+  const existingIds = AppState.activities.map(a => typeof a.id === 'number' ? a.id : 0);
+  const newId = Math.max(...existingIds, 0) + 1;
   const activity = {
-    id: newId, name, emoji, accId, status: 'planned', date,
-    distance: '—', duration: '—', level: 'Makkelijk', elevation: 0, lat: 0, lng: 0,
-    desc: '',
+    id: newId, name, emoji, accId, status: 'planned', date: date || null,
+    distance: '—', duration: '—', level, elevation: 0, lat: 0, lng: 0, desc,
   };
   AppState.activities.push(activity);
+  await dbSaveActivity(activity);
   return activity;
+}
+
+async function updateActivity(id, changes) {
+  const act = AppState.activities.find(a => a.id === id);
+  if (!act) return null;
+  Object.assign(act, changes);
+  await dbSaveActivity(act);
+  return act;
+}
+
+async function deleteActivity(id) {
+  const idx = AppState.activities.findIndex(a => a.id === id);
+  if (idx === -1) return false;
+  AppState.activities.splice(idx, 1);
+  await dbDeleteActivity(id);
+  return true;
 }
 
 function getProgress() {
@@ -104,8 +117,66 @@ function getProgress() {
   return { done, total, percent: total > 0 ? Math.round((done / total) * 100) : 0 };
 }
 
-// ── Init: zet de startwaarden NA het laden van data.js ────
+// ── Firebase sync-initialisatie ───────────────────────────
+// Wordt aangeroepen vanuit initAppState nadat Firebase klaar is.
+function startFirebaseSync() {
+  // Activiteiten: laad eerst, dan realtime luisteren
+  dbLoadActivities().then(remoteActivities => {
+    if (remoteActivities && remoteActivities.length > 0) {
+      // Merge: remote data wint voor bestaande IDs, lokale data voor nieuwe
+      const remoteIds = new Set(remoteActivities.map(a => a.id));
+      const localOnly = AppState.activities.filter(a => !remoteIds.has(a.id));
+      AppState.activities = [...remoteActivities, ...localOnly];
+      refreshAllScreens();
+    } else {
+      // Eerste keer: push de seed-data naar Firebase
+      AppState.activities.forEach(act => dbSaveActivity(act));
+    }
+
+    // Daarna: realtime updates van reisgenoten
+    const unsub = dbWatchActivities(remoteActs => {
+      if (!remoteActs || remoteActs.length === 0) return;
+      AppState.activities = remoteActs;
+      refreshAllScreens();
+    });
+    AppState.dbUnsubscribers.push(unsub);
+  });
+
+  // Tickets: laad en luister
+  dbLoadTickets().then(remoteTickets => {
+    if (remoteTickets) {
+      AppState.tickets = remoteTickets;
+      if (document.getElementById('screen-tickets').classList.contains('active')) {
+        renderTicketsScreen();
+      }
+    }
+    const unsub = dbWatchTickets(remoteTickets => {
+      AppState.tickets = remoteTickets;
+      if (document.getElementById('screen-tickets').classList.contains('active')) {
+        renderTicketsScreen();
+      }
+      renderHomeScreen();
+    });
+    AppState.dbUnsubscribers.push(unsub);
+  });
+}
+
+function refreshAllScreens() {
+  const screens = {
+    'screen-home': renderHomeScreen,
+    'screen-planning': renderPlanningScreen,
+    'screen-roadtrip': renderRoadtripScreen,
+  };
+  Object.entries(screens).forEach(([id, fn]) => {
+    if (document.getElementById(id).classList.contains('active')) fn();
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────
 function initAppState() {
   AppState.selectedPlanningDay = getToday();
   AppState.viewingAccommodationId = getActiveAccommodation().id;
+
+  // Firebase sync starten zodra db klaar is
+  onDbReady(startFirebaseSync);
 }
