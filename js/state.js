@@ -5,7 +5,7 @@
 const AppState = {
   activities: ACTIVITIES.map(a => ({ ...a })),
   tickets: [],
-  extraTrips: [],
+  trips: [],                 // alle reizen (metadata) — echt, via Firestore
   discoveredAdded: new Set(),
   selectedPlanningDay: null,
   viewingAccommodationId: null,
@@ -16,11 +16,22 @@ const AppState = {
 };
 
 // ── Datum / "vandaag" logica ──────────────────────────────
+// FIX: geeft altijd de echte huidige datum terug. Voorheen werd
+// buiten het reisvenster een gefingeerde datum binnen de reis
+// teruggegeven, wat het weer structureel liet breken (Open-Meteo's
+// 16-daagse forecast-venster matcht dan nooit met de "echte vandaag"
+// die de weer-provider zelf ook gebruikt). Schermen die willen weten
+// of de reis nog moet beginnen of al voorbij is, gebruiken getTripPhase().
 function getToday() {
+  return new Date();
+}
+
+// 'before' | 'during' | 'after' — relatief aan de actieve reis.
+function getTripPhase() {
   const now = new Date();
-  const inTrip = now >= TRIP_START && now <= TRIP_END;
-  if (inTrip) return now;
-  return new Date(TRIP_END.getFullYear(), TRIP_END.getMonth(), TRIP_END.getDate() - 1);
+  if (now < TRIP_START) return 'before';
+  if (now > TRIP_END) return 'after';
+  return 'during';
 }
 
 function getDayNumber(date) {
@@ -117,8 +128,84 @@ function getProgress() {
   return { done, total, percent: total > 0 ? Math.round((done / total) * 100) : 0 };
 }
 
+// ── Reizen (echte multi-trip, via Firestore) ──────────────
+function getActiveTrip() {
+  return AppState.trips.find(t => t.isActive) || null;
+}
+
+// Vervangt de inhoud van ACCOMMODATIONS/ACTIVITIES/TRIP_START/TRIP_END
+// in-place (niet opnieuw toewijzen — andere bestanden houden al een
+// referentie naar dezelfde array/Date-objecten vast). Zo hoeft geen
+// enkel scherm te weten dat er van reis is gewisseld; ze lezen bij de
+// eerstvolgende render gewoon de bijgewerkte waarden.
+function applyTripData(trip, accommodations) {
+  // Kopie eerst nemen — accommodations kan (in een fallback-pad) dezelfde
+  // array-referentie zijn als ACCOMMODATIONS zelf, die hieronder leeg-
+  // gemaakt wordt. Zonder deze kopie zou die dan als lege array eindigen.
+  const snapshot = accommodations.slice();
+
+  TRIP_START.setTime(trip.startDate.getTime());
+  TRIP_END.setTime(trip.endDate.getTime());
+
+  ACCOMMODATIONS.length = 0;
+  snapshot
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .forEach(acc => ACCOMMODATIONS.push({
+      ...acc,
+      checkIn: new Date(acc.checkIn),
+      checkOut: new Date(acc.checkOut),
+    }));
+}
+
+async function switchToTrip(tripId) {
+  const trip = AppState.trips.find(t => t.id === tripId);
+  if (!trip) return;
+
+  // Oude realtime-listeners (activiteiten/tickets van de vorige reis) opruimen
+  AppState.dbUnsubscribers.forEach(unsub => unsub());
+  AppState.dbUnsubscribers = [];
+
+  await dbSetActiveTrip(tripId, AppState.trips.map(t => t.id));
+  AppState.trips.forEach(t => { t.isActive = t.id === tripId; });
+  setCurrentTripId(tripId);
+
+  const accs = await dbLoadAccommodations(tripId);
+  applyTripData(trip, accs || []);
+
+  AppState.activities = [];
+  AppState.tickets = [];
+  AppState.selectedPlanningDay = getToday();
+  AppState.viewingAccommodationId = getActiveAccommodation() ? getActiveAccommodation().id : null;
+
+  startFirebaseSync();
+  updateMeerSummary();
+  navigateTo('home');
+  showToast(`✓ ${trip.name} is nu actief`);
+}
+
+async function createTrip({ name, country, countryFlag, startDate, endDate, accommodations }) {
+  const id = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : `trip-${Date.now()}`;
+  const trip = { id, name, country, countryFlag, startDate, endDate, isActive: false };
+  await dbSaveTripMeta(trip);
+  for (const acc of accommodations) {
+    await dbSaveAccommodation(id, { ...acc, id: (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : `acc-${Date.now()}-${Math.random()}` });
+  }
+  AppState.trips.push(trip);
+  return trip;
+}
+
+async function deleteTrip(tripId) {
+  const wasActive = AppState.trips.find(t => t.id === tripId)?.isActive;
+  await dbDeleteTripMeta(tripId);
+  AppState.trips = AppState.trips.filter(t => t.id !== tripId);
+  if (wasActive && AppState.trips.length > 0) {
+    await switchToTrip(AppState.trips[0].id);
+  }
+}
+
 // ── Firebase sync-initialisatie ───────────────────────────
-// Wordt aangeroepen vanuit initAppState nadat Firebase klaar is.
+// Wordt aangeroepen vanuit initAppState nadat Firebase klaar is, en
+// opnieuw vanuit switchToTrip() bij het wisselen van reis.
 function startFirebaseSync() {
   // Activiteiten: laad eerst, dan realtime luisteren
   dbLoadActivities().then(remoteActivities => {
@@ -128,8 +215,10 @@ function startFirebaseSync() {
       const localOnly = AppState.activities.filter(a => !remoteIds.has(a.id));
       AppState.activities = [...remoteActivities, ...localOnly];
       refreshAllScreens();
-    } else {
-      // Eerste keer: push de seed-data naar Firebase
+    } else if (getCurrentTripId() === DEFAULT_TRIP_ID) {
+      // Eerste keer voor de standaardreis: push de seed-data naar Firebase.
+      // Nieuwe, door de gebruiker aangemaakte reizen starten bewust leeg —
+      // geen automatische seed meer voor onbekende trip-ID's.
       AppState.activities.forEach(act => dbSaveActivity(act));
     }
 
@@ -161,6 +250,18 @@ function startFirebaseSync() {
   });
 }
 
+// Het Meer-scherm heeft geen eigen render-functie (statische lijst met
+// vaste links) — deze twee regels zijn de enige die van de actieve reis
+// afhangen, dus die werken we hier gericht bij i.p.v. het hele scherm
+// dynamisch te maken.
+function updateMeerSummary() {
+  const tripEl = document.getElementById('meer-trip-sub');
+  const accEl = document.getElementById('meer-acc-sub');
+  const trip = getActiveTrip();
+  if (tripEl) tripEl.textContent = trip ? `${trip.name} · actief` : 'Nog geen reis actief';
+  if (accEl) accEl.textContent = `${ACCOMMODATIONS.length} verblijven · wisselen per datum`;
+}
+
 function refreshAllScreens() {
   const screens = {
     'screen-home': renderHomeScreen,
@@ -178,5 +279,52 @@ function initAppState() {
   AppState.viewingAccommodationId = getActiveAccommodation().id;
 
   // Firebase sync starten zodra db klaar is
-  onDbReady(startFirebaseSync);
+  onDbReady(async () => {
+    // Reizen laden; als de trips-collectie nog nooit is gevuld (eerste
+    // keer ooit), de standaardreis + haar accommodaties zaaien —
+    // zelfde patroon als de bestaande activiteiten-seed hieronder.
+    let trips = await dbLoadAllTrips();
+    if (!trips || trips.length === 0) {
+      const seedTrip = {
+        id: DEFAULT_TRIP_ID, name: 'Noorwegen 2026', country: 'Noorwegen',
+        countryFlag: '🇳🇴', startDate: TRIP_START, endDate: TRIP_END, isActive: true,
+      };
+      await dbSaveTripMeta(seedTrip);
+      for (const acc of ACCOMMODATIONS) {
+        await dbSaveAccommodation(DEFAULT_TRIP_ID, {
+          id: String(acc.id), name: acc.name, short: acc.short, color: acc.color,
+          checkIn: acc.checkIn.toISOString(), checkOut: acc.checkOut.toISOString(),
+          address: acc.address, elevation: acc.elevation, coord: acc.coord,
+          lat: acc.lat, lng: acc.lng, notes: acc.notes, phone: acc.phone,
+          order: ACCOMMODATIONS.indexOf(acc),
+        });
+      }
+      trips = [seedTrip];
+    }
+    AppState.trips = trips;
+
+    // De URL (?trip=XXX) is leidend als hij expliciet is meegegeven —
+    // dat is precies het mechanisme achter de gedeelde reislink.
+    // Zonder expliciete link volgen we de reis die globaal als actief
+    // staat. Wijst de URL naar een trip-ID die niet (meer) bestaat, dan
+    // valt de app terug op de eerste beschikbare reis — geen automatische
+    // Noorwegen-kloon meer voor een onbekende/lege reis.
+    const urlHadExplicitTrip = !!new URLSearchParams(window.location.search).get('trip');
+    let targetTripId = urlHadExplicitTrip ? getCurrentTripId() : (getActiveTrip() || trips[0]).id;
+    let targetTrip = trips.find(t => t.id === targetTripId);
+    if (!targetTrip) {
+      targetTrip = trips[0];
+      targetTripId = targetTrip.id;
+    }
+    setCurrentTripId(targetTripId);
+
+    const accs = await dbLoadAccommodations(targetTripId);
+    applyTripData(targetTrip, accs && accs.length > 0 ? accs : ACCOMMODATIONS);
+    AppState.selectedPlanningDay = getToday();
+    AppState.viewingAccommodationId = getActiveAccommodation() ? getActiveAccommodation().id : null;
+
+    startFirebaseSync();
+    updateMeerSummary();
+    if (document.getElementById('screen-home').classList.contains('active')) renderHomeScreen();
+  });
 }

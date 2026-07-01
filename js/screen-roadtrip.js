@@ -2,8 +2,6 @@
 // screen-roadtrip.js — Roadtrip-modus met live GPS
 // ═══════════════════════════════════════════════════════════
 
-let roadtripGpsWatchId = null;
-
 function renderRoadtripScreen() {
   const acc = getActiveAccommodation();
   const today = getToday();
@@ -60,26 +58,23 @@ function renderRoadtripScreen() {
 function toggleRoadtripGPS() {
   const dot = document.getElementById('rt-gps-dot');
   const label = document.getElementById('rt-gps-label');
-  if (roadtripGpsWatchId) {
-    navigator.geolocation.clearWatch(roadtripGpsWatchId);
-    roadtripGpsWatchId = null;
-    dot.style.background = 'rgba(232,228,217,0.4)';
-    label.textContent = 'GPS UIT';
-    document.getElementById('rt-position').textContent = 'positie onbekend';
+  if (isGpsActive()) {
+    stopGpsTracking();
     showToast('GPS gestopt');
   } else {
-    if (!navigator.geolocation) { showToast('GPS niet beschikbaar'); return; }
-    dot.style.background = '#C5512B';
-    label.textContent = 'GPS AAN';
-    roadtripGpsWatchId = navigator.geolocation.watchPosition(
-      pos => {
-        document.getElementById('rt-position').textContent =
-          `${pos.coords.latitude.toFixed(4)}°N ${pos.coords.longitude.toFixed(4)}°E`;
-      },
-      err => showToast('GPS-fout: ' + err.message),
-      { enableHighAccuracy: true, maximumAge: 5000 }
-    );
-    showToast('📍 GPS-tracking gestart');
+    const started = startGpsTracking('roadtrip', pos => {
+      document.getElementById('rt-position').textContent =
+        `${pos.coords.latitude.toFixed(4)}°N ${pos.coords.longitude.toFixed(4)}°E`;
+    }, () => {
+      dot.style.background = 'rgba(232,228,217,0.4)';
+      label.textContent = 'GPS UIT';
+      document.getElementById('rt-position').textContent = 'positie onbekend';
+    });
+    if (started) {
+      dot.style.background = '#C5512B';
+      label.textContent = 'GPS AAN';
+      showToast('📍 GPS-tracking gestart');
+    }
   }
 }
 

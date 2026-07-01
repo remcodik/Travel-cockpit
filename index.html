@@ -37,11 +37,11 @@
   <div class="px safe-top" style="padding-bottom:12px;border-bottom:1px solid var(--line-soft);background:var(--white)">
     <p class="eyebrow" id="home-day">Dag — · — jun</p>
     <div style="display:flex;align-items:baseline;gap:9px;margin-top:5px">
-      <span class="page-title">NOORWEGEN</span>
-      <span class="mono" style="color:var(--summit);font-size:13px;font-weight:700">2026</span>
+      <span class="page-title" id="home-trip-name">NOORWEGEN 2026</span>
     </div>
     <p class="mono" id="home-coord" style="margin-top:3px">15.06 – 30.06</p>
   </div>
+  <div id="home-trip-phase-banner"></div>
 
   <div class="scroll">
     <button onclick="navigateTo('accommodation')" class="hero-panel topo-panel px"
@@ -211,8 +211,8 @@
 
     <div class="px" style="margin-bottom:8px"><span class="eyebrow">Mijn route</span></div>
     <div class="card" style="margin:0 16px;width:calc(100% - 32px)">
-      <div class="card-row" onclick="navigateTo('accommodation')"><div class="icon-box" style="background:var(--slope-light);color:var(--spruce)">▲</div><div style="flex:1"><p class="row-title">Accommodaties</p><p class="row-sub">4 verblijven · wisselen per datum</p></div><span class="chevron">›</span></div>
-      <div class="card-row" onclick="navigateTo('trips')"><div class="icon-box" style="background:var(--slope-light)">✈️</div><div style="flex:1"><p class="row-title">Mijn reizen</p><p class="row-sub">Noorwegen 2026 · actief</p></div><span class="chevron">›</span></div>
+      <div class="card-row" onclick="navigateTo('accommodation')"><div class="icon-box" style="background:var(--slope-light);color:var(--spruce)">▲</div><div style="flex:1"><p class="row-title">Accommodaties</p><p class="row-sub" id="meer-acc-sub">4 verblijven · wisselen per datum</p></div><span class="chevron">›</span></div>
+      <div class="card-row" onclick="navigateTo('trips')"><div class="icon-box" style="background:var(--slope-light)">✈️</div><div style="flex:1"><p class="row-title">Mijn reizen</p><p class="row-sub" id="meer-trip-sub">Noorwegen 2026 · actief</p></div><span class="chevron">›</span></div>
       <div class="card-row" onclick="copyTripShareUrl()"><div class="icon-box" style="background:var(--slope-light)">🔗</div><div style="flex:1"><p class="row-title">Deel reislink</p><p class="row-sub">Reisgenoten zien dezelfde data</p></div><span style="font-size:12px;font-weight:700;padding:5px 12px;background:var(--slope-light);color:var(--spruce);border-radius:20px;flex-shrink:0">Kopieer</span></div>
       <div class="card-row" onclick="navigateTo('tickets')"><div class="icon-box" style="background:var(--slope-light)">🎟️</div><div style="flex:1"><p class="row-title">Tickets</p><p class="row-sub" id="meer-tickets-sub">1 ticket</p></div><span class="chevron">›</span></div>
     </div>
@@ -364,20 +364,10 @@
   </div>
   <div class="scroll px" style="padding-top:15px">
     <span class="eyebrow" style="display:block;margin-bottom:9px">Actief</span>
-    <div class="card" style="border-left:3px solid var(--spruce);margin-bottom:16px;overflow:hidden">
-      <div style="padding:16px;display:flex;align-items:flex-start;gap:13px">
-        <span style="font-size:34px">🇳🇴</span>
-        <div style="flex:1"><p style="font-weight:800;font-size:17px">Noorwegen 2026</p><p class="mono" style="margin-top:4px">15–30 jun · 16 dagen · 19 activiteiten</p>
-          <div style="display:flex;gap:7px;margin-top:11px">
-            <button onclick="showToast('Noorwegen 2026 is al actief')" style="padding:7px 14px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">✓ Actief</button>
-            <button onclick="navigateTo('planning')" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Planning</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div id="active-trip-card" style="margin-bottom:16px"></div>
     <button onclick="openAddTripSheet()" class="card" style="width:100%;padding:17px;display:flex;align-items:center;gap:13px;border:2px dashed var(--line);background:white;cursor:pointer;text-align:left;box-shadow:none">
       <span style="font-size:30px;color:var(--spruce)">+</span>
-      <div><p style="font-weight:700;font-size:15px">Reis toevoegen</p><p class="mono">Naam, land, datums</p></div>
+      <div><p style="font-weight:700;font-size:15px">Reis toevoegen</p><p class="mono">Naam, land, verblijven met data</p></div>
     </button>
     <div id="extra-trips-list"></div>
   </div>
@@ -450,11 +440,10 @@
     <div class="sheet-handle"></div>
     <p class="sheet-title">REIS TOEVOEGEN</p>
     <input id="trip-name-input" placeholder="Naam (bijv. Italië 2027)"/>
-    <select id="trip-country-select"><option>🇳🇴 Noorwegen</option><option>🇮🇹 Italië</option><option>🇫🇷 Frankrijk</option><option>🇩🇪 Duitsland</option><option>🇪🇸 Spanje</option><option>🇵🇹 Portugal</option><option>🇦🇹 Oostenrijk</option><option>🇨🇭 Zwitserland</option><option>🇭🇷 Kroatië</option><option>🇬🇷 Griekenland</option><option>🇮🇸 IJsland</option><option>🇸🇪 Zweden</option></select>
-    <div style="display:flex;gap:10px;margin-bottom:18px">
-      <div style="flex:1"><p class="eyebrow" style="margin-bottom:5px">Van</p><input id="trip-from-input" type="date" style="margin-bottom:0"/></div>
-      <div style="flex:1"><p class="eyebrow" style="margin-bottom:5px">Tot</p><input id="trip-to-input" type="date" style="margin-bottom:0"/></div>
-    </div>
+    <select id="trip-country-select" style="margin-bottom:18px"><option>🇳🇴 Noorwegen</option><option>🇮🇹 Italië</option><option>🇫🇷 Frankrijk</option><option>🇩🇪 Duitsland</option><option>🇪🇸 Spanje</option><option>🇵🇹 Portugal</option><option>🇦🇹 Oostenrijk</option><option>🇨🇭 Zwitserland</option><option>🇭🇷 Kroatië</option><option>🇬🇷 Griekenland</option><option>🇮🇸 IJsland</option><option>🇸🇪 Zweden</option></select>
+    <p class="eyebrow" style="margin-bottom:9px">Verblijven</p>
+    <div id="trip-accommodations-fields"></div>
+    <button onclick="addAnotherTripAccommodation()" class="btn btn-outline" style="margin-bottom:18px">+ Nog een verblijf</button>
     <button onclick="saveTrip()" class="btn btn-primary">Reis toevoegen</button>
     <button onclick="closeSheet('sheet-trip')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
   </div>
@@ -564,10 +553,15 @@
 </nav>
 <div id="toast"></div>
 <div id="debug-banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#A8291F;color:white;padding:10px 14px;font-family:monospace;font-size:11px;z-index:99999;max-height:40vh;overflow-y:auto;white-space:pre-wrap"></div>
+<div id="gps-global-dot" style="display:none;pointer-events:none;position:fixed;top:calc(env(safe-area-inset-top,12px) + 8px);right:14px;z-index:9998;align-items:center;gap:5px;padding:5px 10px;background:rgba(197,81,43,0.94);border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+  <span style="width:7px;height:7px;border-radius:50%;background:white"></span>
+  <span class="mono" style="color:white;font-size:9px;font-weight:700;letter-spacing:0.5px">GPS</span>
+</div>
 
 <!-- ═══════════ SCRIPTS ═══════════ -->
 <script src="js/firebase.js"></script>
 <script src="js/data.js"></script>
+<script src="js/gps.js"></script>
 <script src="js/state.js"></script>
 <script src="js/topo.js"></script>
 <script src="js/weather.js"></script>
@@ -581,6 +575,20 @@
 <script src="js/screen-roadtrip.js"></script>
 <script src="js/screen-tickets.js"></script>
 <script>
+  // FIX: fouten zichtbaar maken op het toestel zelf — console.error alleen
+  // was onzichtbaar op een telefoon. Vangt ook fouten in async code (bv.
+  // binnen onDbReady-callbacks) die de synchrone try/catch hieronder mist.
+  function showFatalError(context, err) {
+    console.error(context, err);
+    const b = document.getElementById('debug-banner');
+    if (b) {
+      b.classList.add('show');
+      b.textContent += `❌ ${context}: ${err && err.message ? err.message : err}\n${err && err.stack ? err.stack : ''}\n\n`;
+    }
+  }
+  window.addEventListener('error', e => showFatalError('Onverwachte fout', e.error || e.message));
+  window.addEventListener('unhandledrejection', e => showFatalError('Onverwachte fout (async)', e.reason));
+
   // App-initialisatie
   try {
     initFirebase();   // Firebase eerst — stelt db in en start sync
@@ -588,7 +596,7 @@
     initAllTopoPanels();
     renderHomeScreen();
   } catch (e) {
-    console.error('Init fout:', e);
+    showFatalError('Init fout', e);
   }
 </script>
 </body>

@@ -7,6 +7,13 @@ function renderHomeScreen() {
   const dayNum = getDayNumber(today);
   const acc = getActiveAccommodation(); // FIX: altijd via datum-logica, nooit hardcoded
 
+  renderTripPhaseBanner();
+
+  const activeTrip = getActiveTrip();
+  document.getElementById('home-trip-name').textContent = activeTrip
+    ? `${activeTrip.countryFlag || ''} ${activeTrip.name}`.trim().toUpperCase()
+    : 'NOORWEGEN 2026';
+
   document.getElementById('home-day').textContent = `Dag ${dayNum} · ${formatShortDate(today)}`;
   document.getElementById('home-coord').textContent = acc ? acc.coord : '15.06 – 30.06';
 
@@ -62,8 +69,29 @@ function renderHomeScreen() {
   initAllTopoPanels();
 }
 
+// Eerlijke status i.p.v. een gefingeerde datum: buiten het reisvenster
+// toont de app nu duidelijk dat de reis nog moet beginnen of al voorbij
+// is, in plaats van te doen alsof het een willekeurige dag mid-reis is.
+function renderTripPhaseBanner() {
+  const el = document.getElementById('home-trip-phase-banner');
+  if (!el) return;
+  const phase = getTripPhase();
+  if (phase === 'during') { el.innerHTML = ''; return; }
+
+  const daysUntil = Math.ceil((TRIP_START - getToday()) / 86400000);
+  const text = phase === 'before'
+    ? `Reis begint over ${daysUntil} dag${daysUntil === 1 ? '' : 'en'} · ${formatShortDate(TRIP_START)}`
+    : `Reis afgerond op ${formatShortDate(TRIP_END)} — hier is een terugblik`;
+
+  el.innerHTML = `
+    <div class="px" style="padding-top:11px;padding-bottom:11px;background:var(--slope-light);border-bottom:1px solid var(--line-soft)">
+      <p class="mono" style="color:var(--spruce);font-weight:700">◷ ${text}</p>
+    </div>`;
+}
+
 function renderActivityRow(act, index, total) {
   const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
+  if (!acc) return '';
   const isDone = act.status === 'done';
   const isLast = index === total - 1;
   return `
