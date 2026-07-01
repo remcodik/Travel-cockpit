@@ -18,28 +18,23 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
 <link rel="stylesheet" href="css/styles.css"/>
+<!-- Firebase SDK (compat mode — werkt zonder build-stap) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
-#debug-banner{display:none;position:fixed;top:0;left:0;right:0;background:#A8291F;color:white;padding:10px 14px;font-family:monospace;font-size:11px;z-index:99999;max-height:40vh;overflow-y:auto;white-space:pre-wrap}
-#debug-banner.show{display:block}
+/* Safe-area fix — tekst loopt niet meer door statusbalk */
+.safe-top { padding-top: max(14px, env(safe-area-inset-top, 14px)) !important; }
+#toast { bottom: max(88px, calc(76px + env(safe-area-inset-bottom, 0px))); }
+</style>
+<style>
 </style>
 </head>
 <body>
-<div id="debug-banner"></div>
-<script>
-  // Tijdelijke diagnostische laag — vangt elke fout op en toont
-  // die zichtbaar in de app, zodat problemen traceerbaar zijn
-  // zonder devtools op een telefoon.
-  window.onerror = function(msg, src, line, col, err) {
-    var b = document.getElementById('debug-banner');
-    b.classList.add('show');
-    b.textContent += '❌ FOUT: ' + msg + '\n   in ' + (src||'?').split('/').pop() + ':' + line + ':' + col + '\n\n';
-    return false;
-  };
-</script>
+
 
 <!-- ═══════════ HOME ═══════════ -->
 <div id="screen-home" class="screen active">
-  <div class="px" style="padding-top:14px;padding-bottom:12px;border-bottom:1px solid var(--line-soft);background:var(--white)">
+  <div class="px" class="safe-top" style="padding-bottom:12px;border-bottom:1px solid var(--line-soft);background:var(--white)">
     <p class="eyebrow" id="home-day">Dag — · — jun</p>
     <div style="display:flex;align-items:baseline;gap:9px;margin-top:5px">
       <span class="page-title">NOORWEGEN</span>
@@ -181,14 +176,17 @@
     </div>
   </div>
   <div class="hscroll px" style="padding-top:11px;padding-bottom:11px;background:var(--white);border-bottom:1px solid var(--line-soft)">
+    <button data-discover-mode="accommodation" onclick="setDiscoverMode('accommodation', this)" class="chip on">▲ Verblijf</button>
+    <button data-discover-mode="here" onclick="setDiscoverMode('here', this)" class="chip">📍 Hier</button>
+    <span style="width:1px;background:var(--line);align-self:stretch;flex-shrink:0"></span>
     <button onclick="setDiscoverFilter(this, null)" class="chip on">Alles</button>
     <button onclick="setDiscoverFilter(this, 'activity')" class="chip">Wandeling</button>
-    <button onclick="setDiscoverFilter(this, 'restaurant')" class="chip">Eten</button>
+    <button onclick="setDiscoverFilter(this, 'restaurant')" class="chip">Eten & café</button>
     <button onclick="setDiscoverFilter(this, 'viewpoint')" class="chip">Uitzicht</button>
   </div>
   <div class="scroll">
     <div id="discover-list" style="display:flex;flex-direction:column;gap:11px;padding:14px 16px 16px"></div>
-    <div class="px" style="padding-bottom:24px"><button id="discover-more-btn" onclick="handleLoadMoreSuggestions()" class="btn btn-outline">↻ Meer ideeën</button></div>
+    <div class="px" style="padding-bottom:24px"><button id="discover-more-btn" onclick="handleLoadMoreSuggestions()" class="btn btn-primary">↻ Nieuwe ideeën ophalen</button></div>
   </div>
 </div>
 
@@ -212,6 +210,7 @@
     <div class="card" style="margin:0 16px;width:calc(100% - 32px)">
       <div class="card-row" onclick="navigateTo('accommodation')"><div class="icon-box" style="background:var(--slope-light);color:var(--spruce)">▲</div><div style="flex:1"><p class="row-title">Accommodaties</p><p class="row-sub">4 verblijven · wisselen per datum</p></div><span class="chevron">›</span></div>
       <div class="card-row" onclick="navigateTo('trips')"><div class="icon-box" style="background:var(--slope-light)">✈️</div><div style="flex:1"><p class="row-title">Mijn reizen</p><p class="row-sub">Noorwegen 2026 · actief</p></div><span class="chevron">›</span></div>
+      <div class="card-row" onclick="copyTripShareUrl()"><div class="icon-box" style="background:var(--slope-light)">🔗</div><div style="flex:1"><p class="row-title">Deel reislink</p><p class="row-sub">Reisgenoten zien dezelfde data</p></div><span style="font-size:12px;font-weight:700;padding:5px 12px;background:var(--slope-light);color:var(--spruce);border-radius:20px;flex-shrink:0">Kopieer</span></div>
       <div class="card-row" onclick="navigateTo('tickets')"><div class="icon-box" style="background:var(--slope-light)">🎟️</div><div style="flex:1"><p class="row-title">Tickets</p><p class="row-sub" id="meer-tickets-sub">1 ticket</p></div><span class="chevron">›</span></div>
     </div>
 
@@ -496,6 +495,51 @@
 </div>
 
 <!-- ═══════════ NAVIGATIE ═══════════ -->
+
+<!-- ═══════════ SHEET: Activiteit detail ═══════════ -->
+<div class="sheet-backdrop" id="sheet-activity-detail">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div id="activity-detail-content"></div>
+  </div>
+</div>
+
+<!-- ═══════════ SHEET: Activiteit verplaatsen ═══════════ -->
+<div class="sheet-backdrop" id="sheet-move-activity">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title" id="move-activity-title">Verplaatsen</p>
+    <p class="eyebrow" style="margin-bottom:5px">Dag</p>
+    <select id="move-day-select" style="margin-bottom:13px"></select>
+    <p class="eyebrow" style="margin-bottom:5px">Verblijf</p>
+    <select id="move-acc-select" style="margin-bottom:20px"></select>
+    <button id="move-save-btn" class="btn btn-primary">Opslaan</button>
+    <button onclick="closeSheet('sheet-move-activity')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
+  </div>
+</div>
+
+<!-- ═══════════ SHEET: AI-verrijking ═══════════ -->
+<div class="sheet-backdrop" id="sheet-enrich-activity">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title" id="enrich-activity-title">AI-verrijking</p>
+    <div id="enrich-result"></div>
+    <button onclick="closeSheet('sheet-enrich-activity')" class="btn btn-outline" style="margin-top:12px">Sluiten</button>
+  </div>
+</div>
+
+<!-- ═══════════ SHEET: Route-opties ═══════════ -->
+<div class="sheet-backdrop" id="sheet-route-options">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title" id="route-options-title">Route naar</p>
+    <p class="mono" style="margin-bottom:16px;color:var(--ink-mid)">Kies je vertrekpunt</p>
+    <button id="route-from-here-btn" class="btn btn-primary" style="margin-bottom:9px">📍 Vanaf mijn huidige locatie</button>
+    <button id="route-from-acc-btn" class="btn btn-outline" style="margin-bottom:9px">▲ <span id="route-from-acc-label">Vanaf verblijf</span></button>
+    <button onclick="closeSheet('sheet-route-options')" class="btn btn-outline">Annuleer</button>
+  </div>
+</div>
+
 <nav class="bottom-nav">
   <button onclick="navigateTo('home')" id="nav-home" class="active">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>Vandaag
@@ -514,8 +558,10 @@
   </button>
 </nav>
 <div id="toast"></div>
+<div id="debug-banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#A8291F;color:white;padding:10px 14px;font-family:monospace;font-size:11px;z-index:99999;max-height:40vh;overflow-y:auto;white-space:pre-wrap"></div>
 
 <!-- ═══════════ SCRIPTS ═══════════ -->
+<script src="js/firebase.js"></script>
 <script src="js/data.js"></script>
 <script src="js/state.js"></script>
 <script src="js/topo.js"></script>
@@ -530,15 +576,14 @@
 <script src="js/screen-roadtrip.js"></script>
 <script src="js/screen-tickets.js"></script>
 <script>
-  // App-initialisatie — met zichtbare foutafvang voor diagnose
+  // App-initialisatie
   try {
-    initAppState();
+    initFirebase();   // Firebase eerst — stelt db in en start sync
+    initAppState();   // Staat en datum-logica, triggert Firebase sync
     initAllTopoPanels();
     renderHomeScreen();
   } catch (e) {
-    var b = document.getElementById('debug-banner');
-    b.classList.add('show');
-    b.textContent += '❌ INIT-FOUT: ' + e.message + '\n' + (e.stack || '') + '\n\n';
+    console.error('Init fout:', e);
   }
 </script>
 </body>
