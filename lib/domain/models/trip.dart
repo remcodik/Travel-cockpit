@@ -44,5 +44,5 @@ class Trip with _$Trip {
     );
   }
 
-  factory Trip.fromJson(Map<String, dynamic> json) => _\$TripFromJson(json);
+  factory Trip.fromJson(Map<String, dynamic> json) => _$TripFromJson(json);
 }

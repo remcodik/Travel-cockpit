@@ -95,7 +95,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
   Future<void> _navigate(_Station s) async {
     final uri = Uri.parse(
         'https://www.google.com/maps/dir/?api=1'
-        '&destination=\${s.lat},\${s.lng}');
+        '&destination=${s.lat},${s.lng}');
     if (await canLaunchUrl(uri)) {
       launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -168,7 +168,7 @@ class _StationCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: _availColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10)),
-            child: Text('\${station.free}/\${station.total}',
+            child: Text('${station.free}/${station.total}',
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800,
                     color: _availColor)),
           ),

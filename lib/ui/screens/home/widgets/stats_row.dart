@@ -3,21 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../domain/models/planning_item.dart';
-import '../../../../domain/models/place.dart';
-import '../../../../providers/planning_provider.dart';
-import '../../../../providers/place_provider.dart';
-import '../../../../providers/trip_provider.dart';
-import '../../../../providers/database_provider.dart';
-
-// Real counts from DB for the active trip
-final _restaurantCountProvider = FutureProvider<int>((ref) async {
-  final trip = ref.watch(activeTripProvider).valueOrNull;
-  if (trip == null) return 0;
-  final repo = ref.watch(placeRepositoryProvider);
-  final cafes = await repo.getByCategory(trip.id, PlaceCategory.cafe);
-  final rests = await repo.getByCategory(trip.id, PlaceCategory.restaurant);
-  return cafes.length + rests.length;
-});
 
 final _ticketCountProvider = FutureProvider<int>((ref) async {
   // Tickets in planning with category ticket — placeholder until TicketModel
@@ -41,7 +26,6 @@ class StatsRow extends ConsumerWidget {
             ?.where((i) => !i.isCompleted).length ?? 0;
     final done = planningAsync.valueOrNull
             ?.where((i) => i.isCompleted).length ?? 0;
-    final restCount = ref.watch(_restaurantCountProvider).valueOrNull ?? 0;
     final ticketCount = ref.watch(_ticketCountProvider).valueOrNull ?? 0;
 
     return Container(

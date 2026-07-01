@@ -23,15 +23,6 @@ class RoadtripScreen extends ConsumerStatefulWidget {
 class _RoadtripScreenState extends ConsumerState<RoadtripScreen> {
   bool _mapExpanded = false;
 
-  // Norway 2026 — next accommodation coordinates
-  static const _nextStops = [
-    (name: 'Sogndal',               lat: 61.219, lng: 7.158,  dates: '16–19 jun'),
-    (name: 'Skjåk Solside',         lat: 61.913, lng: 8.275,  dates: '19–23 jun'),
-    (name: 'Valdres / Noord-Aurdal',lat: 60.985, lng: 9.236,  dates: '23–27 jun'),
-    (name: 'Gjerstad',              lat: 58.880, lng: 9.020,  dates: '27–29 jun'),
-    (name: 'Kristiansand (ferry)',  lat: 58.145, lng: 7.989,  dates: '29 jun'),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final trip        = ref.watch(activeTripProvider).valueOrNull;
@@ -223,7 +214,7 @@ class _WeatherStrip extends StatelessWidget {
                 style: const TextStyle(fontSize: 28,
                     fontWeight: FontWeight.w900, color: Colors.white)),
             Text(weather.condition, style: const TextStyle(
-                fontSize: 13, color: Colors.white80)),
+                fontSize: 13, color: Colors.white70)),
           ])),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Row(children: [

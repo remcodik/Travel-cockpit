@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
 import '../../providers/connectivity_provider.dart';
 
 /// Shows a slim banner at top of screen when offline.

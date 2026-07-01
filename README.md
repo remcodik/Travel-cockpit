@@ -57,14 +57,19 @@ Nijmegen → Hirtshals (ferry nacht) → Stavanger (tussenstop) → Bergen (aank
 
 ## Tech stack
 
-**Web prototype (live):** React 18 + Vite + Tailwind + Archivo + Space Mono
+**Web app (live, actief in ontwikkeling):**
+- Vanilla HTML/CSS/JS — geen build-stap, geen framework
+- Leaflet + OpenStreetMap (kaart) · Open-Meteo (weer, gratis)
+- Firebase Firestore — persistente, real-time gedeelde data (activiteiten, tickets)
+- Vercel serverless functions — Anthropic Claude API (AI-suggesties), Open Charge Map (laadstations)
 
-**Native Flutter app (in ontwikkeling):**
-- Flutter 3.x · Riverpod · Drift (SQLite) · GoRouter
-- Open-Meteo (weer, gratis) · Anthropic Claude API (AI)
-- FlutterMap + OpenStreetMap
+**Native Flutter app (`lib/` — bestaat al, nog niet geverifieerd):**
+- Flutter 3.x · Riverpod · Drift (SQLite) · GoRouter — ~9.600 regels, alle schermen al gebouwd, incl. een echte multi-trip-provider
+- Nooit gebouwd of getest (geen `ios/`/`android/`-mappen, geen gegenereerde bestanden) — een compile-verificatie is de eerstvolgende stap
+- Volledige architectuur staat uitgewerkt in `docs/08-technical/01-flutter.md`
 
-De Flutter app vereist een Mac om te compileren. De web prototype is de gedeelde versie.
+**Waarom leunt het actieve gebruik nu op de web-app?**
+Een Flutter iOS-app *op je eigen iPhone zetten* vereist een Mac (of een cloud-Mac-CI-dienst) plus een Apple Developer Program-account (US$99/jaar, een Apple-eis) — dat is er (nog) niet. Android- en web-builds van dezelfde Flutter-code vereisen géén Mac en zijn wel haalbaar. Tot de Flutter-app geverifieerd en op een device te krijgen is, blijft de web-app de versie die je nu al kunt gebruiken: geen lokale toolchain nodig, direct bruikbaar in de browser, installeerbaar op het beginscherm. Zie besluit `DL-014` in `docs/00-product/02-decision-log.md`.
 
 ---
 

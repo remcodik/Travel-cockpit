@@ -1,18 +1,22 @@
 # Flutter Architecture
 
 **Document ID:** TC-TECH-001
-**Version:** 1.0
-**Status:** Stable
+**Version:** 1.3
+**Status:** Implemented in `lib/` and build-verified (`flutter analyze`: 0 issues) — no platform install yet (see `DL-014`)
 **Owner:** Product Team
-**Last Updated:** 2025-06-27
+**Last Updated:** 2026-07-01
 
 ---
 
 # Purpose
 
-This document defines the technical architecture for the Travel Cockpit Flutter application.
+This document defines the technical architecture for the native Travel Cockpit Flutter application.
 
-It provides the foundation every developer needs before writing a single line of code.
+**Current status:** the `lib/` directory implements most of this architecture (~9,600 lines, 60 files — Riverpod providers, Drift/SQLite tables and DAOs, GoRouter, all main screens, a real multi-trip provider, an Anthropic AI client, a weather provider). `/notifications` and `/profile` are explicitly still placeholders in `lib/app.dart`.
+
+It was verified for the first time on 2026-07-01: `flutter pub get`, code generation (Drift/Riverpod/freezed) and `flutter analyze` all run clean (0 errors, 0 warnings) after fixing ~15 real compile errors the code had never been checked for before (stray `\$` characters, Drift DAO methods shadowing the framework's own `update`/`delete`, a few missing imports, one class-naming mismatch). A Linux desktop build compiled all Dart code successfully; it only stopped at a native SQLite library download blocked by the verifying sandbox's network policy, not by the app code.
+
+Native iOS installation additionally needs a Mac (or a cloud Mac CI service) and, separately, an Apple Developer Program membership (US$99/year) to install durably on a personal iPhone — an Apple requirement, not a toolchain one. **Android and Flutter Web builds of this same code do not require a Mac** and are the next concrete step toward actually running this app on a device. The actively used product today is still the web app (see root `README.md` and `docs/00-product/02-decision-log.md`, decision `DL-014`).
 
 ---
 
@@ -259,3 +263,6 @@ dependencies:
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2025-06-27 | Initial stable version |
+| 1.1 | 2026-07-01 | Marked as deferred blueprint — native work not started due to lack of a Mac; web app is the active product (`DL-014`) |
+| 1.2 | 2026-07-01 | Correction: `lib/` already implements most of this architecture (previously missed in review) but has never been built/analyzed — status changed from "not started" to "implemented, unverified" |
+| 1.3 | 2026-07-01 | Build-verified: fixed ~15 real compile errors, `flutter analyze` now clean (0 issues); Linux build confirmed all Dart code compiles |

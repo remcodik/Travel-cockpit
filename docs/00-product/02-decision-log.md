@@ -1,9 +1,9 @@
 # Decision Log
 
 **Document ID:** TC-PROD-002
-**Version:** 2.0
+**Version:** 2.2
 **Status:** Stable — updated as decisions are made
-**Last Updated:** 2026-06-28
+**Last Updated:** 2026-07-01
 
 ---
 
@@ -143,9 +143,31 @@ The bottom nav tabs (Vandaag, Kaart, Planning, Ideeën) are the primary daily-us
 
 ---
 
+## DL-014 — Web App First, Native Flutter App Deferred
+
+**Decision:** Travel Cockpit ships as an installable mobile web app (Vercel + browser, "Add to Home Screen") as the primary, actively developed product. The native Flutter app described in `08-technical/01-flutter.md` is a deferred future target, not current work.
+
+**Why:** Building and running a Flutter iOS app requires a Mac — Xcode only runs on macOS, and there is no Mac available. The only other machine available is a work-managed laptop on which installing development toolchains (Flutter SDK, Android Studio, etc.) is not permitted. Rather than block on hardware that isn't available, the choice was made to build a web app instead: no local toolchain needed, deployable and testable immediately, and it delivers a real, usable result now.
+
+**Consequence:**
+- `README.md` must describe the actual stack of the live app (plain HTML/CSS/JS + Leaflet + Firebase, no build step) rather than an aspirational one.
+- `08-technical/01-flutter.md` remains valid as an architecture blueprint, but its status reflects "deferred, not started" rather than "stable/in progress".
+
+**Correction (2026-07-01):** This decision originally stated "no Flutter code exists in this repository." That was incorrect — a substantial `lib/` directory (~9,600 lines across 60 Dart files) already exists, implementing the architecture from `08-technical/01-flutter.md` almost in full (Riverpod providers, Drift/SQLite tables and DAOs, GoRouter, all main screens, a real multi-trip provider, an Anthropic AI client, a weather provider). It was missed in the earlier review because the file listing was truncated. This code has never been run through `flutter pub get` / `build_runner` / `flutter analyze` — there are no generated files and no `ios/`/`android/` platform folders — so its actual buildability is unverified, not absent.
+
+This changes the practical picture: **Android and Flutter Web builds do not require a Mac** and can be produced from a Linux environment. Only a genuine native **iOS** build needs either a physical Mac or a cloud Mac CI service (e.g. Codemagic) — and, separately from tooling, installing an app durably on a personal iPhone requires an Apple Developer Program membership (US$99/year), which is an Apple policy requirement, not a toolchain limitation.
+
+**Update (2026-07-01) — build verified:** A full `flutter pub get` / `build_runner` / `flutter analyze` pass was run against `lib/` for the first time. It found ~15 real compile errors (never caught before because the code had never been built) — mostly mechanical: stray `\$` characters instead of `$`, Drift DAOs whose custom `update`/`delete` methods shadowed the framework's own methods, a few missing imports and one naming mismatch. All were fixed; `flutter analyze` now reports 0 errors and 0 warnings. A Linux desktop build was attempted as an end-to-end check and compiled all Dart code successfully, stopping only at a native SQLite C-library download blocked by this sandbox's network policy — an environment limitation, not a code defect.
+
+**Status:** The Flutter codebase is now verified buildable. Next concrete step is a real Android build (via this cloud environment or a CI service) — the first target that would let the app be genuinely installed and run, without needing a Mac.
+
+---
+
 # Change History
 
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-06-01 | Initial decisions DL-001 through DL-008 |
 | 2.0 | 2026-06-28 | Added DL-009 through DL-013, full rewrites |
+| 2.1 | 2026-07-01 | Added DL-014 — web app first, native app deferred due to lack of Mac / restricted work laptop |
+| 2.2 | 2026-07-01 | Corrected DL-014 — a substantial, previously-overlooked `lib/` Flutter codebase already exists but is unverified; Android/web builds don't require a Mac |

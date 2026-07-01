@@ -231,18 +231,18 @@ class _AccTag extends ConsumerWidget {
     final n = name.toLowerCase();
     if (n.contains('molden') || n.contains('solvorn') ||
         n.contains('urnes')  || n.contains('bøyabreen'))
-      return _norwayAccommodations[0]; // Sogndal
+      return norwayAccommodations[0]; // Sogndal
     if (n.contains('lom')    || n.contains('bakeriet') ||
         n.contains('klimapark') || n.contains('vegaskjelet') ||
         n.contains('dønfoss') || n.contains('gjelbrue'))
-      return _norwayAccommodations[1]; // Skjåk
+      return norwayAccommodations[1]; // Skjåk
     if (n.contains('besseggen') || n.contains('bygdin') ||
         n.contains('mjølkevegen') || n.contains('gomobu') ||
         n.contains('syndin'))
-      return _norwayAccommodations[2]; // Valdres
+      return norwayAccommodations[2]; // Valdres
     if (n.contains('solhomfjell') || n.contains('risør') ||
         n.contains('tvedestrand'))
-      return _norwayAccommodations[3]; // Gjerstad
+      return norwayAccommodations[3]; // Gjerstad
     return null;
   }
 

@@ -5,7 +5,7 @@ import '../tables/places_table.dart';
 part 'place_dao.g.dart';
 
 @DriftAccessor(tables: [PlacesTable])
-class PlaceDao extends DatabaseAccessor<AppDatabase> with _\$PlaceDaoMixin {
+class PlaceDao extends DatabaseAccessor<AppDatabase> with _$PlaceDaoMixin {
   PlaceDao(super.db);
 
   Stream<List<PlacesTableData>> watchByTrip(String tripId) =>
@@ -25,9 +25,9 @@ class PlaceDao extends DatabaseAccessor<AppDatabase> with _\$PlaceDaoMixin {
   Future<void> insert(PlacesTableCompanion entry) =>
       into(placesTable).insert(entry);
 
-  Future<bool> update(PlacesTableCompanion entry) =>
-      (update(placesTable)..where((p) => p.id.equals(entry.id.value))).write(entry) > 0;
+  Future<bool> updatePlace(PlacesTableCompanion entry) async =>
+      (await (update(placesTable)..where((p) => p.id.equals(entry.id.value))).write(entry)) > 0;
 
-  Future<int> delete(String id) =>
+  Future<int> deletePlace(String id) =>
       (delete(placesTable)..where((p) => p.id.equals(id))).go();
 }

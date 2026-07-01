@@ -54,5 +54,5 @@ class PlanningItem with _$PlanningItem {
   }
 
   factory PlanningItem.fromJson(Map<String, dynamic> json) =>
-      _\$PlanningItemFromJson(json);
+      _$PlanningItemFromJson(json);
 }

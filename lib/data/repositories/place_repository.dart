@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../local/database.dart';
-import '../local/tables/places_table.dart';
 import '../../domain/models/place.dart';
 
 class PlaceRepository {
@@ -25,7 +24,7 @@ class PlaceRepository {
       _db.placeDao.insert(_toCompanion(place));
 
   Future<void> delete(String id) =>
-      _db.placeDao.delete(id);
+      _db.placeDao.deletePlace(id);
 
   Place _fromRow(PlacesTableData r) => Place(
     id:           r.id,

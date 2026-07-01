@@ -6,7 +6,7 @@ part 'planning_dao.g.dart';
 
 @DriftAccessor(tables: [PlanningItemsTable])
 class PlanningDao extends DatabaseAccessor<AppDatabase>
-    with _\$PlanningDaoMixin {
+    with _$PlanningDaoMixin {
   PlanningDao(super.db);
 
   Stream<List<PlanningItemsTableData>> watchByTrip(String tripId) =>
@@ -33,14 +33,14 @@ class PlanningDao extends DatabaseAccessor<AppDatabase>
   Future<void> insert(PlanningItemsTableCompanion entry) =>
       into(planningItemsTable).insert(entry);
 
-  Future<bool> updateStatus(String id, String status) =>
-      (update(planningItemsTable)..where((p) => p.id.equals(id)))
+  Future<bool> updateStatus(String id, String status) async =>
+      (await (update(planningItemsTable)..where((p) => p.id.equals(id)))
           .write(PlanningItemsTableCompanion(
             status: Value(status),
             completedAt: status == 'completed'
                 ? Value(DateTime.now()) : const Value.absent(),
-          )) > 0;
+          ))) > 0;
 
-  Future<int> delete(String id) =>
+  Future<int> deletePlanningItem(String id) =>
       (delete(planningItemsTable)..where((p) => p.id.equals(id))).go();
 }

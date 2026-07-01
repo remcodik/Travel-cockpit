@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'providers/ai_provider.dart';
 import 'providers/preferences_provider.dart';
+import 'providers/database_provider.dart';
 import 'data/local/database.dart';
 import 'data/seed/seed_service.dart';
 

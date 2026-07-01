@@ -50,7 +50,7 @@ class Accommodation with _$Accommodation {
   }
 
   factory Accommodation.fromJson(Map<String, dynamic> json) =>
-      _\$AccommodationFromJson(json);
+      _$AccommodationFromJson(json);
 }
 
 /// Simple time value — hours and minutes only.
@@ -61,7 +61,7 @@ class Time with _$Time {
     required int minute,
   }) = _Time;
 
-  factory Time.fromJson(Map<String, dynamic> json) => _\$TimeFromJson(json);
+  factory Time.fromJson(Map<String, dynamic> json) => _$TimeFromJson(json);
 
   factory Time.parse(String s) {
     final parts = s.split(':');
@@ -70,7 +70,7 @@ class Time with _$Time {
 }
 
 extension TimeX on Time {
-  String get display => '\${hour.toString().padLeft(2,'0')}:\${minute.toString().padLeft(2,'0')}';
+  String get display => '${hour.toString().padLeft(2,'0')}:${minute.toString().padLeft(2,'0')}';
 }
 
 /// Full accommodation with its Place data — used in UI.
