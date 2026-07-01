@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-// screen-planning.js — Planningscherm met dag-tabs
+// screen-planning.js — Planningscherm met volledige activiteiten-CRUD
 // ═══════════════════════════════════════════════════════════
 
 function renderPlanningScreen() {
@@ -16,6 +16,7 @@ function buildDayTabs() {
     const acc = getAccommodationForDate(day);
     const color = acc ? acc.color : 'var(--ink-faint)';
     const isSelected = day.toDateString() === AppState.selectedPlanningDay.toDateString();
+    const actCount = getActivitiesForDate(day).length;
     return `
       <button class="day-tab ${isSelected ? 'selected' : ''}"
         style="background:${isSelected ? color : 'var(--white)'};border-color:${isSelected ? color : 'var(--line)'}"
@@ -23,15 +24,12 @@ function buildDayTabs() {
         <span class="mono" style="font-size:10px;font-weight:700;color:${isSelected ? 'rgba(255,255,255,.85)' : color}">D${dayNum}</span>
         <span style="font-family:var(--font-display);font-size:17px;font-weight:800;color:${isSelected ? 'white' : 'var(--ink)'};line-height:1.1">${day.getDate()}</span>
         <span class="mono" style="font-size:8px;color:${isSelected ? 'rgba(255,255,255,.55)' : 'var(--ink-faint)'}">${MONTHS[day.getMonth()]}</span>
-        ${acc ? `<span class="acc-dot" style="width:5px;height:5px;background:${isSelected ? 'rgba(255,255,255,.8)' : color};margin-top:2px"></span>` : ''}
+        ${actCount > 0 ? `<span style="width:16px;height:16px;background:${isSelected ? 'rgba(255,255,255,.3)' : color + '22'};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:${isSelected ? 'white' : color};margin-top:2px">${actCount}</span>` : `<span style="width:16px;height:4px"></span>`}
       </button>`;
   }).join('');
 
-  // Scroll geselecteerde tab in beeld
   const selectedIdx = Math.floor((AppState.selectedPlanningDay - TRIP_START) / 86400000);
-  setTimeout(() => {
-    container.scrollLeft = Math.max(0, (selectedIdx - 2) * 62);
-  }, 50);
+  setTimeout(() => { container.scrollLeft = Math.max(0, (selectedIdx - 2) * 66); }, 50);
 }
 
 function selectPlanningDay(isoString) {
@@ -53,7 +51,7 @@ function renderPlanningDay() {
     <div style="flex:1">
       <p class="row-title" style="font-size:15.5px">${WEEKDAYS[day.getDay()]} ${day.getDate()} ${MONTHS[day.getMonth()]}</p>
       ${acc
-        ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span class="acc-dot" style="width:8px;height:8px;background:${acc.color}"></span><span class="mono" style="color:${acc.color};font-weight:700">vanuit ${escapeHtml(acc.name)}</span></div>`
+        ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span><span class="mono" style="color:${acc.color};font-weight:700">vanuit ${escapeHtml(acc.name)}</span></div>`
         : `<p class="mono" style="margin-top:3px">reisdag · onderweg</p>`}
     </div>
     ${acc ? renderElevationTag(acc.elevation, acc.color) : ''}
@@ -67,35 +65,70 @@ function renderPlanningDay() {
     container.innerHTML = `
       <div class="empty-state">
         <span class="summit-tri" style="border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:24px solid var(--line)"></span>
-        <p class="row-title" style="font-size:18px;margin-top:16px">Geen activiteiten</p>
-        <p class="mono" style="margin-top:4px">Plan via AI-ideeën</p>
-        <button onclick="navigateTo('discover')" class="btn btn-primary" style="margin-top:20px;width:auto;padding:10px 20px">AI-ideeën</button>
+        <p class="row-title" style="font-size:18px;margin-top:16px">Niets gepland</p>
+        <p class="mono" style="margin-top:4px">Voeg toe via AI-ideeën of het + icoon</p>
+        <button onclick="openAddActivitySheetForCurrentDay()" class="btn btn-primary" style="margin-top:20px;width:auto;padding:10px 20px">+ Activiteit</button>
       </div>`;
     return;
   }
 
   let html = '';
+
   if (dayActivities.length > 0) {
-    html += `<div class="card" style="margin-bottom:13px;overflow:hidden">`;
-    html += dayActivities.map((a, i) => renderActivityRow(a, i, dayActivities.length)).join('');
+    html += `<p class="eyebrow" style="margin-bottom:8px">Gepland op dag ${dayNum}</p>`;
+    html += `<div class="card" style="margin-bottom:16px;overflow:hidden">`;
+    dayActivities.forEach((act, i) => {
+      html += renderPlanningActivityRow(act, i, dayActivities.length);
+    });
     html += `</div>`;
   }
+
   if (unscheduled.length > 0) {
-    html += `<p class="eyebrow" style="margin-bottom:8px">Beschikbaar vanuit ${escapeHtml(acc.short)}</p>`;
-    html += `<div class="card" style="margin-bottom:13px;overflow:hidden">`;
-    html += unscheduled.map((a, i) => renderUnscheduledRow(a, i, unscheduled.length)).join('');
+    html += `<p class="eyebrow" style="margin-bottom:8px">Beschikbaar vanuit ${escapeHtml(acc.short)} · nog in te plannen</p>`;
+    html += `<div class="card" style="margin-bottom:16px;overflow:hidden">`;
+    unscheduled.forEach((act, i) => {
+      html += renderUnscheduledRow(act, i, unscheduled.length);
+    });
     html += `</div>`;
   }
+
   container.innerHTML = html;
+}
+
+function renderPlanningActivityRow(act, index, total) {
+  const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
+  if (!acc) return '';
+  const isDone = act.status === 'done';
+  const isLast = index === total - 1;
+  return `
+    <div class="activity-row" style="${isLast ? '' : 'border-bottom:1px solid var(--line-soft)'}" onclick="openActivityDetailSheet(${act.id})">
+      <div class="activity-band" style="background:${acc.color}"></div>
+      <div class="activity-thumb" style="background:${isDone ? 'var(--paper-warm)' : acc.color + '18'}">${act.emoji}</div>
+      <div style="flex:1;min-width:0">
+        <p class="row-title" style="${isDone ? 'color:var(--ink-faint);text-decoration:line-through' : ''};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(act.name)}</p>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+          ${renderElevationTag(act.elevation, acc.color)}
+          <span class="mono">· ${act.distance} · ${act.duration}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="activity-check"
+          style="border-color:${isDone ? acc.color : 'var(--line)'};background:${isDone ? acc.color : 'transparent'}"
+          onclick="event.stopPropagation();handleToggleActivity(${act.id})">
+          ${isDone ? checkmarkSvg() : ''}
+        </button>
+      </div>
+    </div>`;
 }
 
 function renderUnscheduledRow(act, index, total) {
   const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
+  if (!acc) return '';
   const isLast = index === total - 1;
   return `
-    <div class="activity-row" style="${isLast ? '' : 'border-bottom:1px solid var(--line-soft)'}" onclick="showToast('${escapeHtml(act.name)} · ${act.distance}')">
-      <div class="activity-band" style="background:${acc.color}"></div>
-      <div class="activity-thumb" style="background:${acc.color}18">${act.emoji}</div>
+    <div class="activity-row" style="${isLast ? '' : 'border-bottom:1px solid var(--line-soft)'}" onclick="openActivityDetailSheet(${act.id})">
+      <div class="activity-band" style="background:${acc.color}40"></div>
+      <div class="activity-thumb" style="background:${acc.color}12">${act.emoji}</div>
       <div style="flex:1;min-width:0">
         <p class="row-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(act.name)}</p>
         <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
@@ -103,6 +136,258 @@ function renderUnscheduledRow(act, index, total) {
           <span class="mono">· ${act.level}</span>
         </div>
       </div>
-      <span class="from-acc-badge" style="background:${acc.color}20;color:${acc.color}">niet ingepland</span>
+      <button onclick="event.stopPropagation();openMoveActivitySheet(${act.id})"
+        style="font-size:11px;font-weight:700;padding:5px 11px;background:${acc.color}15;color:${acc.color};border:1.5px solid ${acc.color}40;border-radius:20px;cursor:pointer;white-space:nowrap;flex-shrink:0">
+        Inplannen
+      </button>
     </div>`;
+}
+
+// ── Activiteit detail sheet ───────────────────────────────
+function openActivityDetailSheet(id) {
+  const act = AppState.activities.find(a => a.id === id);
+  if (!act) return;
+  const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
+
+  const dateLabel = act.date
+    ? `${WEEKDAYS[act.date.getDay()]} ${formatShortDate(act.date)}`
+    : 'Nog niet ingepland';
+
+  document.getElementById('activity-detail-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:18px">
+      <div style="width:54px;height:54px;border-radius:15px;background:${acc.color}18;display:flex;align-items:center;justify-content:center;font-size:27px;flex-shrink:0">${act.emoji}</div>
+      <div style="flex:1">
+        <p style="font-size:19px;font-weight:800;letter-spacing:-0.3px">${escapeHtml(act.name)}</p>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span>
+          <span class="mono" style="color:${acc.color};font-weight:700">${acc.name}</span>
+        </div>
+      </div>
+    </div>
+    ${act.desc ? `<p style="font-size:13.5px;line-height:1.65;color:var(--ink-mid);margin-bottom:14px">${escapeHtml(act.desc)}</p>` : ''}
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
+      ${act.elevation ? `<span class="from-acc-badge" style="background:${acc.color}15;color:${acc.color}">▲ ${act.elevation}m</span>` : ''}
+      ${act.distance !== '—' ? `<span class="from-acc-badge" style="background:var(--slope-light);color:var(--spruce)">${act.distance}</span>` : ''}
+      ${act.duration !== '—' ? `<span class="from-acc-badge" style="background:var(--slope-light);color:var(--spruce)">${act.duration}</span>` : ''}
+      ${act.level !== '—' ? `<span class="from-acc-badge" style="background:var(--slope-light);color:var(--spruce)">${act.level}</span>` : ''}
+      <span class="from-acc-badge" style="background:var(--paper-warm);color:var(--ink-mid)">◷ ${dateLabel}</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <button onclick="handleToggleActivity(${act.id});closeSheet('sheet-activity-detail')" class="btn btn-primary">
+        ${act.status === 'done' ? '↩ Heropenen' : '✓ Markeer als gedaan'}
+      </button>
+      <button onclick="closeSheet('sheet-activity-detail');openMoveActivitySheet(${act.id})" class="btn btn-outline">
+        ↕ Verplaatsen naar andere dag
+      </button>
+      <button onclick="closeSheet('sheet-activity-detail');openAiEnrichSheet(${act.id})" class="btn btn-outline">
+        ◎ Verrijken met AI
+      </button>
+      ${act.lat && act.lng
+        ? `<button onclick="openMapsForCoords(${act.lat},${act.lng},'${escapeHtml(act.name).replace(/'/g, "\\'")}');closeSheet('sheet-activity-detail')" class="btn btn-outline">◈ Route in Google Maps</button>`
+        : ''}
+      <button onclick="handleDeleteActivity(${act.id})" 
+        style="padding:13px;border-radius:13px;font-size:13px;font-weight:700;text-transform:uppercase;border:1.5px solid #dc2626;background:white;color:#dc2626;cursor:pointer;letter-spacing:0.5px">
+        🗑 Verwijderen
+      </button>
+    </div>`;
+
+  openSheet('sheet-activity-detail');
+}
+
+// ── Activiteit verplaatsen ────────────────────────────────
+function openMoveActivitySheet(id) {
+  const act = AppState.activities.find(a => a.id === id);
+  if (!act) return;
+
+  const daySelect = document.getElementById('move-day-select');
+  const accSelect = document.getElementById('move-acc-select');
+
+  daySelect.innerHTML = `<option value="">Niet ingepland</option>` +
+    getAllTripDays().map((d, i) => {
+      const iso = d.toISOString();
+      const selected = act.date && act.date.toDateString() === d.toDateString() ? 'selected' : '';
+      return `<option value="${iso}" ${selected}>Dag ${i+1} · ${WEEKDAYS[d.getDay()]} ${formatShortDate(d)}</option>`;
+    }).join('');
+
+  accSelect.innerHTML = ACCOMMODATIONS.map(a =>
+    `<option value="${a.id}" ${a.id === act.accId ? 'selected' : ''}>${a.name} (${formatShortDate(a.checkIn)}–${formatShortDate(a.checkOut)})</option>`
+  ).join('');
+
+  document.getElementById('move-activity-title').textContent = act.name;
+  document.getElementById('move-save-btn').onclick = () => saveMoveActivity(id);
+  openSheet('sheet-move-activity');
+}
+
+async function saveMoveActivity(id) {
+  const dateStr = document.getElementById('move-day-select').value;
+  const accId = parseInt(document.getElementById('move-acc-select').value);
+  const date = dateStr ? new Date(dateStr) : null;
+
+  await updateActivity(id, { date, accId });
+  closeSheet('sheet-move-activity');
+  showToast('✓ Activiteit verplaatst');
+  renderPlanningScreen();
+  renderHomeScreen();
+}
+
+// ── Activiteit verwijderen ────────────────────────────────
+async function handleDeleteActivity(id) {
+  const act = AppState.activities.find(a => a.id === id);
+  if (!act) return;
+  closeSheet('sheet-activity-detail');
+
+  // Bevestiging via een tweede tap (geen destructive actie zonder bevestiging)
+  if (!window._deleteConfirm || window._deleteConfirm !== id) {
+    window._deleteConfirm = id;
+    showToast(`Tik nogmaals op verwijderen om "${act.name}" te verwijderen`, 3000);
+    return;
+  }
+  window._deleteConfirm = null;
+  await deleteActivity(id);
+  showToast(`🗑 ${act.name} verwijderd`);
+  renderPlanningScreen();
+  renderHomeScreen();
+}
+
+// ── AI-verrijking van bestaande activiteit ────────────────
+async function openAiEnrichSheet(id) {
+  const act = AppState.activities.find(a => a.id === id);
+  if (!act) return;
+
+  const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
+  document.getElementById('enrich-activity-title').textContent = act.name;
+  document.getElementById('enrich-result').innerHTML = `
+    <div class="empty-state" style="padding:24px 0">
+      <div class="spinner" style="margin-bottom:12px"></div>
+      <p class="mono">AI verrijkt "${escapeHtml(act.name)}"…</p>
+    </div>`;
+  openSheet('sheet-enrich-activity');
+
+  try {
+    const response = await fetch('/api/suggestions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accommodationName: acc ? acc.name : 'Onbekend',
+        accommodationLocation: acc ? acc.address : '',
+        country: 'Noorwegen',
+        today: formatShortDate(getToday()),
+        temperature: 14,
+        weatherCondition: 'licht bewolkt',
+        rainProbability: 15,
+        userPreferences: Array.from(AppState.travelStyles),
+        alreadyPlanned: [],
+        categoryFilter: null,
+        language: 'nl',
+        enrichMode: true,
+        activityName: act.name,
+        activityDescription: act.desc || '',
+        prompt: `Verrijk de activiteit "${act.name}" in de omgeving van ${acc ? acc.name : 'Noorwegen'}. 
+Geef als JSON array met 1 object: {
+  "name": "${act.name}",
+  "description": "uitgebreide beschrijving, 2-3 zinnen",
+  "duration_minutes": getal,
+  "distance_km": getal of null,
+  "difficulty": "easy"|"medium"|"hard",
+  "why_recommended": "waarom dit de moeite waard is",
+  "tips": ["tip 1", "tip 2", "tip 3"],
+  "best_time": "beste tijd van de dag",
+  "komoot_search": "zoekterm voor Komoot"
+}`
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Onbekende fout');
+    const suggestions = data.suggestions || [];
+    const enriched = suggestions[0];
+
+    if (enriched) {
+      document.getElementById('enrich-result').innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <p style="font-size:13.5px;line-height:1.65;color:var(--ink-mid)">${escapeHtml(enriched.description || enriched.why_recommended || '')}</p>
+          ${enriched.tips && enriched.tips.length ? `
+            <div style="background:var(--slope-light);border-radius:11px;padding:12px 14px">
+              <p class="eyebrow" style="margin-bottom:8px">Tips</p>
+              ${enriched.tips.map(t => `<p style="font-size:12.5px;color:var(--spruce);margin-bottom:5px">· ${escapeHtml(t)}</p>`).join('')}
+            </div>` : ''}
+          ${enriched.best_time ? `<p class="mono">⏰ Beste tijd: ${escapeHtml(enriched.best_time)}</p>` : ''}
+          <button onclick="applyAiEnrichment(${id}, ${JSON.stringify(enriched).replace(/"/g, '&quot;')})" class="btn btn-primary">
+            ✓ Beschrijving opslaan
+          </button>
+          ${enriched.komoot_search ? `
+            <a href="https://www.komoot.com/smart-tour?sport=hike&q=${encodeURIComponent(enriched.komoot_search)}" target="_blank"
+              style="display:block;padding:13px;border-radius:13px;border:1.5px solid var(--line);text-align:center;font-size:13px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none">
+              Bekijk op Komoot
+            </a>` : ''}
+        </div>`;
+    } else {
+      document.getElementById('enrich-result').innerHTML = `<p class="mono" style="color:var(--summit)">Kon activiteit niet verrijken</p>`;
+    }
+  } catch (err) {
+    document.getElementById('enrich-result').innerHTML = `
+      <p class="mono" style="color:var(--summit)">Fout: ${escapeHtml(err.message)}</p>
+      <button onclick="openAiEnrichSheet(${id})" class="btn btn-outline" style="margin-top:12px">Opnieuw</button>`;
+  }
+}
+
+async function applyAiEnrichment(id, enriched) {
+  await updateActivity(id, {
+    desc: enriched.description || enriched.why_recommended || '',
+    duration: enriched.duration_minutes ? Math.round(enriched.duration_minutes / 60) + ' u' : undefined,
+    distance: enriched.distance_km ? enriched.distance_km + ' km' : undefined,
+    level: { easy: 'Makkelijk', medium: 'Gemiddeld', hard: 'Zwaar' }[enriched.difficulty] || undefined,
+  });
+  closeSheet('sheet-enrich-activity');
+  showToast('✓ Activiteit verrijkt met AI');
+  renderPlanningScreen();
+}
+
+// ── Context-bewust activiteit toevoegen ───────────────────
+// Opent het formulier met de huidige dag en verblijf al ingevuld.
+function openAddActivitySheetForCurrentDay() {
+  const day = AppState.selectedPlanningDay || getToday();
+  const acc = getAccommodationForDate(day) || getActiveAccommodation();
+
+  const daySelect = document.getElementById('activity-day-select');
+  daySelect.innerHTML = `<option value="">Niet ingepland</option>` +
+    getAllTripDays().map((d, i) => {
+      const iso = d.toISOString();
+      const isThis = d.toDateString() === day.toDateString();
+      return `<option value="${iso}" ${isThis ? 'selected' : ''}>Dag ${i+1} · ${WEEKDAYS[d.getDay()]} ${formatShortDate(d)}</option>`;
+    }).join('');
+
+  const accSelect = document.getElementById('activity-acc-select');
+  accSelect.innerHTML = ACCOMMODATIONS.map(a =>
+    `<option value="${a.id}" ${a.id === acc.id ? 'selected' : ''}>${a.name} (${formatShortDate(a.checkIn)}–${formatShortDate(a.checkOut)})</option>`
+  ).join('');
+
+  document.getElementById('activity-name-input').value = '';
+  openSheet('sheet-activity');
+}
+
+// Overschrijft de generieke openAddActivitySheet uit screen-tickets.js
+function openAddActivitySheet() {
+  openAddActivitySheetForCurrentDay();
+}
+
+async function saveActivity() {
+  const name = document.getElementById('activity-name-input').value.trim();
+  if (!name) { showToast('Voer een naam in'); return; }
+
+  const dateStr = document.getElementById('activity-day-select').value;
+  const accId = parseInt(document.getElementById('activity-acc-select').value);
+  const date = dateStr ? new Date(dateStr) : null;
+
+  const act = await addActivity({ name, accId, date });
+  closeSheet('sheet-activity');
+  showToast(`✓ ${name} toegevoegd`);
+
+  if (date) {
+    AppState.selectedPlanningDay = date;
+    renderPlanningScreen();
+  } else {
+    renderPlanningScreen();
+  }
+  renderHomeScreen();
 }
