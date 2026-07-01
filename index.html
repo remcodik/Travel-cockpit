@@ -107,7 +107,7 @@
 
 <!-- ═══════════ MAP ═══════════ -->
 <div id="screen-map" class="screen">
-  <div style="background:var(--white);border-bottom:1px solid var(--line-soft);padding:11px 16px 9px">
+  <div class="safe-top" style="background:var(--white);border-bottom:1px solid var(--line-soft);padding:11px 16px 9px">
     <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">
       <p style="font-family:var(--font-display);font-size:19px;font-weight:800;letter-spacing:-0.4px;flex:1">KAART</p>
       <button onclick="toggleGPS()" id="gps-toggle-btn" class="chip">📍 GPS</button>
@@ -152,7 +152,7 @@
 
 <!-- ═══════════ PLANNING ═══════════ -->
 <div id="screen-planning" class="screen">
-  <div class="px" class="safe-top" style="padding-bottom:9px;border-bottom:1px solid var(--line-soft);background:var(--white);display:flex;align-items:center">
+  <div class="px safe-top" style="padding-bottom:9px;border-bottom:1px solid var(--line-soft);background:var(--white);display:flex;align-items:center">
     <span class="page-title" style="flex:1">PLANNING</span>
     <div style="display:flex;gap:7px">
       <button onclick="togglePlanningFilter(this)" id="planning-filter-btn" class="chip" style="font-size:10px;padding:5px 10px">Alle</button>
@@ -195,7 +195,7 @@
 
 <!-- ═══════════ MEER ═══════════ -->
 <div id="screen-meer" class="screen">
-  <div class="px" class="safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center">
+  <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center">
     <span class="page-title" style="flex:1">MEER</span><span class="mono">v6.0</span>
   </div>
   <div class="scroll">
@@ -333,7 +333,7 @@
 
 <!-- ═══════════ TICKETS ═══════════ -->
 <div id="screen-tickets" class="screen" style="padding-bottom:0">
-  <div class="px" class="safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+  <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <span class="page-title" style="flex:1">TICKETS</span>
     <button onclick="openAddTicketSheet()" class="fab" style="background:var(--spruce);color:white">+</button>
@@ -357,7 +357,7 @@
 
 <!-- ═══════════ MIJN REIZEN ═══════════ -->
 <div id="screen-trips" class="screen" style="padding-bottom:0">
-  <div class="px" class="safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+  <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <span class="page-title" style="flex:1">MIJN REIZEN</span>
     <button onclick="openAddTripSheet()" class="fab" style="background:var(--spruce);color:white">+</button>
@@ -375,7 +375,7 @@
 
 <!-- ═══════════ INSTELLINGEN ═══════════ -->
 <div id="screen-settings" class="screen" style="padding-bottom:0">
-  <div class="px" class="safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+  <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <span class="page-title">INSTELLINGEN</span>
   </div>
