@@ -63,12 +63,13 @@ Nijmegen → Hirtshals (ferry nacht) → Stavanger (tussenstop) → Bergen (aank
 - Firebase Firestore — persistente, real-time gedeelde data (activiteiten, tickets)
 - Vercel serverless functions — Anthropic Claude API (AI-suggesties), Open Charge Map (laadstations)
 
-**Native Flutter app (toekomstplan — nog niet gestart):**
-- Flutter 3.x · Riverpod · Drift (SQLite) · GoRouter
+**Native Flutter app (`lib/` — bestaat al, nog niet geverifieerd):**
+- Flutter 3.x · Riverpod · Drift (SQLite) · GoRouter — ~9.600 regels, alle schermen al gebouwd, incl. een echte multi-trip-provider
+- Nooit gebouwd of getest (geen `ios/`/`android/`-mappen, geen gegenereerde bestanden) — een compile-verificatie is de eerstvolgende stap
 - Volledige architectuur staat uitgewerkt in `docs/08-technical/01-flutter.md`
 
-**Waarom nu een web-app in plaats van de native app?**
-Een Flutter iOS-app bouwen en testen vereist een Mac (Xcode draait alleen op macOS) — die is er niet. De enige beschikbare laptop is een werklaptop waar geen ontwikkelsoftware op geïnstalleerd mag worden. Om toch snel een écht werkend resultaat te hebben, is gekozen voor een web-app: geen lokale toolchain nodig, direct bruikbaar in de browser, installeerbaar op het beginscherm. Zodra er een Mac (of andere geschikte build-omgeving) beschikbaar is, blijft de native app het uiteindelijke doel. Zie besluit `DL-014` in `docs/00-product/02-decision-log.md`.
+**Waarom leunt het actieve gebruik nu op de web-app?**
+Een Flutter iOS-app *op je eigen iPhone zetten* vereist een Mac (of een cloud-Mac-CI-dienst) plus een Apple Developer Program-account (US$99/jaar, een Apple-eis) — dat is er (nog) niet. Android- en web-builds van dezelfde Flutter-code vereisen géén Mac en zijn wel haalbaar. Tot de Flutter-app geverifieerd en op een device te krijgen is, blijft de web-app de versie die je nu al kunt gebruiken: geen lokale toolchain nodig, direct bruikbaar in de browser, installeerbaar op het beginscherm. Zie besluit `DL-014` in `docs/00-product/02-decision-log.md`.
 
 ---
 

@@ -1,8 +1,8 @@
 # Flutter Architecture
 
 **Document ID:** TC-TECH-001
-**Version:** 1.1
-**Status:** Deferred blueprint — not started (see `DL-014`)
+**Version:** 1.2
+**Status:** Implemented in `lib/`, unverified — build/analyze pass pending (see `DL-014`)
 **Owner:** Product Team
 **Last Updated:** 2026-07-01
 
@@ -10,11 +10,11 @@
 
 # Purpose
 
-This document defines the target technical architecture for a future native Travel Cockpit Flutter application.
+This document defines the technical architecture for the native Travel Cockpit Flutter application.
 
-**Current status:** no Flutter code exists in this repository. Native development is blocked on hardware — building and running a Flutter iOS app requires a Mac (Xcode), which is not available, and the only other machine is a work laptop that cannot have development software installed. The actively developed product today is the web app (see root `README.md` and `docs/00-product/02-decision-log.md`, decision `DL-014`).
+**Current status:** the `lib/` directory already implements most of this architecture (~9,600 lines, 60 files — Riverpod providers, Drift/SQLite tables and DAOs, GoRouter, all main screens, a real multi-trip provider, an Anthropic AI client, a weather provider). It has never been run through `flutter pub get` / `build_runner` / `flutter analyze` — there are no generated files and no `ios/`/`android/` platform folders — so its actual buildability is unverified rather than absent. `/notifications` and `/profile` are explicitly still placeholders in `lib/app.dart`.
 
-This document is kept up to date as the plan to resume once a Mac (or equivalent build environment) becomes available. It provides the foundation every developer needs before writing a single line of native code.
+Native iOS development additionally needs a Mac (or a cloud Mac CI service) and, separately, an Apple Developer Program membership (US$99/year) to install durably on a personal iPhone — an Apple requirement, not a toolchain one. Android and Flutter Web builds of this same code do not require a Mac. The actively used product today is still the web app (see root `README.md` and `docs/00-product/02-decision-log.md`, decision `DL-014`), while a build/analyze verification pass on `lib/` is the next concrete step toward the native app.
 
 ---
 
@@ -262,3 +262,4 @@ dependencies:
 |---|---|---|
 | 1.0 | 2025-06-27 | Initial stable version |
 | 1.1 | 2026-07-01 | Marked as deferred blueprint — native work not started due to lack of a Mac; web app is the active product (`DL-014`) |
+| 1.2 | 2026-07-01 | Correction: `lib/` already implements most of this architecture (previously missed in review) but has never been built/analyzed — status changed from "not started" to "implemented, unverified" |

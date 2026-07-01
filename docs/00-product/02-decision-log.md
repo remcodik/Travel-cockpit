@@ -1,7 +1,7 @@
 # Decision Log
 
 **Document ID:** TC-PROD-002
-**Version:** 2.1
+**Version:** 2.2
 **Status:** Stable — updated as decisions are made
 **Last Updated:** 2026-07-01
 
@@ -151,10 +151,13 @@ The bottom nav tabs (Vandaag, Kaart, Planning, Ideeën) are the primary daily-us
 
 **Consequence:**
 - `README.md` must describe the actual stack of the live app (plain HTML/CSS/JS + Leaflet + Firebase, no build step) rather than an aspirational one.
-- `08-technical/01-flutter.md` remains valid as an architecture blueprint, but its status reflects "deferred, not started" rather than "stable/in progress" — no Flutter code exists in this repository.
-- The native app remains the longer-term goal. When a Mac (or another suitable build environment, e.g. a cloud Mac build service) becomes available, `08-technical/01-flutter.md` is the starting point to resume that work.
+- `08-technical/01-flutter.md` remains valid as an architecture blueprint, but its status reflects "deferred, not started" rather than "stable/in progress".
 
-**Status:** Open — revisit once a Mac or equivalent build environment is available.
+**Correction (2026-07-01):** This decision originally stated "no Flutter code exists in this repository." That was incorrect — a substantial `lib/` directory (~9,600 lines across 60 Dart files) already exists, implementing the architecture from `08-technical/01-flutter.md` almost in full (Riverpod providers, Drift/SQLite tables and DAOs, GoRouter, all main screens, a real multi-trip provider, an Anthropic AI client, a weather provider). It was missed in the earlier review because the file listing was truncated. This code has never been run through `flutter pub get` / `build_runner` / `flutter analyze` — there are no generated files and no `ios/`/`android/` platform folders — so its actual buildability is unverified, not absent.
+
+This changes the practical picture: **Android and Flutter Web builds do not require a Mac** and can be produced from a Linux environment. Only a genuine native **iOS** build needs either a physical Mac or a cloud Mac CI service (e.g. Codemagic) — and, separately from tooling, installing an app durably on a personal iPhone requires an Apple Developer Program membership (US$99/year), which is an Apple policy requirement, not a toolchain limitation.
+
+**Status:** Open — a build/analyze verification pass on the existing `lib/` code is the next concrete step (see `docs/08-technical/01-flutter.md`), not a full restart.
 
 ---
 
@@ -165,3 +168,4 @@ The bottom nav tabs (Vandaag, Kaart, Planning, Ideeën) are the primary daily-us
 | 1.0 | 2026-06-01 | Initial decisions DL-001 through DL-008 |
 | 2.0 | 2026-06-28 | Added DL-009 through DL-013, full rewrites |
 | 2.1 | 2026-07-01 | Added DL-014 — web app first, native app deferred due to lack of Mac / restricted work laptop |
+| 2.2 | 2026-07-01 | Corrected DL-014 — a substantial, previously-overlooked `lib/` Flutter codebase already exists but is unverified; Android/web builds don't require a Mac |
