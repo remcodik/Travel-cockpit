@@ -157,7 +157,9 @@ The bottom nav tabs (Vandaag, Kaart, Planning, Ideeën) are the primary daily-us
 
 This changes the practical picture: **Android and Flutter Web builds do not require a Mac** and can be produced from a Linux environment. Only a genuine native **iOS** build needs either a physical Mac or a cloud Mac CI service (e.g. Codemagic) — and, separately from tooling, installing an app durably on a personal iPhone requires an Apple Developer Program membership (US$99/year), which is an Apple policy requirement, not a toolchain limitation.
 
-**Status:** Open — a build/analyze verification pass on the existing `lib/` code is the next concrete step (see `docs/08-technical/01-flutter.md`), not a full restart.
+**Update (2026-07-01) — build verified:** A full `flutter pub get` / `build_runner` / `flutter analyze` pass was run against `lib/` for the first time. It found ~15 real compile errors (never caught before because the code had never been built) — mostly mechanical: stray `\$` characters instead of `$`, Drift DAOs whose custom `update`/`delete` methods shadowed the framework's own methods, a few missing imports and one naming mismatch. All were fixed; `flutter analyze` now reports 0 errors and 0 warnings. A Linux desktop build was attempted as an end-to-end check and compiled all Dart code successfully, stopping only at a native SQLite C-library download blocked by this sandbox's network policy — an environment limitation, not a code defect.
+
+**Status:** The Flutter codebase is now verified buildable. Next concrete step is a real Android build (via this cloud environment or a CI service) — the first target that would let the app be genuinely installed and run, without needing a Mac.
 
 ---
 
