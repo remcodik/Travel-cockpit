@@ -1,18 +1,20 @@
 # Flutter Architecture
 
 **Document ID:** TC-TECH-001
-**Version:** 1.0
-**Status:** Stable
+**Version:** 1.1
+**Status:** Deferred blueprint — not started (see `DL-014`)
 **Owner:** Product Team
-**Last Updated:** 2025-06-27
+**Last Updated:** 2026-07-01
 
 ---
 
 # Purpose
 
-This document defines the technical architecture for the Travel Cockpit Flutter application.
+This document defines the target technical architecture for a future native Travel Cockpit Flutter application.
 
-It provides the foundation every developer needs before writing a single line of code.
+**Current status:** no Flutter code exists in this repository. Native development is blocked on hardware — building and running a Flutter iOS app requires a Mac (Xcode), which is not available, and the only other machine is a work laptop that cannot have development software installed. The actively developed product today is the web app (see root `README.md` and `docs/00-product/02-decision-log.md`, decision `DL-014`).
+
+This document is kept up to date as the plan to resume once a Mac (or equivalent build environment) becomes available. It provides the foundation every developer needs before writing a single line of native code.
 
 ---
 
@@ -259,3 +261,4 @@ dependencies:
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2025-06-27 | Initial stable version |
+| 1.1 | 2026-07-01 | Marked as deferred blueprint — native work not started due to lack of a Mac; web app is the active product (`DL-014`) |

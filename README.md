@@ -57,14 +57,18 @@ Nijmegen → Hirtshals (ferry nacht) → Stavanger (tussenstop) → Bergen (aank
 
 ## Tech stack
 
-**Web prototype (live):** React 18 + Vite + Tailwind + Archivo + Space Mono
+**Web app (live, actief in ontwikkeling):**
+- Vanilla HTML/CSS/JS — geen build-stap, geen framework
+- Leaflet + OpenStreetMap (kaart) · Open-Meteo (weer, gratis)
+- Firebase Firestore — persistente, real-time gedeelde data (activiteiten, tickets)
+- Vercel serverless functions — Anthropic Claude API (AI-suggesties), Open Charge Map (laadstations)
 
-**Native Flutter app (in ontwikkeling):**
+**Native Flutter app (toekomstplan — nog niet gestart):**
 - Flutter 3.x · Riverpod · Drift (SQLite) · GoRouter
-- Open-Meteo (weer, gratis) · Anthropic Claude API (AI)
-- FlutterMap + OpenStreetMap
+- Volledige architectuur staat uitgewerkt in `docs/08-technical/01-flutter.md`
 
-De Flutter app vereist een Mac om te compileren. De web prototype is de gedeelde versie.
+**Waarom nu een web-app in plaats van de native app?**
+Een Flutter iOS-app bouwen en testen vereist een Mac (Xcode draait alleen op macOS) — die is er niet. De enige beschikbare laptop is een werklaptop waar geen ontwikkelsoftware op geïnstalleerd mag worden. Om toch snel een écht werkend resultaat te hebben, is gekozen voor een web-app: geen lokale toolchain nodig, direct bruikbaar in de browser, installeerbaar op het beginscherm. Zodra er een Mac (of andere geschikte build-omgeving) beschikbaar is, blijft de native app het uiteindelijke doel. Zie besluit `DL-014` in `docs/00-product/02-decision-log.md`.
 
 ---
 

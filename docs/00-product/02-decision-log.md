@@ -1,9 +1,9 @@
 # Decision Log
 
 **Document ID:** TC-PROD-002
-**Version:** 2.0
+**Version:** 2.1
 **Status:** Stable — updated as decisions are made
-**Last Updated:** 2026-06-28
+**Last Updated:** 2026-07-01
 
 ---
 
@@ -143,9 +143,25 @@ The bottom nav tabs (Vandaag, Kaart, Planning, Ideeën) are the primary daily-us
 
 ---
 
+## DL-014 — Web App First, Native Flutter App Deferred
+
+**Decision:** Travel Cockpit ships as an installable mobile web app (Vercel + browser, "Add to Home Screen") as the primary, actively developed product. The native Flutter app described in `08-technical/01-flutter.md` is a deferred future target, not current work.
+
+**Why:** Building and running a Flutter iOS app requires a Mac — Xcode only runs on macOS, and there is no Mac available. The only other machine available is a work-managed laptop on which installing development toolchains (Flutter SDK, Android Studio, etc.) is not permitted. Rather than block on hardware that isn't available, the choice was made to build a web app instead: no local toolchain needed, deployable and testable immediately, and it delivers a real, usable result now.
+
+**Consequence:**
+- `README.md` must describe the actual stack of the live app (plain HTML/CSS/JS + Leaflet + Firebase, no build step) rather than an aspirational one.
+- `08-technical/01-flutter.md` remains valid as an architecture blueprint, but its status reflects "deferred, not started" rather than "stable/in progress" — no Flutter code exists in this repository.
+- The native app remains the longer-term goal. When a Mac (or another suitable build environment, e.g. a cloud Mac build service) becomes available, `08-technical/01-flutter.md` is the starting point to resume that work.
+
+**Status:** Open — revisit once a Mac or equivalent build environment is available.
+
+---
+
 # Change History
 
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-06-01 | Initial decisions DL-001 through DL-008 |
 | 2.0 | 2026-06-28 | Added DL-009 through DL-013, full rewrites |
+| 2.1 | 2026-07-01 | Added DL-014 — web app first, native app deferred due to lack of Mac / restricted work laptop |
