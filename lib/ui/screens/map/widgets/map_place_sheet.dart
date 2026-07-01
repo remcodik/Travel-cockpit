@@ -3,7 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../map_screen.dart';
 
 class MapPlaceSheet extends StatelessWidget {
-  final MapPlace place;
+  final MapPlaceData place;
   final VoidCallback onAdd;
   final VoidCallback onNavigate;
   final VoidCallback onClose;

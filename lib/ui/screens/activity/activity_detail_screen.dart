@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/models/place.dart';
-import '../../../domain/models/planning_item.dart';
 import '../../../providers/place_provider.dart';
 import '../../../providers/planning_provider.dart';
 

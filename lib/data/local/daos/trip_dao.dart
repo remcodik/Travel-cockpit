@@ -5,7 +5,7 @@ import '../tables/trips_table.dart';
 part 'trip_dao.g.dart';
 
 @DriftAccessor(tables: [TripsTable])
-class TripDao extends DatabaseAccessor<AppDatabase> with _\$TripDaoMixin {
+class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
   TripDao(super.db);
 
   // All trips ordered by start date
@@ -25,8 +25,8 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _\$TripDaoMixin {
   Future<void> insert(TripsTableCompanion entry) =>
       into(tripsTable).insert(entry);
 
-  Future<bool> update(TripsTableCompanion entry) =>
-      (update(tripsTable)..where((t) => t.id.equals(entry.id.value))).write(entry) > 0;
+  Future<bool> updateTrip(TripsTableCompanion entry) async =>
+      (await (update(tripsTable)..where((t) => t.id.equals(entry.id.value))).write(entry)) > 0;
 
   Future<void> setActive(String tripId) async {
     // Deactivate all first
@@ -36,6 +36,6 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _\$TripDaoMixin {
         .write(const TripsTableCompanion(isActive: Value(true)));
   }
 
-  Future<int> delete(String id) =>
+  Future<int> deleteTrip(String id) =>
       (delete(tripsTable)..where((t) => t.id.equals(id))).go();
 }

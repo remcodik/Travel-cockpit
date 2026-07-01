@@ -21,7 +21,7 @@ class AccommodationDay {
 
 // Global accommodation schedule for Norway 2026
 // Derived from index.html seed data
-const _norwayAccommodations = [
+final List<AccommodationDay> norwayAccommodations = [
   AccommodationDay(
     name: 'Sogndal', shortName: 'Sgd',
     checkIn:  DateTime.utc(2026, 6, 16),
@@ -50,7 +50,7 @@ const _norwayAccommodations = [
 
 AccommodationDay? accForDate(DateTime d) {
   final date = DateTime.utc(d.year, d.month, d.day);
-  for (final a in _norwayAccommodations) {
+  for (final a in norwayAccommodations) {
     if (!date.isBefore(a.checkIn) && date.isBefore(a.checkOut)) {
       return a;
     }
@@ -123,7 +123,6 @@ class _DayTabBarState extends State<DayTabBar> {
   Widget build(BuildContext context) {
     const months   = ['jan','feb','mrt','apr','mei','jun',
                       'jul','aug','sep','okt','nov','dec'];
-    const weekdays = ['ma','di','wo','do','vr','za','zo'];
     final today    = DateTime.now();
 
     return Container(
@@ -267,7 +266,7 @@ class _AccLegendStrip extends StatelessWidget {
                 color: acc.color)),
           const Spacer(),
           // All 4 accommodation dots
-          Row(children: _norwayAccommodations.map((a) => Tooltip(
+          Row(children: norwayAccommodations.map((a) => Tooltip(
             message: a.name,
             child: Container(
               margin: const EdgeInsets.only(left: 5),

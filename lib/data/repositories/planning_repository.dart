@@ -1,8 +1,6 @@
 import 'package:drift/drift.dart';
 import '../local/database.dart';
-import '../local/tables/planning_items_table.dart';
 import '../../domain/models/planning_item.dart';
-import '../../domain/models/place.dart';
 
 class PlanningRepository {
   final AppDatabase _db;
@@ -26,7 +24,7 @@ class PlanningRepository {
       _db.planningDao.updateStatus(id, 'planned');
 
   Future<void> delete(String id) =>
-      _db.planningDao.delete(id);
+      _db.planningDao.deletePlanningItem(id);
 
   PlanningItem _fromRow(PlanningItemsTableData r) => PlanningItem(
     id:           r.id,

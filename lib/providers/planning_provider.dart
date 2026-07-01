@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/planning_item.dart';
 import '../domain/models/place.dart';
+import '../data/repositories/planning_repository.dart';
+import '../data/repositories/place_repository.dart';
 import 'database_provider.dart';
 import 'trip_provider.dart';
 

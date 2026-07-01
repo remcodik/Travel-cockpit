@@ -7,7 +7,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../domain/models/place.dart';
 import '../../../providers/trip_provider.dart';
 import '../../../providers/database_provider.dart';
-import '../../../providers/planning_provider.dart';
 import 'widgets/map_filter_chips.dart';
 import 'widgets/map_place_sheet.dart';
 
@@ -26,7 +25,7 @@ class _AccConfig {
       required this.lat, required this.lng});
 }
 
-const _accs = [
+final List<_AccConfig> _accs = [
   _AccConfig(name: 'Sogndal',              shortName: 'Sgd',
       color: Color(0xFF2d6a4f),
       checkIn: DateTime.utc(2026,6,16), checkOut: DateTime.utc(2026,6,19),

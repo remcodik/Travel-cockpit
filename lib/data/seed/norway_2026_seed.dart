@@ -1,7 +1,6 @@
 import '../../domain/models/trip.dart';
 import '../../domain/models/place.dart';
 import '../../domain/models/accommodation.dart';
-import '../../domain/models/planning_item.dart';
 
 /// Seed data: Noorwegen Zomerreis 2026 (15–30 juni)
 /// Gebaseerd op echte reisplanning van Remco.

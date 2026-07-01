@@ -6,7 +6,7 @@ part 'accommodation_dao.g.dart';
 
 @DriftAccessor(tables: [AccommodationsTable])
 class AccommodationDao extends DatabaseAccessor<AppDatabase>
-    with _\$AccommodationDaoMixin {
+    with _$AccommodationDaoMixin {
   AccommodationDao(super.db);
 
   Stream<List<AccommodationsTableData>> watchByTrip(String tripId) =>
@@ -29,9 +29,9 @@ class AccommodationDao extends DatabaseAccessor<AppDatabase>
   Future<void> insert(AccommodationsTableCompanion entry) =>
       into(accommodationsTable).insert(entry);
 
-  Future<bool> update(AccommodationsTableCompanion entry) =>
-      (update(accommodationsTable)..where((a) => a.id.equals(entry.id.value)))
-          .write(entry) > 0;
+  Future<bool> updateAccommodation(AccommodationsTableCompanion entry) async =>
+      (await (update(accommodationsTable)..where((a) => a.id.equals(entry.id.value)))
+          .write(entry)) > 0;
 
   Future<void> updateActiveStatus(String tripId, DateTime today) async {
     final all = await getByTrip(tripId);
@@ -43,6 +43,6 @@ class AccommodationDao extends DatabaseAccessor<AppDatabase>
     }
   }
 
-  Future<int> delete(String id) =>
+  Future<int> deleteAccommodation(String id) =>
       (delete(accommodationsTable)..where((a) => a.id.equals(id))).go();
 }

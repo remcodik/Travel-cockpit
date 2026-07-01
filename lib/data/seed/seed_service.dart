@@ -1,13 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../local/database.dart';
-import '../local/tables/trips_table.dart';
-import '../local/tables/places_table.dart';
-import '../local/tables/accommodations_table.dart';
-import '../local/tables/planning_items_table.dart';
-import '../../domain/models/accommodation.dart';
 import 'package:drift/drift.dart';
-import 'dart:convert';
 import 'norway_2026_seed.dart';
 
 const _seedKey = 'seed_loaded_v1';
@@ -132,6 +126,6 @@ class Uuid {
   const Uuid();
   String v4() {
     final now = DateTime.now().microsecondsSinceEpoch;
-    return '\${now.toRadixString(16).padLeft(12,'0')}-\${(now % 0xFFFF).toRadixString(16).padLeft(4,'0')}-4\${(now % 0xFFF).toRadixString(16).padLeft(3,'0')}-\${(8 + (now % 4)).toRadixString(16)}\${(now % 0xFFF).toRadixString(16).padLeft(3,'0')}-\${(now % 0xFFFFFFFFFFFF).toRadixString(16).padLeft(12,'0')}';
+    return '${now.toRadixString(16).padLeft(12,'0')}-${(now % 0xFFFF).toRadixString(16).padLeft(4,'0')}-4${(now % 0xFFF).toRadixString(16).padLeft(3,'0')}-${(8 + (now % 4)).toRadixString(16)}${(now % 0xFFF).toRadixString(16).padLeft(3,'0')}-${(now % 0xFFFFFFFFFFFF).toRadixString(16).padLeft(12,'0')}';
   }
 }

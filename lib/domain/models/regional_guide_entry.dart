@@ -82,5 +82,5 @@ class RegionalGuideEntry with _$RegionalGuideEntry {
   }
 
   factory RegionalGuideEntry.fromJson(Map<String, dynamic> json) =>
-      _\$RegionalGuideEntryFromJson(json);
+      _$RegionalGuideEntryFromJson(json);
 }

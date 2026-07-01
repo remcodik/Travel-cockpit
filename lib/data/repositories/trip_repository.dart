@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 import '../local/database.dart';
-import '../local/tables/trips_table.dart';
 import '../../domain/models/trip.dart';
 
 class TripRepository {
@@ -31,7 +30,7 @@ class TripRepository {
       _db.tripDao.setActive(tripId);
 
   Future<void> delete(String tripId) =>
-      _db.tripDao.delete(tripId);
+      _db.tripDao.deleteTrip(tripId);
 
   Trip _fromRow(TripsTableData r) => Trip(
     id:            r.id,

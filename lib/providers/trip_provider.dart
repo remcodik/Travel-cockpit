@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/trip.dart';
+import '../data/repositories/trip_repository.dart';
 import 'database_provider.dart';
 
 // All trips — reactive stream

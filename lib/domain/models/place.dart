@@ -77,7 +77,7 @@ class Place with _$Place {
     );
   }
 
-  factory Place.fromJson(Map<String, dynamic> json) => _\$PlaceFromJson(json);
+  factory Place.fromJson(Map<String, dynamic> json) => _$PlaceFromJson(json);
 }
 
 extension PlaceCategoryX on PlaceCategory {
