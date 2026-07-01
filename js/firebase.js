@@ -57,6 +57,17 @@ function tripRef(collection) {
   return db.collection('trips').doc(tripId).collection(collection);
 }
 
+function getCurrentTripId() {
+  return tripId;
+}
+
+// Wisselt de actieve trip-ID. Roept alleen de variabele bij — het
+// afmelden van oude listeners en opnieuw laden van data gebeurt in
+// state.js (switchToTrip), dat deze functie aanroept.
+function setCurrentTripId(newTripId) {
+  tripId = newTripId;
+}
+
 // ── Genereer een deelbare reislink ────────────────────────
 function getTripShareUrl() {
   const base = window.location.origin + window.location.pathname;
@@ -134,32 +145,35 @@ function dbWatchActivities(callback) {
 }
 
 // ── Tickets ───────────────────────────────────────────────
-async function dbSaveTicket(ticket, index) {
+// FIX: doc-ID is het stabiele ticket.id (UUID), niet de array-index.
+// Met index als ID verschoof de foto van een ander ticket naar dit
+// ticket zodra er eentje ertussenuit werd verwijderd.
+async function dbSaveTicket(ticket) {
   const ref = tripRef('tickets');
-  if (!ref) return;
+  if (!ref || !ticket.id) return;
   try {
     // Bestandsdata (base64) slaan we lokaal op vanwege Firestore 1MB limiet
     const { fileDataUrl, ...rest } = ticket;
-    await ref.doc(String(index)).set({
+    await ref.doc(ticket.id).set({
       ...rest,
       hasFile: !!fileDataUrl,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
     // Bestand apart opslaan in localStorage (device-local)
     if (fileDataUrl) {
-      try { localStorage.setItem(`tc_ticket_file_${index}`, fileDataUrl); } catch (e) {}
+      try { localStorage.setItem(`tc_ticket_file_${ticket.id}`, fileDataUrl); } catch (e) {}
     }
   } catch (err) {
     console.error('Ticket opslaan mislukt:', err);
   }
 }
 
-async function dbDeleteTicket(index) {
+async function dbDeleteTicket(ticketId) {
   const ref = tripRef('tickets');
-  if (!ref) return;
+  if (!ref || !ticketId) return;
   try {
-    await ref.doc(String(index)).delete();
-    try { localStorage.removeItem(`tc_ticket_file_${index}`); } catch (e) {}
+    await ref.doc(ticketId).delete();
+    try { localStorage.removeItem(`tc_ticket_file_${ticketId}`); } catch (e) {}
   } catch (err) {
     console.error('Ticket verwijderen mislukt:', err);
   }
@@ -170,13 +184,13 @@ async function dbLoadTickets() {
   if (!ref) return null;
   try {
     const snap = await ref.orderBy('updatedAt').get();
-    return snap.docs.map((doc, i) => {
+    return snap.docs.map(doc => {
       const d = doc.data();
       // Bestandsdata terug ophalen uit localStorage
       const fileDataUrl = d.hasFile
         ? (localStorage.getItem(`tc_ticket_file_${doc.id}`) || null)
         : null;
-      return { ...d, fileDataUrl };
+      return { ...d, id: doc.id, fileDataUrl };
     });
   } catch (err) {
     console.error('Tickets laden mislukt:', err);
@@ -194,7 +208,7 @@ function dbWatchTickets(callback) {
       const fileDataUrl = d.hasFile
         ? (localStorage.getItem(`tc_ticket_file_${doc.id}`) || null)
         : null;
-      return { ...d, fileDataUrl };
+      return { ...d, id: doc.id, fileDataUrl };
     });
     callback(tickets);
   }, err => console.error('Ticket watch fout:', err));
@@ -231,5 +245,140 @@ async function dbLoadAiSuggestions(accId) {
   } catch (err) {
     console.error('AI cache laden mislukt:', err);
     return null;
+  }
+}
+
+// ── Reizen (trips-collectie op het hoogste niveau) ────────
+// Elk trip-document bevat alleen metadata (naam, land, data, actief).
+// De bijbehorende activiteiten/tickets/accommodaties staan in de
+// subcollecties eronder, via tripRef() — precies zoals nu al gebeurt
+// voor de standaardreis, alleen was er tot nu toe nooit een echt
+// document op trips/{tripId} zelf.
+function allTripsRef() {
+  if (!db) return null;
+  return db.collection('trips');
+}
+
+async function dbLoadAllTrips() {
+  const ref = allTripsRef();
+  if (!ref) return null;
+  try {
+    const snap = await ref.get();
+    return snap.docs
+      .filter(doc => doc.data().name) // sluit lege/legacy trip-docs uit
+      .map(doc => {
+        const d = doc.data();
+        return {
+          ...d,
+          id: doc.id,
+          startDate: d.startDate ? new Date(d.startDate) : null,
+          endDate: d.endDate ? new Date(d.endDate) : null,
+        };
+      });
+  } catch (err) {
+    console.error('Reizen laden mislukt:', err);
+    return null;
+  }
+}
+
+function dbWatchAllTrips(callback) {
+  const ref = allTripsRef();
+  if (!ref) return () => {};
+  return ref.onSnapshot(snap => {
+    const trips = snap.docs
+      .filter(doc => doc.data().name)
+      .map(doc => {
+        const d = doc.data();
+        return {
+          ...d,
+          id: doc.id,
+          startDate: d.startDate ? new Date(d.startDate) : null,
+          endDate: d.endDate ? new Date(d.endDate) : null,
+        };
+      });
+    callback(trips);
+  }, err => console.error('Reizen watch fout:', err));
+}
+
+async function dbSaveTripMeta(trip) {
+  const ref = allTripsRef();
+  if (!ref || !trip.id) return;
+  try {
+    await ref.doc(trip.id).set({
+      name: trip.name,
+      country: trip.country,
+      countryFlag: trip.countryFlag || '',
+      startDate: trip.startDate ? trip.startDate.toISOString() : null,
+      endDate: trip.endDate ? trip.endDate.toISOString() : null,
+      isActive: !!trip.isActive,
+      createdAt: trip.createdAt || firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+  } catch (err) {
+    console.error('Reis opslaan mislukt:', err);
+  }
+}
+
+// Zet precies één reis actief; deactiveert de rest (spiegelt DL-004
+// uit de Flutter-architectuur: nooit meer dan één actieve reis).
+async function dbSetActiveTrip(newActiveTripId, allTripIds) {
+  const ref = allTripsRef();
+  if (!ref) return;
+  try {
+    const batch = db.batch();
+    allTripIds.forEach(id => {
+      batch.set(ref.doc(id), { isActive: id === newActiveTripId }, { merge: true });
+    });
+    await batch.commit();
+  } catch (err) {
+    console.error('Reis activeren mislukt:', err);
+  }
+}
+
+async function dbDeleteTripMeta(tripIdToDelete) {
+  const ref = allTripsRef();
+  if (!ref) return;
+  try {
+    await ref.doc(tripIdToDelete).delete();
+    // Subcollecties (activiteiten/tickets/accommodaties/ai_cache) blijven
+    // achter als "wees"-data in Firestore — bewust niet automatisch
+    // verwijderd, zodat een per-ongeluk-verwijderde reis herstelbaar
+    // blijft door hem opnieuw aan te maken met dezelfde trip-ID.
+  } catch (err) {
+    console.error('Reis verwijderen mislukt:', err);
+  }
+}
+
+// ── Accommodaties (per reis, onder trips/{tripId}/accommodations) ──
+async function dbLoadAccommodations(forTripId) {
+  const ref = db && db.collection('trips').doc(forTripId).collection('accommodations');
+  if (!ref) return null;
+  try {
+    const snap = await ref.orderBy('order').get();
+    return snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+  } catch (err) {
+    console.error('Accommodaties laden mislukt:', err);
+    return null;
+  }
+}
+
+async function dbSaveAccommodation(forTripId, acc) {
+  const ref = db && db.collection('trips').doc(forTripId).collection('accommodations');
+  if (!ref || !acc.id) return;
+  try {
+    const { id, ...rest } = acc;
+    await ref.doc(id).set(rest, { merge: true });
+  } catch (err) {
+    console.error('Accommodatie opslaan mislukt:', err);
+  }
+}
+
+async function dbDeleteAccommodation(forTripId, accId) {
+  const ref = db && db.collection('trips').doc(forTripId).collection('accommodations');
+  if (!ref) return;
+  try {
+    await ref.doc(accId).delete();
+  } catch (err) {
+    console.error('Accommodatie verwijderen mislukt:', err);
   }
 }

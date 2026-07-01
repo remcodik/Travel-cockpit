@@ -1,0 +1,59 @@
+rules_version = '2';
+
+// Travel Cockpit — basisbeveiliging voor Firestore.
+//
+// BELANGRIJK: dit bestand wordt niet automatisch actief. Activeren moet
+// handmatig via Firebase Console → Firestore Database → Rules → plak deze
+// inhoud → Publiceren. Zie docs/00-product/02-decision-log.md (Fase B)
+// voor de achtergrond.
+//
+// Wat dit wel/niet oplost:
+// - Wel: blokkeert lege/misvormde documenten (schema-validatie), en
+//   voorkomt dat iemand willekeurige, te grote documenten dumpt.
+// - Niet: dit is geen echte toegangscontrole — er is geen login-systeem
+//   in de app, dus wie de trip-ID kent (bv. via de gedeelde reislink)
+//   kan nog steeds legitiem-ogende data lezen/schrijven. Een echte
+//   oplossing vereist Firebase Authentication, wat een grotere,
+//   aparte stap is dan deze basisbescherming.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /trips/{tripId} {
+      allow read: if true;
+      allow write: if request.resource.data.name is string
+                   && request.resource.data.name.size() > 0
+                   && request.resource.data.name.size() < 200;
+
+      match /activities/{activityId} {
+        allow read: if true;
+        allow write: if request.resource.data.name is string
+                     && request.resource.data.name.size() > 0
+                     && request.resource.data.name.size() < 300;
+      }
+
+      match /accommodations/{accId} {
+        allow read: if true;
+        allow write: if request.resource.data.name is string
+                     && request.resource.data.name.size() > 0
+                     && request.resource.data.name.size() < 200;
+      }
+
+      match /tickets/{ticketId} {
+        allow read: if true;
+        allow write: if request.resource.data.name is string
+                     && request.resource.data.name.size() > 0
+                     && request.resource.data.name.size() < 300;
+      }
+
+      match /ai_cache/{accId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Alles buiten trips/** expliciet dicht.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

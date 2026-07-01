@@ -19,19 +19,30 @@ export default async function handler(req, res) {
   // of het dashboard kunnen zien wat er precies binnenkomt.
   console.log('charging-stations aangeroepen met:', { lat, lng, points, distanceKm, hasKey: !!apiKey });
 
+  // Basisvalidatie tegen misbruik: begrens de straal en het aantal
+  // routepunten, zodat één verzoek niet honderden upstream-aanroepen
+  // naar Open Charge Map kan triggeren.
+  const boundedDistanceKm = Math.min(parseFloat(distanceKm) || 25, 100);
+  if (lat && (isNaN(parseFloat(lat)) || Math.abs(parseFloat(lat)) > 90)) {
+    return res.status(400).json({ error: 'Ongeldige lat' });
+  }
+  if (lng && (isNaN(parseFloat(lng)) || Math.abs(parseFloat(lng)) > 180)) {
+    return res.status(400).json({ error: 'Ongeldige lng' });
+  }
+
   try {
     if (lat && lng) {
       const stations = await fetchStationsNear(
         parseFloat(lat),
         parseFloat(lng),
-        parseFloat(distanceKm) || 25,
+        boundedDistanceKm,
         apiKey
       );
       return res.status(200).json({ stations });
     }
 
     if (points) {
-      const coords = points.split(';').map(p => {
+      const coords = points.split(';').slice(0, 20).map(p => {
         const [plat, plng] = p.split(',').map(Number);
         return { lat: plat, lng: plng };
       });
@@ -42,7 +53,7 @@ export default async function handler(req, res) {
       for (const point of coords) {
         const stations = await fetchStationsNear(
           point.lat, point.lng,
-          parseFloat(distanceKm) || 15,
+          Math.min(parseFloat(distanceKm) || 15, 100),
           apiKey
         );
         for (const station of stations) {

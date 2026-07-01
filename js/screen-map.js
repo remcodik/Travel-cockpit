@@ -3,7 +3,6 @@
 // ═══════════════════════════════════════════════════════════
 
 let leafletMap = null;
-let gpsWatchId = null;
 let gpsMarker = null;
 let gpsTrack = [];
 let gpsPolyline = null;
@@ -216,35 +215,33 @@ function toggleFullRoute() {
 
 function toggleGPS() {
   const btn = document.getElementById('gps-toggle-btn');
-  if (gpsWatchId) {
-    navigator.geolocation.clearWatch(gpsWatchId);
-    gpsWatchId = null;
-    gpsTrack = [];
-    if (gpsMarker) { gpsMarker.remove(); gpsMarker = null; }
-    if (gpsPolyline) gpsPolyline.setLatLngs([]);
-    btn.textContent = '📍 GPS';
-    btn.classList.remove('on');
+  if (isGpsActive()) {
+    stopGpsTracking();
     showToast('GPS gestopt');
   } else {
-    if (!navigator.geolocation) { showToast('GPS niet beschikbaar op dit apparaat'); return; }
-    btn.textContent = '📍 Actief';
-    btn.classList.add('on');
-    gpsWatchId = navigator.geolocation.watchPosition(
-      pos => {
-        const latlng = [pos.coords.latitude, pos.coords.longitude];
-        gpsTrack.push(latlng);
-        if (gpsTrack.length > 200) gpsTrack.shift();
-        if (gpsPolyline) gpsPolyline.setLatLngs(gpsTrack);
-        if (gpsMarker) {
-          gpsMarker.setLatLng(latlng);
-        } else {
-          gpsMarker = L.circleMarker(latlng, { radius: 8, color: '#C5512B', fillColor: '#C5512B', fillOpacity: 1, weight: 3 }).addTo(leafletMap);
-          leafletMap.panTo(latlng);
-        }
-      },
-      err => showToast('GPS-fout: ' + err.message),
-      { enableHighAccuracy: true, maximumAge: 5000 }
-    );
-    showToast('📍 GPS-tracking gestart');
+    const started = startGpsTracking('map', pos => {
+      const latlng = [pos.coords.latitude, pos.coords.longitude];
+      gpsTrack.push(latlng);
+      if (gpsTrack.length > 200) gpsTrack.shift();
+      if (gpsPolyline) gpsPolyline.setLatLngs(gpsTrack);
+      if (gpsMarker) {
+        gpsMarker.setLatLng(latlng);
+      } else {
+        gpsMarker = L.circleMarker(latlng, { radius: 8, color: '#C5512B', fillColor: '#C5512B', fillOpacity: 1, weight: 3 }).addTo(leafletMap);
+        leafletMap.panTo(latlng);
+      }
+    }, () => {
+      // Opgeroepen zodra de tracking stopt, ook als dat via een ander scherm gebeurde
+      gpsTrack = [];
+      if (gpsMarker) { gpsMarker.remove(); gpsMarker = null; }
+      if (gpsPolyline) gpsPolyline.setLatLngs([]);
+      btn.textContent = '📍 GPS';
+      btn.classList.remove('on');
+    });
+    if (started) {
+      btn.textContent = '📍 Actief';
+      btn.classList.add('on');
+      showToast('📍 GPS-tracking gestart');
+    }
   }
 }

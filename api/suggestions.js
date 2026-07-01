@@ -31,7 +31,22 @@ export default async function handler(req, res) {
     alreadyPlanned,
     categoryFilter,
     language,
-  } = req.body;
+  } = req.body || {};
+
+  // Basisvalidatie tegen misbruik/kosten-opblazen: dit endpoint is publiek
+  // bereikbaar (geen login-systeem), dus begrens in elk geval de omvang
+  // van wat er in de prompt terechtkomt. Lost geen volledig rate-limiting-
+  // vraagstuk op (dat vereist een aparte infrastructuurkeuze), maar
+  // voorkomt de grofste misbruik-vectoren.
+  if (!accommodationName || typeof accommodationName !== 'string' || accommodationName.length > 200) {
+    return res.status(400).json({ error: 'accommodationName ontbreekt of is ongeldig' });
+  }
+  if (Array.isArray(alreadyPlanned) && alreadyPlanned.length > 200) {
+    return res.status(400).json({ error: 'alreadyPlanned te groot' });
+  }
+  if (Array.isArray(userPreferences) && userPreferences.length > 50) {
+    return res.status(400).json({ error: 'userPreferences te groot' });
+  }
 
   // Systeemprompt — direct gebaseerd op docs/04-ai/01-ai-architecture.md
   // en docs/04-ai/01-ai-philosophy.md: AI suggereert, beslist nooit.

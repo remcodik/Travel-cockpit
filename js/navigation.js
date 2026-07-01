@@ -18,6 +18,8 @@ function showToast(message, duration) {
 }
 
 function navigateTo(screenId) {
+  stopGpsIfLeavingOwner(screenId);
+
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const target = document.getElementById('screen-' + screenId);
   if (!target) { console.error('Onbekend scherm:', screenId); return; }

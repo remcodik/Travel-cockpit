@@ -55,8 +55,10 @@ function renderTicketFilePreview(ticket) {
 }
 
 async function handleRemoveTicket(index) {
+  const ticket = AppState.tickets[index];
+  if (!ticket) return;
   AppState.tickets.splice(index, 1);
-  await dbDeleteTicket(index);
+  await dbDeleteTicket(ticket.id);
   showToast('Ticket verwijderd');
   renderTicketsScreen();
   renderHomeScreen();
@@ -112,6 +114,7 @@ async function saveTicket() {
   if (!name) { showToast('Voer een naam in'); return; }
 
   const ticket = {
+    id: (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : `ticket-${Date.now()}`,
     name,
     venue: document.getElementById('ticket-venue-input').value.trim(),
     code: document.getElementById('ticket-code-input').value.trim(),
@@ -122,56 +125,146 @@ async function saveTicket() {
     fileType: pendingTicketFile ? pendingTicketFile.type : null,
   };
 
-  const newIndex = AppState.tickets.length;
   AppState.tickets.push(ticket);
-  await dbSaveTicket(ticket, newIndex);
+  await dbSaveTicket(ticket);
   closeSheet('sheet-ticket');
   showToast(`✓ ${name} opgeslagen`);
   renderTicketsScreen();
   renderHomeScreen();
 }
 
-// ── Mijn reizen ────────────────────────────────────────────
+// ── Mijn reizen — echte multi-trip CRUD ───────────────────
 function renderTripsScreen() {
-  const container = document.getElementById('extra-trips-list');
-  if (AppState.extraTrips.length === 0) { container.innerHTML = ''; return; }
-  container.innerHTML = `<p class="eyebrow" style="margin:18px 0 9px">Overige reizen</p>` +
-    AppState.extraTrips.map((trip, i) => `
-      <div class="card" style="margin-bottom:10px">
-        <div style="padding:15px;display:flex;align-items:flex-start;gap:12px">
-          <span style="font-size:28px">${trip.country.split(' ')[0]}</span>
-          <div style="flex:1">
-            <p style="font-weight:800;font-size:15px">${escapeHtml(trip.name)}</p>
-            <p class="mono" style="margin-top:4px">${trip.from || '—'} – ${trip.to || '—'}</p>
-          </div>
-          <button onclick="removeTrip(${i})" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px">✕</button>
-        </div>
-      </div>`).join('');
+  const activeContainer = document.getElementById('active-trip-card');
+  const listContainer = document.getElementById('extra-trips-list');
+  if (!activeContainer || !listContainer) return;
+
+  const trips = AppState.trips.slice().sort((a, b) => (b.startDate || 0) - (a.startDate || 0));
+  const active = trips.find(t => t.isActive);
+  const others = trips.filter(t => !t.isActive);
+
+  activeContainer.innerHTML = active ? renderTripCard(active, true) : `
+    <p class="mono" style="padding:16px 0">Nog geen reis actief.</p>`;
+
+  listContainer.innerHTML = others.length === 0 ? '' :
+    `<p class="eyebrow" style="margin:18px 0 9px">Overige reizen</p>` +
+    others.map(t => renderTripCard(t, false)).join('');
 }
 
-function removeTrip(index) {
-  AppState.extraTrips.splice(index, 1);
-  showToast('Reis verwijderd');
+function renderTripCard(trip, isActive) {
+  const from = trip.startDate ? formatShortDate(trip.startDate) : '—';
+  const to = trip.endDate ? formatShortDate(trip.endDate) : '—';
+  return `
+    <div class="card" style="border-left:3px solid ${isActive ? 'var(--spruce)' : 'var(--line)'};margin-bottom:10px;overflow:hidden">
+      <div style="padding:16px;display:flex;align-items:flex-start;gap:13px">
+        <span style="font-size:28px">${trip.countryFlag || '🌍'}</span>
+        <div style="flex:1">
+          <p style="font-weight:800;font-size:15.5px">${escapeHtml(trip.name)}</p>
+          <p class="mono" style="margin-top:4px">${from} – ${to}</p>
+          <div style="display:flex;gap:7px;margin-top:11px">
+            ${isActive
+              ? `<button onclick="showToast('${escapeHtml(trip.name)} is al actief')" style="padding:7px 14px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">✓ Actief</button>`
+              : `<button onclick="handleActivateTrip('${trip.id}')" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Activeren</button>`}
+          </div>
+        </div>
+        <button onclick="handleDeleteTrip('${trip.id}', '${escapeHtml(trip.name).replace(/'/g, "\\'")}')" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px">✕</button>
+      </div>
+    </div>`;
+}
+
+async function handleActivateTrip(tripId) {
+  await switchToTrip(tripId);
   renderTripsScreen();
 }
+
+async function handleDeleteTrip(tripId, name) {
+  if (AppState.trips.length <= 1) { showToast('Je kunt de enige reis niet verwijderen'); return; }
+  if (!window._deleteTripConfirm || window._deleteTripConfirm !== tripId) {
+    window._deleteTripConfirm = tripId;
+    showToast(`Tik nogmaals om "${name}" te verwijderen`, 3000);
+    return;
+  }
+  window._deleteTripConfirm = null;
+  await deleteTrip(tripId);
+  showToast(`🗑 ${name} verwijderd`);
+  renderTripsScreen();
+}
+
+let pendingNewAccommodations = [];
 
 function openAddTripSheet() {
   document.getElementById('trip-name-input').value = '';
+  pendingNewAccommodations = [{}];
+  renderTripAccommodationFields();
   openSheet('sheet-trip');
 }
 
-function saveTrip() {
+// Eén accommodatie is verplicht (DL-003: accommodatie is de operationele
+// eenheid van elke reisdag) — verdere kunnen later via de accommodatie-
+// beheerder worden toegevoegd. Hier bewust minimaal: naam, adres,
+// check-in/uit, coördinaten (handmatig, zoals de bestaande Noorwegen-data).
+function renderTripAccommodationFields() {
+  const container = document.getElementById('trip-accommodations-fields');
+  if (!container) return;
+  container.innerHTML = pendingNewAccommodations.map((_, i) => `
+    <div class="card" style="padding:13px;margin-bottom:10px">
+      <p class="eyebrow" style="margin-bottom:8px">Verblijf ${i + 1}</p>
+      <input id="new-acc-name-${i}" placeholder="Naam accommodatie"/>
+      <input id="new-acc-address-${i}" placeholder="Adres"/>
+      <div style="display:flex;gap:10px">
+        <input id="new-acc-checkin-${i}" type="date" style="flex:1"/>
+        <input id="new-acc-checkout-${i}" type="date" style="flex:1"/>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:0">
+        <input id="new-acc-lat-${i}" type="number" step="0.0001" placeholder="Breedtegraad (optioneel)" style="flex:1;margin-bottom:0"/>
+        <input id="new-acc-lng-${i}" type="number" step="0.0001" placeholder="Lengtegraad (optioneel)" style="flex:1;margin-bottom:0"/>
+      </div>
+    </div>`).join('');
+}
+
+function addAnotherTripAccommodation() {
+  pendingNewAccommodations.push({});
+  renderTripAccommodationFields();
+}
+
+async function saveTrip() {
   const name = document.getElementById('trip-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return; }
-  AppState.extraTrips.push({
-    name,
-    country: document.getElementById('trip-country-select').value,
-    from: document.getElementById('trip-from-input').value,
-    to: document.getElementById('trip-to-input').value,
-  });
+  const countrySelect = document.getElementById('trip-country-select');
+  const country = countrySelect.value.replace(/^\S+\s/, '');
+  const countryFlag = countrySelect.value.split(' ')[0];
+
+  const accommodations = pendingNewAccommodations.map((_, i) => {
+    const accName = document.getElementById(`new-acc-name-${i}`).value.trim();
+    const checkIn = document.getElementById(`new-acc-checkin-${i}`).value;
+    const checkOut = document.getElementById(`new-acc-checkout-${i}`).value;
+    const lat = parseFloat(document.getElementById(`new-acc-lat-${i}`).value) || 0;
+    const lng = parseFloat(document.getElementById(`new-acc-lng-${i}`).value) || 0;
+    return {
+      name: accName || `Verblijf ${i + 1}`,
+      address: document.getElementById(`new-acc-address-${i}`).value.trim(),
+      checkIn: checkIn ? new Date(checkIn).toISOString() : new Date().toISOString(),
+      checkOut: checkOut ? new Date(checkOut).toISOString() : new Date().toISOString(),
+      lat, lng,
+      short: (accName || 'Vbl').slice(0, 3),
+      color: '#5B8C7B',
+      elevation: 0,
+      coord: lat && lng ? `${lat}°N ${lng}°E` : '—',
+      notes: '',
+      phone: null,
+    };
+  }).filter(a => a.name);
+
+  if (accommodations.length === 0) { showToast('Voeg minstens één verblijf toe'); return; }
+
+  const startDate = new Date(Math.min(...accommodations.map(a => new Date(a.checkIn).getTime())));
+  const endDate = new Date(Math.max(...accommodations.map(a => new Date(a.checkOut).getTime())));
+
+  const trip = await createTrip({ name, country, countryFlag, startDate, endDate, accommodations });
   closeSheet('sheet-trip');
   showToast(`✓ ${name} toegevoegd`);
   renderTripsScreen();
+  return trip;
 }
 
 // ── Instellingen ───────────────────────────────────────────
