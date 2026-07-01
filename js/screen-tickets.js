@@ -1,12 +1,19 @@
 // ═══════════════════════════════════════════════════════════
-// screen-tickets.js — Tickets met bestand-upload + Mijn reizen + Instellingen
+// screen-tickets.js — Tickets met Firestore-opslag + bestand-upload
+// Tickets worden persistent opgeslagen en gedeeld via Firebase.
 // ═══════════════════════════════════════════════════════════
 
-let pendingTicketFile = null; // { dataUrl, name, type }
+let pendingTicketFile = null;
 
 function renderTicketsScreen() {
   const moreLabel = document.getElementById('tickets-active-label');
   const listEl = document.getElementById('tickets-list');
+  const count = 1 + AppState.tickets.length; // 1 = het vaste Klimapark-ticket
+
+  const totalEl = document.getElementById('stat-tickets');
+  if (totalEl) totalEl.textContent = count;
+  const subEl = document.getElementById('meer-tickets-sub');
+  if (subEl) subEl.textContent = `${count} ticket${count !== 1 ? 's' : ''}`;
 
   if (AppState.tickets.length === 0) {
     moreLabel.style.display = 'none';
@@ -15,15 +22,12 @@ function renderTicketsScreen() {
   }
 
   moreLabel.style.display = 'block';
-  document.getElementById('stat-tickets').textContent = 1 + AppState.tickets.length;
-  document.getElementById('meer-tickets-sub').textContent = `${1 + AppState.tickets.length} tickets`;
-
   listEl.innerHTML = AppState.tickets.map((ticket, i) => `
     <div class="card" style="border-left:3px solid var(--spruce);margin-bottom:10px;overflow:hidden">
       <div style="padding:15px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <p style="font-weight:800;font-size:15.5px;flex:1">${escapeHtml(ticket.name)}</p>
-          <button onclick="removeTicket(${i})" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px;margin-left:8px">✕</button>
+          <button onclick="handleRemoveTicket(${i})" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px;margin-left:8px;padding:4px">✕</button>
         </div>
         ${ticket.venue ? `<p class="mono" style="margin-top:5px">${escapeHtml(ticket.venue)}</p>` : ''}
         <div style="display:flex;gap:15px;margin-top:11px" class="mono">
@@ -44,18 +48,22 @@ function renderTicketFilePreview(ticket) {
         ? `<img src="${ticket.fileDataUrl}" class="file-preview" alt="Ticket bestand"/>`
         : `<div class="file-upload-icon">📄</div>`}
       <div style="flex:1;min-width:0">
-        <p style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(ticket.fileName)}</p>
+        <p style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(ticket.fileName || 'Bijlage')}</p>
         <p class="mono">Bijgevoegd document</p>
       </div>
     </div>`;
 }
 
-function removeTicket(index) {
+async function handleRemoveTicket(index) {
   AppState.tickets.splice(index, 1);
+  await dbDeleteTicket(index);
   showToast('Ticket verwijderd');
   renderTicketsScreen();
   renderHomeScreen();
 }
+
+// Alias voor backward compat
+function removeTicket(index) { handleRemoveTicket(index); }
 
 function openAddTicketSheet() {
   document.getElementById('ticket-name-input').value = '';
@@ -66,26 +74,13 @@ function openAddTicketSheet() {
   openSheet('sheet-ticket');
 }
 
-// FIX: bestandsupload toegevoegd — voorheen kon je alleen tekst invoeren,
-// geen foto of PDF van het echte ticket bijvoegen.
 function handleTicketFileSelect(input) {
   const file = input.files[0];
   if (!file) return;
-
-  const maxSize = 8 * 1024 * 1024; // 8MB
-  if (file.size > maxSize) {
-    showToast('Bestand te groot (max 8MB)');
-    input.value = '';
-    return;
-  }
-
+  if (file.size > 8 * 1024 * 1024) { showToast('Bestand te groot (max 8MB)'); input.value = ''; return; }
   const reader = new FileReader();
   reader.onload = e => {
-    pendingTicketFile = {
-      dataUrl: e.target.result,
-      name: file.name,
-      type: file.type,
-    };
+    pendingTicketFile = { dataUrl: e.target.result, name: file.name, type: file.type };
     updateTicketFileUploadUI();
   };
   reader.readAsDataURL(file);
@@ -94,7 +89,6 @@ function handleTicketFileSelect(input) {
 function updateTicketFileUploadUI() {
   const uploadEl = document.getElementById('ticket-file-upload');
   if (!pendingTicketFile) { resetTicketFileUpload(); return; }
-
   uploadEl.classList.add('has-file');
   const isImage = pendingTicketFile.type.startsWith('image/');
   uploadEl.querySelector('.file-upload-icon').innerHTML = isImage
@@ -113,7 +107,7 @@ function resetTicketFileUpload() {
   uploadEl.querySelector('.file-upload-hint').textContent = 'Foto of PDF, max 8MB';
 }
 
-function saveTicket() {
+async function saveTicket() {
   const name = document.getElementById('ticket-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return; }
 
@@ -128,7 +122,9 @@ function saveTicket() {
     fileType: pendingTicketFile ? pendingTicketFile.type : null,
   };
 
+  const newIndex = AppState.tickets.length;
   AppState.tickets.push(ticket);
+  await dbSaveTicket(ticket, newIndex);
   closeSheet('sheet-ticket');
   showToast(`✓ ${name} opgeslagen`);
   renderTicketsScreen();
@@ -139,7 +135,6 @@ function saveTicket() {
 function renderTripsScreen() {
   const container = document.getElementById('extra-trips-list');
   if (AppState.extraTrips.length === 0) { container.innerHTML = ''; return; }
-
   container.innerHTML = `<p class="eyebrow" style="margin:18px 0 9px">Overige reizen</p>` +
     AppState.extraTrips.map((trip, i) => `
       <div class="card" style="margin-bottom:10px">
@@ -177,30 +172,6 @@ function saveTrip() {
   closeSheet('sheet-trip');
   showToast(`✓ ${name} toegevoegd`);
   renderTripsScreen();
-}
-
-// ── Activiteit toevoegen ──────────────────────────────────
-function openAddActivitySheet() {
-  const select = document.getElementById('activity-day-select');
-  select.innerHTML = getAllTripDays().map((d, i) =>
-    `<option value="${d.toISOString()}">Dag ${i + 1} · ${WEEKDAYS[d.getDay()]} ${formatShortDate(d)}</option>`
-  ).join('');
-  document.getElementById('activity-name-input').value = '';
-  openSheet('sheet-activity');
-}
-
-function saveActivity() {
-  const name = document.getElementById('activity-name-input').value.trim();
-  if (!name) { showToast('Voer een naam in'); return; }
-  const dateStr = document.getElementById('activity-day-select').value;
-  const accId = parseInt(document.getElementById('activity-acc-select').value);
-  const date = dateStr ? new Date(dateStr) : null;
-
-  addActivity({ name, accId, date });
-  closeSheet('sheet-activity');
-  showToast(`✓ ${name} toegevoegd`);
-  if (date) { AppState.selectedPlanningDay = date; renderPlanningScreen(); }
-  renderHomeScreen();
 }
 
 // ── Instellingen ───────────────────────────────────────────
