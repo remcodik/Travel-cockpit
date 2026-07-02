@@ -549,7 +549,10 @@
       <input id="edit-acc-lat-input" type="number" step="0.0001" placeholder="Breedtegraad" style="flex:1"/>
       <input id="edit-acc-lng-input" type="number" step="0.0001" placeholder="Lengtegraad" style="flex:1"/>
     </div>
-    <input id="edit-acc-url-input" type="url" placeholder="Link (hotel/Airbnb, optioneel)"/>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="edit-acc-url-input" type="url" placeholder="Link (hotel/Airbnb, optioneel)" style="flex:1"/>
+      <button type="button" onclick="handleExtractFromMapsLink()" title="Locatie/adres uit link halen (Google Maps, of best-effort uit boekingslink)" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">📍</button>
+    </div>
     <textarea id="edit-acc-notes-input" placeholder="Notities (optioneel)" rows="3" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:14.5px;margin-bottom:18px;font-family:inherit;resize:vertical"></textarea>
     <button id="edit-acc-save-btn" class="btn btn-primary">Opslaan</button>
     <button onclick="closeSheet('sheet-edit-accommodation')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>

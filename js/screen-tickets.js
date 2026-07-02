@@ -219,7 +219,8 @@ function renderTripCard(trip, isActive) {
           <p class="mono" style="margin-top:4px">${from} – ${to}</p>
           <div style="display:flex;gap:7px;margin-top:11px">
             ${isActive
-              ? `<button onclick="showToast('${escapeHtml(trip.name)} is al actief')" style="padding:7px 14px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">✓ Actief</button>`
+              ? `<button onclick="showToast('${escapeHtml(trip.name)} is al actief')" style="padding:7px 14px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">✓ Actief</button>
+                 ${AppState.trips.length > 1 ? `<button onclick="handleDeactivateTrip('${trip.id}')" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Deactiveren</button>` : ''}`
               : `<button onclick="handleActivateTrip('${trip.id}')" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Activeren</button>`}
           </div>
         </div>
@@ -259,6 +260,19 @@ async function saveTripEdit(tripId) {
 
 async function handleActivateTrip(tripId) {
   await switchToTrip(tripId);
+  renderTripsScreen();
+}
+
+// Handmatig deactiveren (Fase F-vervolg): er is altijd precies één actieve
+// reis nodig — "deactiveren" betekent dus expliciet wisselen naar de meest
+// recente andere reis, i.p.v. stil naar trips[0]. Kan niet als het de enige
+// reis is (niets om naar over te schakelen).
+async function handleDeactivateTrip(tripId) {
+  const others = AppState.trips.filter(t => t.id !== tripId);
+  if (others.length === 0) { showToast('Je kunt de enige reis niet deactiveren'); return; }
+  const next = others.slice().sort((a, b) => (b.startDate || 0) - (a.startDate || 0))[0];
+  await switchToTrip(next.id);
+  showToast(`${next.name} is nu actief`);
   renderTripsScreen();
 }
 
