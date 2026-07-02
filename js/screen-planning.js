@@ -66,6 +66,8 @@ function renderPlanningDay() {
         : `<p class="mono" style="margin-top:3px">reisdag · onderweg</p>`}
     </div>
     ${acc ? renderElevationTag(acc.elevation, acc.color) : ''}
+    <button onclick="openNoteScreen('day','${day.toISOString().slice(0,10)}','Dag ${dayNum} — ${day.getDate()} ${MONTHS[day.getMonth()]}')"
+      style="width:32px;height:32px;border-radius:9px;border:1.5px solid var(--line);background:white;cursor:pointer;font-size:14px;color:var(--ink-faint);flex-shrink:0;display:flex;align-items:center;justify-content:center" title="Dagnotitie">✎</button>
   `;
 
   let dayActivities = getActivitiesForDate(day);
@@ -136,7 +138,8 @@ function renderPlanningActivityRow(act, index, total) {
           <span class="mono">· ${act.distance} · ${act.duration}</span>
         </div>
       </div>
-      <button onclick="event.stopPropagation();openEditActivitySheet(${act.id})" class="edit-pencil-btn" title="Bewerken">✎</button>
+      ${renderNoteButton('activity', act.id, act.name, acc.color)}
+      ${act.lat && act.lng ? `<button onclick="event.stopPropagation();openMapsForCoords(${act.lat},${act.lng},'${escapeHtml(act.name).replace(/'/g, "\\'")}')" style="width:30px;height:30px;border-radius:8px;border:1.5px solid var(--water-light);background:var(--water-light);cursor:pointer;font-size:13px;color:var(--water);flex-shrink:0;display:flex;align-items:center;justify-content:center" title="Route">◈</button>` : ''}
       <button class="activity-check"
         style="border-color:${isDone ? acc.color : 'var(--line)'};background:${isDone ? acc.color : 'transparent'}"
         onclick="handleToggleActivity(${act.id})">
@@ -158,6 +161,7 @@ function renderUnscheduledRow(act, index, total) {
         <p class="mono" style="margin-top:2px">${act.level} · tik voor details</p>
       </div>
       <button onclick="event.stopPropagation();openEditActivitySheet(${act.id})" class="edit-pencil-btn" title="Bewerken">✎</button>
+      ${renderNoteButton('activity', act.id, act.name, acc.color)}
       <button onclick="openMoveActivitySheet(${act.id})"
         style="font-size:11px;font-weight:700;padding:5px 10px;background:${acc.color}15;color:${acc.color};border:1.5px solid ${acc.color}40;border-radius:20px;cursor:pointer;white-space:nowrap;flex-shrink:0">
         Inplannen
