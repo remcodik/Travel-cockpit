@@ -1,7 +1,14 @@
 # Vervolgstap-plan — N1/N2/N6/N8/H4 (klein) + N3/N7 (apart te bespreken)
 
 **Document ID:** TC-ISSUES-004
-**Status:** Plan ter bespreking — **niet bouwen voordat de vragen onderaan beantwoord zijn**
+**Status:** Alle vragen beantwoord (2026-07-02, alle aanbevolen opties gekozen) — N1/N2/N6/N8/H4/N3 worden nu gebouwd. N7 wacht op een routing-dienst-voorstel.
+
+**Antwoorden:**
+1. N1 (SW-updates): banner "nieuwe versie beschikbaar, herlaad" i.p.v. stil automatisch bijwerken.
+2. N6 (export-scope): alle reizen tegelijk als één backup-bestand.
+3. H4 (suggestie-limiet): 15.
+4. N7 (routing-dienst): wordt uitgezocht, concreet voorstel volgt apart.
+5. N3 (trigger): automatisch — toast/knop na het afvinken van een activiteit.
 **Bron:** Vervolg op `03-fase-e-plan-en-nieuwe-ideeen.md`, nu elk item technisch geanalyseerd tegen de huidige code
 
 ---
