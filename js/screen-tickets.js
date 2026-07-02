@@ -271,9 +271,17 @@ async function handleDeactivateTrip(tripId) {
   const others = AppState.trips.filter(t => t.id !== tripId);
   if (others.length === 0) { showToast('Je kunt de enige reis niet deactiveren'); return; }
   const next = others.slice().sort((a, b) => (b.startDate || 0) - (a.startDate || 0))[0];
-  await switchToTrip(next.id);
-  showToast(`${next.name} is nu actief`);
-  renderTripsScreen();
+  try {
+    await switchToTrip(next.id);
+    showToast(`${next.name} is nu actief`);
+    renderTripsScreen();
+  } catch (err) {
+    // FIX: switchToTrip() kan falen op een Firestore-schrijffout of
+    // netwerkhapering — voorheen bleef dat helemaal stil (de knop "deed
+    // niets"). Nu altijd een zichtbare melding, en de fout in de console.
+    console.error('Deactiveren mislukt:', err);
+    showToast('⚠️ Deactiveren mislukt — probeer opnieuw');
+  }
 }
 
 async function handleDeleteTrip(tripId, name) {
