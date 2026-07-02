@@ -5,7 +5,7 @@
 function renderAccommodationScreen(accId) {
   // FIX: geen hardcoded fallback meer — gebruik altijd de actieve
   // accommodatie op basis van datum als er geen expliciete keuze is.
-  const acc = ACCOMMODATIONS.find(a => a.id === accId) || getActiveAccommodation();
+  const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, accId)) || getActiveAccommodation();
   AppState.viewingAccommodationId = acc.id;
   const activeAcc = getActiveAccommodation();
 
@@ -76,7 +76,7 @@ function renderAccommodationScreen(accId) {
 }
 
 function openMapsForAccommodation(accId) {
-  const acc = ACCOMMODATIONS.find(a => a.id === accId);
+  const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, accId));
   if (!acc) return;
   window.open(`https://www.google.com/maps/dir/?api=1&destination=${acc.lat},${acc.lng}`, '_blank');
 }
