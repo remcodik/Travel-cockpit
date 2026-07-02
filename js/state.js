@@ -256,6 +256,46 @@ async function deleteTrip(tripId) {
   }
 }
 
+// ── Verblijf bewerken/verwijderen (Fase E) ─────────────────
+async function updateAccommodation(accId, changes) {
+  const acc = ACCOMMODATIONS.find(a => a.id === accId);
+  if (!acc) return null;
+  Object.assign(acc, changes);
+  // dbSaveAccommodation verwacht checkIn/checkOut als ISO-strings (zelfde
+  // conventie als createTrip()) — in ACCOMMODATIONS staan ze als Date.
+  await dbSaveAccommodation(getCurrentTripId(), {
+    ...acc,
+    checkIn: acc.checkIn.toISOString(),
+    checkOut: acc.checkOut.toISOString(),
+  });
+  await recalculateTripDates();
+  return acc;
+}
+
+// Reis start/einddatum groeit automatisch mee met verblijf-wijzigingen
+// (Fase E-besluit), herberekend uit min/max van alle verblijven.
+async function recalculateTripDates() {
+  if (ACCOMMODATIONS.length === 0) return;
+  const newStart = new Date(Math.min(...ACCOMMODATIONS.map(a => a.checkIn.getTime())));
+  const newEnd = new Date(Math.max(...ACCOMMODATIONS.map(a => a.checkOut.getTime())));
+  TRIP_START.setTime(newStart.getTime());
+  TRIP_END.setTime(newEnd.getTime());
+  await updateTripMeta(getCurrentTripId(), { startDate: new Date(TRIP_START), endDate: new Date(TRIP_END) });
+}
+
+async function deleteAccommodationWithChoice(accId, alsoDeleteActivities) {
+  if (alsoDeleteActivities) {
+    const toDelete = AppState.activities.filter(act => idsMatch(act.accId, accId));
+    for (const act of toDelete) {
+      await deleteActivity(act.id);
+    }
+  }
+  await dbDeleteAccommodation(getCurrentTripId(), accId);
+  const idx = ACCOMMODATIONS.findIndex(a => a.id === accId);
+  if (idx !== -1) ACCOMMODATIONS.splice(idx, 1);
+  await recalculateTripDates();
+}
+
 // ── Firebase sync-initialisatie ───────────────────────────
 // Wordt aangeroepen vanuit initAppState nadat Firebase klaar is, en
 // opnieuw vanuit switchToTrip() bij het wisselen van reis.
