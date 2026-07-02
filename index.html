@@ -343,18 +343,10 @@
     <button onclick="openAddTicketSheet()" class="fab" style="background:var(--spruce);color:white">+</button>
   </div>
   <div class="scroll px" style="padding-top:15px">
-    <span class="eyebrow" style="display:block;margin-bottom:9px">Gearchiveerd</span>
-    <div class="card" style="border-left:3px solid var(--line);opacity:.72;margin-bottom:16px;overflow:hidden">
-      <div style="padding:15px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div style="flex:1"><p style="font-weight:800;font-size:15.5px">Klimapark 2469</p><p class="mono" style="margin-top:5px">IJstunnel · 2 personen · 1841m</p></div>
-          <span style="font-size:9px;font-weight:700;padding:4px 9px;background:var(--paper-warm);color:var(--ink-faint);border-radius:20px;text-transform:uppercase;flex-shrink:0;margin-left:8px">Gebruikt</span>
-        </div>
-        <div style="display:flex;gap:15px;margin-top:11px" class="mono"><span>◷ 21 jun 2026</span><span>· 10:00</span></div>
-      </div>
-    </div>
     <span class="eyebrow" id="tickets-active-label" style="display:none;margin-bottom:9px">Actief</span>
     <div id="tickets-list"></div>
+    <span class="eyebrow" id="tickets-archived-label" style="display:none;margin-bottom:9px;margin-top:16px">Gearchiveerd</span>
+    <div id="tickets-archived-list"></div>
     <button onclick="openAddTicketSheet()" class="btn btn-outline" style="margin-top:8px">+ Ticket toevoegen</button>
   </div>
 </div>
@@ -432,7 +424,7 @@
 <div class="sheet-backdrop" id="sheet-ticket">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-handle"></div>
-    <p class="sheet-title">TICKET TOEVOEGEN</p>
+    <p class="sheet-title" id="ticket-sheet-title">TICKET TOEVOEGEN</p>
     <input id="ticket-name-input" placeholder="Naam activiteit"/>
     <input id="ticket-venue-input" placeholder="Locatie"/>
     <input id="ticket-code-input" placeholder="Boekingscode"/>
@@ -467,6 +459,18 @@
   </div>
 </div>
 
+<!-- ═══════════ SHEET: Reis bewerken ═══════════ -->
+<div class="sheet-backdrop" id="sheet-edit-trip">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">REIS BEWERKEN</p>
+    <input id="edit-trip-name-input" placeholder="Naam"/>
+    <select id="edit-trip-country-select" style="margin-bottom:18px"><option>🇳🇴 Noorwegen</option><option>🇮🇹 Italië</option><option>🇫🇷 Frankrijk</option><option>🇩🇪 Duitsland</option><option>🇪🇸 Spanje</option><option>🇵🇹 Portugal</option><option>🇦🇹 Oostenrijk</option><option>🇨🇭 Zwitserland</option><option>🇭🇷 Kroatië</option><option>🇬🇷 Griekenland</option><option>🇮🇸 IJsland</option><option>🇸🇪 Zweden</option></select>
+    <button id="edit-trip-save-btn" class="btn btn-primary">Opslaan</button>
+    <button onclick="closeSheet('sheet-edit-trip')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
+  </div>
+</div>
+
 <div class="sheet-backdrop" id="sheet-activity">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-handle"></div>
@@ -488,6 +492,18 @@
     </div>
     <button onclick="saveActivity()" class="btn btn-primary">Toevoegen</button>
     <button onclick="closeSheet('sheet-activity')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
+  </div>
+</div>
+
+<!-- ═══════════ SHEET: Activiteit bewerken ═══════════ -->
+<div class="sheet-backdrop" id="sheet-edit-activity">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">ACTIVITEIT BEWERKEN</p>
+    <input id="edit-activity-name-input" placeholder="Naam activiteit"/>
+    <textarea id="edit-activity-desc-input" placeholder="Beschrijving (optioneel)" rows="3" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:14.5px;margin-bottom:18px;font-family:inherit;resize:vertical"></textarea>
+    <button id="edit-activity-save-btn" class="btn btn-primary">Opslaan</button>
+    <button onclick="closeSheet('sheet-edit-activity')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
   </div>
 </div>
 

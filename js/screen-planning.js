@@ -136,6 +136,7 @@ function renderPlanningActivityRow(act, index, total) {
           <span class="mono">· ${act.distance} · ${act.duration}</span>
         </div>
       </div>
+      <button onclick="event.stopPropagation();openEditActivitySheet(${act.id})" class="edit-pencil-btn" title="Bewerken">✎</button>
       <button class="activity-check"
         style="border-color:${isDone ? acc.color : 'var(--line)'};background:${isDone ? acc.color : 'transparent'}"
         onclick="handleToggleActivity(${act.id})">
@@ -156,6 +157,7 @@ function renderUnscheduledRow(act, index, total) {
         <p class="row-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(act.name)}</p>
         <p class="mono" style="margin-top:2px">${act.level} · tik voor details</p>
       </div>
+      <button onclick="event.stopPropagation();openEditActivitySheet(${act.id})" class="edit-pencil-btn" title="Bewerken">✎</button>
       <button onclick="openMoveActivitySheet(${act.id})"
         style="font-size:11px;font-weight:700;padding:5px 10px;background:${acc.color}15;color:${acc.color};border:1.5px solid ${acc.color}40;border-radius:20px;cursor:pointer;white-space:nowrap;flex-shrink:0">
         Inplannen
@@ -223,6 +225,27 @@ function openActivityDetailSheet(id) {
   }
 
   openSheet('sheet-place-detail');
+}
+
+// ── Activiteit bewerken (Fase E) ───────────────────────────
+function openEditActivitySheet(id) {
+  const act = AppState.activities.find(a => a.id === id);
+  if (!act) return;
+  document.getElementById('edit-activity-name-input').value = act.name;
+  document.getElementById('edit-activity-desc-input').value = act.desc || '';
+  document.getElementById('edit-activity-save-btn').onclick = () => saveActivityEdit(id);
+  openSheet('sheet-edit-activity');
+}
+
+async function saveActivityEdit(id) {
+  const name = document.getElementById('edit-activity-name-input').value.trim();
+  if (!name) { showToast('Voer een naam in'); return; }
+  const desc = document.getElementById('edit-activity-desc-input').value.trim();
+  await updateActivity(id, { name, desc });
+  closeSheet('sheet-edit-activity');
+  showToast('✓ Activiteit bijgewerkt');
+  renderPlanningScreen();
+  renderHomeScreen();
 }
 
 // ── Activiteit verplaatsen ────────────────────────────────

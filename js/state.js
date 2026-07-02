@@ -239,6 +239,14 @@ async function createTrip({ name, country, countryFlag, startDate, endDate, acco
   return trip;
 }
 
+async function updateTripMeta(tripId, changes) {
+  const trip = AppState.trips.find(t => t.id === tripId);
+  if (!trip) return null;
+  Object.assign(trip, changes);
+  await dbSaveTripMeta(trip);
+  return trip;
+}
+
 async function deleteTrip(tripId) {
   const wasActive = AppState.trips.find(t => t.id === tripId)?.isActive;
   await dbDeleteTripMeta(tripId);
