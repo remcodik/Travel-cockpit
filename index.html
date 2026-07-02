@@ -245,7 +245,8 @@
     <button onclick="openMapsForAccommodation(AppState.viewingAccommodationId)" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">◈</span><span class="eyebrow" style="font-size:8px">Route</span></button>
     <button onclick="navigateTo('map')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">⊕</span><span class="eyebrow" style="font-size:8px">Kaart</span></button>
     <button onclick="showWeatherDetailForActiveAccommodation()" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">☀</span><span class="eyebrow" style="font-size:8px">Weer</span></button>
-    <button onclick="showToast('Geen telefoonnummer opgeslagen voor dit verblijf')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;cursor:pointer"><span style="font-size:20px;color:var(--spruce)">☎</span><span class="eyebrow" style="font-size:8px">Bel</span></button>
+    <button onclick="showToast('Geen telefoonnummer opgeslagen voor dit verblijf')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">☎</span><span class="eyebrow" style="font-size:8px">Bel</span></button>
+    <button onclick="openEditAccommodationSheet(AppState.viewingAccommodationId)" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;cursor:pointer"><span style="font-size:20px;color:var(--spruce)">✎</span><span class="eyebrow" style="font-size:8px">Bewerk</span></button>
   </div>
   <div class="scroll">
     <div class="px" style="padding-top:16px;display:flex;flex-direction:column;gap:13px">
@@ -259,6 +260,8 @@
         <div class="card-row" onclick="navigateTo('tickets')"><div class="icon-box" style="background:var(--slope-light)">🎟️</div><span style="flex:1" class="row-title">Tickets</span><span class="chevron">›</span></div>
         <div class="card-row" onclick="navigateTo('map')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">◈</div><span style="flex:1" class="row-title">Bekijk op kaart</span><span class="chevron">›</span></div>
       </div>
+      <span class="eyebrow">Activiteiten van dit verblijf</span>
+      <div id="acc-activities"></div>
       <span class="eyebrow">Alle verblijven</span>
       <div id="acc-stops" style="display:flex;flex-direction:column;gap:7px"></div>
     </div>
@@ -504,6 +507,40 @@
     <textarea id="edit-activity-desc-input" placeholder="Beschrijving (optioneel)" rows="3" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:14.5px;margin-bottom:18px;font-family:inherit;resize:vertical"></textarea>
     <button id="edit-activity-save-btn" class="btn btn-primary">Opslaan</button>
     <button onclick="closeSheet('sheet-edit-activity')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
+  </div>
+</div>
+
+<!-- ═══════════ SHEET: Verblijf bewerken ═══════════ -->
+<div class="sheet-backdrop" id="sheet-edit-accommodation">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">VERBLIJF BEWERKEN</p>
+    <input id="edit-acc-name-input" placeholder="Naam accommodatie"/>
+    <input id="edit-acc-address-input" placeholder="Adres"/>
+    <div style="display:flex;gap:10px">
+      <input id="edit-acc-checkin-input" type="date" style="flex:1"/>
+      <input id="edit-acc-checkout-input" type="date" style="flex:1"/>
+    </div>
+    <div style="display:flex;gap:10px">
+      <input id="edit-acc-lat-input" type="number" step="0.0001" placeholder="Breedtegraad" style="flex:1"/>
+      <input id="edit-acc-lng-input" type="number" step="0.0001" placeholder="Lengtegraad" style="flex:1"/>
+    </div>
+    <input id="edit-acc-url-input" type="url" placeholder="Link (hotel/Airbnb, optioneel)"/>
+    <textarea id="edit-acc-notes-input" placeholder="Notities (optioneel)" rows="3" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:14.5px;margin-bottom:18px;font-family:inherit;resize:vertical"></textarea>
+    <button id="edit-acc-save-btn" class="btn btn-primary">Opslaan</button>
+    <button onclick="closeSheet('sheet-edit-accommodation')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
+  </div>
+</div>
+
+<!-- ═══════════ SHEET: Verblijf verwijderen — keuze over activiteiten ═══════════ -->
+<div class="sheet-backdrop" id="sheet-delete-accommodation">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">VERBLIJF VERWIJDEREN</p>
+    <p class="row-sub" style="margin-bottom:18px;line-height:1.5" id="delete-acc-warning">—</p>
+    <button id="delete-acc-with-activities-btn" class="btn btn-primary" style="background:#dc2626;margin-bottom:9px">🗑 Verblijf + activiteiten verwijderen</button>
+    <button id="delete-acc-keep-activities-btn" class="btn btn-outline" style="margin-bottom:9px">Verblijf verwijderen, activiteiten laten staan</button>
+    <button onclick="closeSheet('sheet-delete-accommodation')" class="btn btn-outline">Annuleer</button>
   </div>
 </div>
 
