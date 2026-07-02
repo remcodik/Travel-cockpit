@@ -109,6 +109,12 @@ button { font-family: inherit; }
   font-size: 19px; flex-shrink: 0;
 }
 .chevron { color: var(--line); font-size: 16px; }
+.edit-pencil-btn {
+  width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--paper-warm); color: var(--ink-mid); font-size: 13px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.edit-pencil-btn:active { background: var(--slope-light); color: var(--spruce); }
 
 /* ── 7. Hero panels ─────────────────────────────────────── */
 .hero-panel {

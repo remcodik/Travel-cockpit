@@ -6,28 +6,37 @@
 let pendingTicketFile = null;
 
 function renderTicketsScreen() {
-  const moreLabel = document.getElementById('tickets-active-label');
+  const activeLabel = document.getElementById('tickets-active-label');
   const listEl = document.getElementById('tickets-list');
-  const count = 1 + AppState.tickets.length; // 1 = het vaste Klimapark-ticket
+  const archivedLabel = document.getElementById('tickets-archived-label');
+  const archivedListEl = document.getElementById('tickets-archived-list');
+
+  const active = AppState.tickets.filter(t => t.status !== 'used');
+  const archived = AppState.tickets.filter(t => t.status === 'used');
+  const count = AppState.tickets.length;
 
   const totalEl = document.getElementById('stat-tickets');
   if (totalEl) totalEl.textContent = count;
   const subEl = document.getElementById('meer-tickets-sub');
   if (subEl) subEl.textContent = `${count} ticket${count !== 1 ? 's' : ''}`;
 
-  if (AppState.tickets.length === 0) {
-    moreLabel.style.display = 'none';
-    listEl.innerHTML = '';
-    return;
-  }
+  activeLabel.style.display = active.length > 0 ? 'block' : 'none';
+  listEl.innerHTML = active.map(t => renderTicketRow(t, false)).join('');
 
-  moreLabel.style.display = 'block';
-  listEl.innerHTML = AppState.tickets.map((ticket, i) => `
-    <div class="card" style="border-left:3px solid var(--spruce);margin-bottom:10px;overflow:hidden">
+  archivedLabel.style.display = archived.length > 0 ? 'block' : 'none';
+  archivedListEl.innerHTML = archived.map(t => renderTicketRow(t, true)).join('');
+}
+
+function renderTicketRow(ticket, isArchived) {
+  return `
+    <div class="card" style="border-left:3px solid ${isArchived ? 'var(--line)' : 'var(--spruce)'};margin-bottom:10px;overflow:hidden;${isArchived ? 'opacity:.72' : ''}">
       <div style="padding:15px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <p style="font-weight:800;font-size:15.5px;flex:1">${escapeHtml(ticket.name)}</p>
-          <button onclick="handleRemoveTicket(${i})" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px;margin-left:8px;padding:4px">✕</button>
+          <div style="display:flex;gap:6px;margin-left:8px;flex-shrink:0">
+            <button onclick="openEditTicketSheet('${ticket.id}')" class="edit-pencil-btn" title="Bewerken">✎</button>
+            <button onclick="handleRemoveTicket('${ticket.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px;padding:4px">✕</button>
+          </div>
         </div>
         ${ticket.venue ? `<p class="mono" style="margin-top:5px">${escapeHtml(ticket.venue)}</p>` : ''}
         <div style="display:flex;gap:15px;margin-top:11px" class="mono">
@@ -36,8 +45,11 @@ function renderTicketsScreen() {
         </div>
         ${ticket.code ? `<p class="mono" style="margin-top:6px;padding:4px 9px;background:var(--slope-light);color:var(--spruce);border-radius:6px;display:inline-block">${escapeHtml(ticket.code)}</p>` : ''}
         ${ticket.fileDataUrl ? renderTicketFilePreview(ticket) : ''}
+        ${isArchived
+          ? `<button onclick="handleUnarchiveTicket('${ticket.id}')" style="margin-top:11px;padding:6px 12px;background:none;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">↺ Terugzetten</button>`
+          : `<button onclick="handleArchiveTicket('${ticket.id}')" style="margin-top:11px;padding:6px 12px;background:var(--paper-warm);border:none;border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">✓ Markeer als gebruikt</button>`}
       </div>
-    </div>`).join('');
+    </div>`;
 }
 
 function renderTicketFilePreview(ticket) {
@@ -54,25 +66,62 @@ function renderTicketFilePreview(ticket) {
     </div>`;
 }
 
-async function handleRemoveTicket(index) {
-  const ticket = AppState.tickets[index];
-  if (!ticket) return;
-  AppState.tickets.splice(index, 1);
-  await dbDeleteTicket(ticket.id);
+async function handleRemoveTicket(ticketId) {
+  const idx = AppState.tickets.findIndex(t => t.id === ticketId);
+  if (idx === -1) return;
+  AppState.tickets.splice(idx, 1);
+  await dbDeleteTicket(ticketId);
   showToast('Ticket verwijderd');
   renderTicketsScreen();
   renderHomeScreen();
 }
 
-// Alias voor backward compat
-function removeTicket(index) { handleRemoveTicket(index); }
+// Archiveren is niet destructief (het ticket blijft bestaan), dus zonder
+// dubbel-tik-bevestiging — in tegenstelling tot echt verwijderen.
+async function handleArchiveTicket(ticketId) {
+  const ticket = AppState.tickets.find(t => t.id === ticketId);
+  if (!ticket) return;
+  ticket.status = 'used';
+  await dbSaveTicket(ticket);
+  showToast(`✓ ${ticket.name} gearchiveerd`);
+  renderTicketsScreen();
+}
+
+async function handleUnarchiveTicket(ticketId) {
+  const ticket = AppState.tickets.find(t => t.id === ticketId);
+  if (!ticket) return;
+  ticket.status = 'active';
+  await dbSaveTicket(ticket);
+  showToast(`✓ ${ticket.name} teruggezet`);
+  renderTicketsScreen();
+}
+
+// ── Ticket toevoegen/bewerken (zelfde sheet, editingTicketId bepaalt modus) ──
+let editingTicketId = null;
 
 function openAddTicketSheet() {
+  editingTicketId = null;
+  document.getElementById('ticket-sheet-title').textContent = 'TICKET TOEVOEGEN';
   document.getElementById('ticket-name-input').value = '';
   document.getElementById('ticket-venue-input').value = '';
   document.getElementById('ticket-code-input').value = '';
   pendingTicketFile = null;
   resetTicketFileUpload();
+  openSheet('sheet-ticket');
+}
+
+function openEditTicketSheet(ticketId) {
+  const ticket = AppState.tickets.find(t => t.id === ticketId);
+  if (!ticket) return;
+  editingTicketId = ticketId;
+  document.getElementById('ticket-sheet-title').textContent = 'TICKET BEWERKEN';
+  document.getElementById('ticket-name-input').value = ticket.name;
+  document.getElementById('ticket-venue-input').value = ticket.venue || '';
+  document.getElementById('ticket-code-input').value = ticket.code || '';
+  document.getElementById('ticket-date-input').value = ticket.date || '';
+  document.getElementById('ticket-time-input').value = ticket.time || '';
+  pendingTicketFile = ticket.fileDataUrl ? { dataUrl: ticket.fileDataUrl, name: ticket.fileName, type: ticket.fileType } : null;
+  updateTicketFileUploadUI();
   openSheet('sheet-ticket');
 }
 
@@ -113,22 +162,29 @@ async function saveTicket() {
   const name = document.getElementById('ticket-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return; }
 
+  const existing = editingTicketId ? AppState.tickets.find(t => t.id === editingTicketId) : null;
   const ticket = {
-    id: (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : `ticket-${Date.now()}`,
+    id: existing ? existing.id : ((self.crypto && crypto.randomUUID) ? crypto.randomUUID() : `ticket-${Date.now()}`),
     name,
     venue: document.getElementById('ticket-venue-input').value.trim(),
     code: document.getElementById('ticket-code-input').value.trim(),
     date: document.getElementById('ticket-date-input').value,
     time: document.getElementById('ticket-time-input').value,
+    status: existing ? existing.status : 'active',
     fileDataUrl: pendingTicketFile ? pendingTicketFile.dataUrl : null,
     fileName: pendingTicketFile ? pendingTicketFile.name : null,
     fileType: pendingTicketFile ? pendingTicketFile.type : null,
   };
 
-  AppState.tickets.push(ticket);
+  if (existing) {
+    Object.assign(existing, ticket);
+  } else {
+    AppState.tickets.push(ticket);
+  }
   await dbSaveTicket(ticket);
   closeSheet('sheet-ticket');
   showToast(`✓ ${name} opgeslagen`);
+  editingTicketId = null;
   renderTicketsScreen();
   renderHomeScreen();
 }
@@ -167,9 +223,38 @@ function renderTripCard(trip, isActive) {
               : `<button onclick="handleActivateTrip('${trip.id}')" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Activeren</button>`}
           </div>
         </div>
-        <button onclick="handleDeleteTrip('${trip.id}', '${escapeHtml(trip.name).replace(/'/g, "\\'")}')" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px">✕</button>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button onclick="openEditTripSheet('${trip.id}')" class="edit-pencil-btn" title="Bewerken">✎</button>
+          <button onclick="handleDeleteTrip('${trip.id}', '${escapeHtml(trip.name).replace(/'/g, "\\'")}')" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px">✕</button>
+        </div>
       </div>
     </div>`;
+}
+
+// ── Reis bewerken (Fase E) ─────────────────────────────────
+function openEditTripSheet(tripId) {
+  const trip = AppState.trips.find(t => t.id === tripId);
+  if (!trip) return;
+  document.getElementById('edit-trip-name-input').value = trip.name;
+  const countrySelect = document.getElementById('edit-trip-country-select');
+  const matchValue = `${trip.countryFlag || ''} ${trip.country || ''}`.trim();
+  const hasMatch = Array.from(countrySelect.options).some(o => o.value === matchValue);
+  countrySelect.value = hasMatch ? matchValue : countrySelect.options[0].value;
+  document.getElementById('edit-trip-save-btn').onclick = () => saveTripEdit(tripId);
+  openSheet('sheet-edit-trip');
+}
+
+async function saveTripEdit(tripId) {
+  const name = document.getElementById('edit-trip-name-input').value.trim();
+  if (!name) { showToast('Voer een naam in'); return; }
+  const countrySelect = document.getElementById('edit-trip-country-select');
+  const country = countrySelect.value.replace(/^\S+\s/, '');
+  const countryFlag = countrySelect.value.split(' ')[0];
+  await updateTripMeta(tripId, { name, country, countryFlag });
+  closeSheet('sheet-edit-trip');
+  showToast(`✓ ${name} bijgewerkt`);
+  renderTripsScreen();
+  updateMeerSummary();
 }
 
 async function handleActivateTrip(tripId) {
