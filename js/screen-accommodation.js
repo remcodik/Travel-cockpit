@@ -72,6 +72,15 @@ function renderAccommodationScreen(accId) {
       </button>`;
   }).join('');
 
+  // Topografisch patroon afgeleid van de echte locatie/hoogte van dit
+  // verblijf, zodat elke accommodatie een eigen, herkenbaar patroon
+  // krijgt i.p.v. voor elk verblijf hetzelfde decoratieve vaste patroon.
+  const heroSvg = document.querySelector('#screen-accommodation .topo-svg');
+  if (heroSvg) {
+    heroSvg.dataset.topo = topoSeedForLocation(acc.lat, acc.lng, acc.elevation);
+    heroSvg.dataset.topoElevation = acc.elevation;
+  }
+
   initAllTopoPanels();
 }
 

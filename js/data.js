@@ -8,6 +8,14 @@ const TRIP_END = new Date(2026, 5, 30);
 const MONTHS = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
 const WEEKDAYS = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
 
+// Eén iconenset voor zowel AI-suggesties (Discover) als handmatig
+// toegevoegde activiteiten — voorheen had Discover deze categorieën,
+// maar viel elke toegevoegde activiteit terug op een generiek 📍.
+const CATEGORY_EMOJIS = {
+  activity: '🏔️', restaurant: '🍽️', cafe: '☕', viewpoint: '🌄',
+  default: '📍',
+};
+
 // ── Accommodaties ─────────────────────────────────────────
 const ACCOMMODATIONS = [
   {

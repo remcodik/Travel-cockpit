@@ -473,12 +473,19 @@
     <p class="sheet-title">ACTIVITEIT TOEVOEGEN</p>
     <input id="activity-name-input" placeholder="Naam activiteit"/>
     <select id="activity-day-select"></select>
-    <select id="activity-acc-select" style="margin-bottom:18px">
+    <select id="activity-acc-select" style="margin-bottom:14px">
       <option value="1">Sogndal (16–19 jun)</option>
       <option value="2">Skjåk Solside (19–23 jun)</option>
       <option value="3">Valdres / Noord-Aurdal (23–27 jun)</option>
       <option value="4">Gjerstad (27–29 jun)</option>
     </select>
+    <p class="eyebrow" style="margin-bottom:7px">Soort — bepaalt het icoon</p>
+    <div id="activity-category-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
+      <button type="button" onclick="setActivityCategory(this,'activity')" class="chip on">🏔️ Wandeling</button>
+      <button type="button" onclick="setActivityCategory(this,'restaurant')" class="chip">🍽️ Eten</button>
+      <button type="button" onclick="setActivityCategory(this,'cafe')" class="chip">☕ Café</button>
+      <button type="button" onclick="setActivityCategory(this,'viewpoint')" class="chip">🌄 Uitzicht</button>
+    </div>
     <button onclick="saveActivity()" class="btn btn-primary">Toevoegen</button>
     <button onclick="closeSheet('sheet-activity')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
   </div>
