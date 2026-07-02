@@ -173,13 +173,14 @@ function renderMapMarkers() {
       </div>`;
     const icon = L.divIcon({ html, className: '', iconSize: [36, dayLabel ? 50 : 40], iconAnchor: [18, dayLabel ? 50 : 40] });
     const marker = L.marker([act.lat, act.lng], { icon }).addTo(leafletMap);
-    marker.on('click', () => openPlaceDetailSheet(act, acc));
+    // FIX (H5): rechtstreeks de Planning-detailweergave gebruiken i.p.v.
+    // de kale kaart-versie, zodat Verplaatsen/AI-verrijking/Verwijderen
+    // ook vanuit de kaart beschikbaar zijn — voorheen kon je vanaf een
+    // kaart-pin alleen "+ Plan" en "Route" doen.
+    marker.on('click', () => openActivityDetailSheet(act.id));
     activityMarkers.push(marker);
   });
 }
-
-// ── Detail-sheet bij tik op een activiteit-pin op de kaart ──
-let placeDetailContext = null; // { act, acc }
 
 // Gedeelde hero-header voor sheet-place-detail — gebruikt door zowel de
 // kaart (hier) als Planning (openActivityDetailSheet). Kleur komt van de
@@ -203,43 +204,6 @@ function renderPdHero(act, acc) {
   metaEl.innerHTML = metaParts.length
     ? metaParts.map(p => `<span class="mono" style="background:rgba(255,255,255,0.16);color:white;padding:3px 9px;border-radius:20px;font-size:11px">${escapeHtml(p)}</span>`).join('')
     : `<span class="mono" style="color:rgba(255,255,255,0.7)">Geen details bekend</span>`;
-}
-
-function openPlaceDetailSheet(act, acc) {
-  placeDetailContext = { act, acc };
-
-  renderPdHero(act, acc);
-  document.getElementById('pd-desc').textContent = act.desc || `Activiteit vanuit ${acc.name}.`;
-
-  const alreadyPlanned = act.status === 'done' || act.date !== null;
-  const addBtn = document.getElementById('pd-add-btn');
-  addBtn.textContent = alreadyPlanned ? '✓ Al gepland' : '+ Plan';
-  addBtn.disabled = alreadyPlanned;
-  addBtn.style.opacity = alreadyPlanned ? '0.5' : '1';
-
-  openSheet('sheet-place-detail');
-}
-
-function handlePlaceDetailAdd() {
-  if (!placeDetailContext) return;
-  const { act } = placeDetailContext;
-  if (act.status !== 'done' && act.date === null) {
-    act.status = 'planned';
-    showToast(`✓ ${act.name} ingepland`);
-    closeSheet('sheet-place-detail');
-    if (document.getElementById('screen-home').classList.contains('active')) renderHomeScreen();
-    if (document.getElementById('screen-planning').classList.contains('active')) renderPlanningScreen();
-  }
-}
-
-function handlePlaceDetailRoute() {
-  if (!placeDetailContext) return;
-  const { act } = placeDetailContext;
-  if (act.lat && act.lng) {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${act.lat},${act.lng}`, '_blank');
-  } else {
-    showToast('Geen coördinaten bekend voor deze plek');
-  }
 }
 
 function setMapFilter(accId) {

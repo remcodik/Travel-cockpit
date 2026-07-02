@@ -73,7 +73,7 @@
       <button onclick="navigateTo('planning')" class="stat-cell"><span class="stat-num" id="stat-todo">—</span><span class="stat-label">Te doen</span></button>
       <button onclick="navigateTo('planning')" class="stat-cell"><span class="stat-num" id="stat-done">—</span><span class="stat-label">Gedaan</span></button>
       <button onclick="navigateTo('tickets')" class="stat-cell"><span class="stat-num" id="stat-tickets">1</span><span class="stat-label">Tickets</span></button>
-      <button onclick="navigateTo('map')" class="stat-cell"><span class="stat-num">04</span><span class="stat-label">Laders</span></button>
+      <button onclick="openChargingStationsSheet()" class="stat-cell"><span class="stat-num" style="font-size:19px">⚡</span><span class="stat-label">Laders</span></button>
     </div>
 
     <div class="px" style="margin-top:24px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
@@ -528,8 +528,8 @@
     </div>
     <p id="pd-desc" class="row-sub" style="margin-bottom:18px;line-height:1.5"></p>
     <div style="display:flex;gap:10px;margin-bottom:9px">
-      <button id="pd-add-btn" onclick="handlePlaceDetailAdd()" class="btn btn-primary" style="flex:1">+ Plan</button>
-      <button id="pd-route-btn" onclick="handlePlaceDetailRoute()" class="btn btn-outline" style="flex:1">◈ Route</button>
+      <button id="pd-add-btn" class="btn btn-primary" style="flex:1">+ Plan</button>
+      <button id="pd-route-btn" class="btn btn-outline" style="flex:1">◈ Route</button>
     </div>
     <div id="pd-extra-actions"></div>
     <button onclick="closeSheet('sheet-place-detail')" class="btn btn-outline" style="margin-top:8px">Sluiten</button>

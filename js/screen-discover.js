@@ -265,8 +265,13 @@ function renderSuggestionList() {
   let list = currentSuggestions;
 
   // Pas categorie-filter toe zonder API aan te roepen
+  // FIX (H3): de "Eten & café"-chip geeft filter 'restaurant' mee maar
+  // moet ook 'cafe'-suggesties tonen — anders verdwijnen cafés stil
+  // ondanks de knoptekst.
   if (currentCategoryFilter) {
-    list = list.filter(s => s.category === currentCategoryFilter ||
+    list = list.filter(s =>
+      s.category === currentCategoryFilter ||
+      (currentCategoryFilter === 'restaurant' && s.category === 'cafe') ||
       (currentCategoryFilter === 'activity' && !['restaurant','cafe','viewpoint'].includes(s.category)));
   }
 
