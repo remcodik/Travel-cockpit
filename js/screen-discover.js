@@ -332,7 +332,7 @@ function openRouteOptionsSheet(name, mapsQuery) {
 }
 
 async function handleAddSuggestion(name, accId) {
-  const acc = ACCOMMODATIONS.find(a => a.id === accId);
+  const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, accId));
   const key = acc.short + '-' + name;
   if (AppState.discoveredAdded.has(key)) {
     showToast('Al toegevoegd aan planning');

@@ -104,7 +104,7 @@ function formatShortDate(date) {
 }
 
 function getNextAccommodation(currentAccId) {
-  const idx = ACCOMMODATIONS.findIndex(a => a.id === currentAccId);
+  const idx = ACCOMMODATIONS.findIndex(a => idsMatch(a.id, currentAccId));
   if (idx >= 0 && idx + 1 < ACCOMMODATIONS.length) return ACCOMMODATIONS[idx + 1];
   return null;
 }
@@ -118,8 +118,17 @@ function getActivitiesForDate(date) {
 
 function getUnscheduledForAccommodation(accId) {
   return AppState.activities.filter(a =>
-    a.accId === accId && !a.date && a.status !== 'done'
+    idsMatch(a.accId, accId) && !a.date && a.status !== 'done'
   );
+}
+
+// FIX: accommodatie-ID's zijn strings (Firestore-doc-ID), maar activiteiten
+// die vóór deze fix zijn opgeslagen kunnen nog een numerieke accId hebben
+// (oude parseInt()-bug, of de allereerste seed vóór de string-migratie).
+// Bestaande Firestore-documenten worden niet met terugwerkende kracht
+// aangepast, dus vergelijk hier getolereerd i.p.v. met strikte ===.
+function idsMatch(a, b) {
+  return a !== null && a !== undefined && b !== null && b !== undefined && String(a) === String(b);
 }
 
 async function toggleActivityStatus(id) {

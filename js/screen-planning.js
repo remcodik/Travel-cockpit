@@ -121,7 +121,7 @@ function renderPlanningDay() {
 }
 
 function renderPlanningActivityRow(act, index, total) {
-  const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
+  const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, act.accId));
   if (!acc) return '';
   const isDone = act.status === 'done';
   const isLast = index === total - 1;
@@ -145,7 +145,7 @@ function renderPlanningActivityRow(act, index, total) {
 }
 
 function renderUnscheduledRow(act, index, total) {
-  const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
+  const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, act.accId));
   if (!acc) return '';
   const isLast = index === total - 1;
   return `
@@ -168,7 +168,7 @@ function renderUnscheduledRow(act, index, total) {
 function openActivityDetailSheet(id) {
   const act = AppState.activities.find(a => a.id === id);
   if (!act) return;
-  const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
+  const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, act.accId));
   if (!acc) return;
 
   // Gebruik de bestaande place-detail sheet (ook gebruikt door de kaart)
@@ -239,7 +239,7 @@ function openMoveActivitySheet(id) {
     }).join('');
 
   document.getElementById('move-acc-select').innerHTML = ACCOMMODATIONS.map(a =>
-    `<option value="${a.id}" ${a.id === act.accId ? 'selected' : ''}>${a.name} (${formatShortDate(a.checkIn)}–${formatShortDate(a.checkOut)})</option>`
+    `<option value="${a.id}" ${idsMatch(a.id, act.accId) ? 'selected' : ''}>${a.name} (${formatShortDate(a.checkIn)}–${formatShortDate(a.checkOut)})</option>`
   ).join('');
 
   document.getElementById('move-activity-title').textContent = act.name;
@@ -281,7 +281,7 @@ async function handleDeleteActivity(id) {
 async function openAiEnrichSheet(id) {
   const act = AppState.activities.find(a => a.id === id);
   if (!act) return;
-  const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
+  const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, act.accId));
 
   document.getElementById('enrich-activity-title').textContent = act.name;
   document.getElementById('enrich-result').innerHTML = `

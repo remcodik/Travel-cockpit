@@ -54,7 +54,7 @@ function renderHomeScreen() {
   // Voortgang per accommodatie (mini-balkjes)
   const barsEl = document.getElementById('home-acc-bars');
   barsEl.innerHTML = ACCOMMODATIONS.map(a => {
-    const accActs = AppState.activities.filter(x => x.accId === a.id);
+    const accActs = AppState.activities.filter(x => idsMatch(x.accId, a.id));
     const accDone = accActs.filter(x => x.status === 'done').length;
     const pct = accActs.length > 0 ? (accDone / accActs.length) * 100 : 0;
     return `
@@ -90,7 +90,7 @@ function renderTripPhaseBanner() {
 }
 
 function renderActivityRow(act, index, total) {
-  const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
+  const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, act.accId));
   if (!acc) return '';
   const isDone = act.status === 'done';
   const isLast = index === total - 1;

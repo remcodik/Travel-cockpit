@@ -149,11 +149,11 @@ function renderMapMarkers() {
 
   // Activiteitenpins — gefilterd op accommodatie indien actief
   const filtered = mapFilterAccId
-    ? AppState.activities.filter(a => a.accId === mapFilterAccId)
+    ? AppState.activities.filter(a => idsMatch(a.accId, mapFilterAccId))
     : AppState.activities;
 
   filtered.filter(a => a.lat && a.lng).forEach(act => {
-    const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
+    const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, act.accId));
     if (!acc) return;
     // Dag-label met volgnummer ("D4-2") als er meerdere activiteiten op
     // dezelfde dag zijn — anders zijn hun pins niet te onderscheiden.
