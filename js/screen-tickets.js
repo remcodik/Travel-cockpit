@@ -268,6 +268,35 @@ async function saveTrip() {
 }
 
 // ── Instellingen ───────────────────────────────────────────
+// Instellingen zijn device-eigen (localStorage), niet gedeeld via
+// Firestore — zelfde aanpak als Flutter's SharedPreferences.
+function renderSettingsScreen() {
+  ['ev', 'fuel', 'none'].forEach(v => {
+    const el = document.getElementById('vehicle-check-' + v);
+    if (el) el.style.opacity = v === AppState.vehicleType ? '1' : '0';
+  });
+
+  ['natuur', 'wandelen', 'fotografie', 'eten', 'cultuur', 'geschiedenis', 'water', 'rust'].forEach(style => {
+    const chip = document.getElementById('style-chip-' + style);
+    if (chip) chip.classList.toggle('on', AppState.travelStyles.has(style));
+  });
+
+  const aiSwitch = document.getElementById('ai-enabled-switch');
+  if (aiSwitch) setSwitchState(aiSwitch, AppState.aiEnabled);
+  const weatherSwitch = document.getElementById('weather-suggestions-switch');
+  if (weatherSwitch) setSwitchState(weatherSwitch, AppState.weatherSuggestionsEnabled);
+
+  ['nl', 'en', 'de'].forEach(lang => {
+    const chip = document.getElementById('lang-chip-' + lang);
+    if (chip) chip.classList.toggle('on', AppState.language === lang);
+  });
+}
+
+function setSwitchState(switchEl, on) {
+  switchEl.style.background = on ? 'var(--spruce)' : 'var(--line)';
+  switchEl.querySelector('.switch-knob').style.left = on ? 'calc(100% - 25px)' : '3px';
+}
+
 function selectVehicleType(type) {
   AppState.vehicleType = type;
   ['ev', 'fuel', 'none'].forEach(v => {
@@ -275,6 +304,7 @@ function selectVehicleType(type) {
   });
   const labels = { ev: 'Elektrisch', fuel: 'Benzine', none: 'Geen voertuig' };
   showToast('Voertuig: ' + labels[type]);
+  saveSettingsToStorage();
 }
 
 function toggleTravelStyle(chipEl, style) {
@@ -285,11 +315,29 @@ function toggleTravelStyle(chipEl, style) {
     AppState.travelStyles.add(style);
     chipEl.classList.add('on');
   }
+  saveSettingsToStorage();
 }
 
 function toggleAiEnabled(switchEl) {
   AppState.aiEnabled = !AppState.aiEnabled;
-  switchEl.style.background = AppState.aiEnabled ? 'var(--spruce)' : 'var(--line)';
-  switchEl.querySelector('.switch-knob').style.left = AppState.aiEnabled ? 'calc(100% - 25px)' : '3px';
+  setSwitchState(switchEl, AppState.aiEnabled);
   showToast(AppState.aiEnabled ? 'AI-suggesties ingeschakeld' : 'AI-suggesties uitgeschakeld');
+  saveSettingsToStorage();
+}
+
+function toggleWeatherSuggestions(switchEl) {
+  AppState.weatherSuggestionsEnabled = !AppState.weatherSuggestionsEnabled;
+  setSwitchState(switchEl, AppState.weatherSuggestionsEnabled);
+  showToast(AppState.weatherSuggestionsEnabled ? 'Weersuggesties ingeschakeld' : 'Weersuggesties uitgeschakeld');
+  saveSettingsToStorage();
+}
+
+function setLanguage(chipEl, lang) {
+  AppState.language = lang;
+  ['nl', 'en', 'de'].forEach(l => {
+    document.getElementById('lang-chip-' + l).classList.toggle('on', l === lang);
+  });
+  const labels = { nl: 'Nederlands', en: 'English', de: 'Deutsch' };
+  showToast('Taal voor AI-suggesties: ' + labels[lang]);
+  saveSettingsToStorage();
 }

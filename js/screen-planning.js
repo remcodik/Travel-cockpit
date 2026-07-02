@@ -173,25 +173,13 @@ function openActivityDetailSheet(id) {
 
   // Gebruik de bestaande place-detail sheet (ook gebruikt door de kaart)
   // en voeg Planning-specifieke acties toe onderaan
-  const thumb = document.getElementById('pd-thumb');
-  if (thumb) {
-    thumb.textContent = act.emoji;
-    thumb.style.background = acc.color + '20';
-  }
-  const nameEl = document.getElementById('pd-name');
-  if (nameEl) nameEl.textContent = act.name;
-
-  const metaParts = [];
-  if (act.elevation) metaParts.push(`▲ ${act.elevation}m`);
-  if (act.distance && act.distance !== '—') metaParts.push(act.distance);
-  if (act.duration && act.duration !== '—') metaParts.push(act.duration);
-  if (act.level && act.level !== '—') metaParts.push(act.level);
+  renderPdHero(act, acc);
+  // Planning-context toont ook de inplanstatus, die de kaart-versie niet heeft
   const dateLabel = act.date
     ? `${WEEKDAYS[act.date.getDay()]} ${formatShortDate(act.date)}`
     : 'Nog niet ingepland';
-  metaParts.push(dateLabel);
   const metaEl = document.getElementById('pd-meta');
-  if (metaEl) metaEl.textContent = metaParts.join(' · ') || 'Geen details bekend';
+  if (metaEl) metaEl.innerHTML += `<span class="mono" style="background:rgba(255,255,255,0.16);color:white;padding:3px 9px;border-radius:20px;font-size:11px">${escapeHtml(dateLabel)}</span>`;
 
   const descEl = document.getElementById('pd-desc');
   if (descEl) descEl.textContent = act.desc || `Activiteit vanuit ${acc.name}.`;
@@ -261,7 +249,9 @@ function openMoveActivitySheet(id) {
 
 async function saveMoveActivity(id) {
   const dateStr = document.getElementById('move-day-select').value;
-  const accId = parseInt(document.getElementById('move-acc-select').value);
+  // FIX: accId is sinds Fase B altijd een string (Firestore-doc-ID/UUID),
+  // parseInt() gaf hiervoor NaN voor elke reis behalve de Noorwegen-seed.
+  const accId = document.getElementById('move-acc-select').value;
   await updateActivity(id, { date: dateStr ? new Date(dateStr) : null, accId });
   closeSheet('sheet-move-activity');
   showToast('✓ Activiteit verplaatst');
@@ -388,7 +378,8 @@ async function saveActivity() {
   const name = document.getElementById('activity-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return; }
   const dateStr = document.getElementById('activity-day-select').value;
-  const accId = parseInt(document.getElementById('activity-acc-select').value);
+  // FIX: accId is sinds Fase B altijd een string (Firestore-doc-ID/UUID).
+  const accId = document.getElementById('activity-acc-select').value;
   const date = dateStr ? new Date(dateStr) : null;
   await addActivity({ name, accId, date });
   closeSheet('sheet-activity');
