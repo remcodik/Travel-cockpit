@@ -7,6 +7,14 @@ const CHARGING_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 uur — laadstations vera
 const chargingCache = new Map();
 let lastChargingError = null; // DIAGNOSE: bewaart de exacte laatste fout
 
+// Opent Google Maps' plek-pagina (naam + coördinaten als zoekopdracht)
+// i.p.v. direct de route-modus — zo kun je eerst info/reviews bekijken
+// en heeft die pagina zelf ook een route-knop.
+function openGoogleMapsPlace(name, lat, lng) {
+  const query = name ? `${name} ${lat},${lng}` : `${lat},${lng}`;
+  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank');
+}
+
 async function fetchChargingStationsNear(lat, lng, distanceKm) {
   const cacheKey = `near:${lat.toFixed(2)},${lng.toFixed(2)}:${distanceKm || 25}`;
   const cached = chargingCache.get(cacheKey);
@@ -100,7 +108,7 @@ function renderChargingStationCard(station) {
   const pointsLabel = station.numberOfPoints ? `${station.numberOfPoints} laadpunt${station.numberOfPoints !== 1 ? 'en' : ''}` : '';
   const dcBadge = isDcStation(station) ? 'DC' : 'AC';
   return `
-    <div class="card-row" onclick="openMapsForCoords(${station.lat},${station.lng},'${escapeHtml(station.name).replace(/'/g, "\\'")}')">
+    <div class="card-row" onclick="openGoogleMapsPlace('${escapeHtml(station.name).replace(/'/g, "\\'")}',${station.lat},${station.lng})">
       <div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px">
