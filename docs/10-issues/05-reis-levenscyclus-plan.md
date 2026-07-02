@@ -1,7 +1,7 @@
 # Reis-levenscyclus — compleet plan (Fase F)
 
 **Document ID:** TC-ISSUES-005
-**Status:** Plan ter bespreking — **niet bouwen voordat de vragen onderaan beantwoord zijn**
+**Status:** Deel 1 en 2 gebouwd en gemerged (2026-07-02). Antwoorden: (1) expliciete keuze via keuzescherm — gekozen. (2) Verblijf toevoegen aan bestaande reis — gebouwd. (4) Verblijven sorteren op check-in datum i.p.v. handmatig herordenen — gekozen, en onderweg een kernbug gevonden: `orderBy('order')` sloot accommodaties zonder dat veld volledig uit, waardoor verblijven van elke nieuw aangemaakte reis nooit laadden. (3) Design per land en (5) zoekfunctie in Mijn reizen: nog open, apart te plannen.
 **Bron:** Live gebruikersfeedback ("een andere reis werd geactiveerd zonder dat ik dat wilde", "kleuren/design zijn hetzelfde als de oude reis") + volledige audit van de reis/verblijf/activiteit-levenscyclus tegen de huidige code
 
 ---
