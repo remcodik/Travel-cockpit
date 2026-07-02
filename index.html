@@ -664,8 +664,13 @@
   <span style="width:7px;height:7px;border-radius:50%;background:white"></span>
   <span class="mono" style="color:white;font-size:9px;font-weight:700;letter-spacing:0.5px">GPS</span>
 </div>
-<div id="offline-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9997;background:var(--ink-mid,#3A4740);color:white;padding:calc(env(safe-area-inset-top,10px) + 6px) 14px 8px;text-align:center">
-  <span class="mono" style="color:white;font-size:11px;font-weight:700">📡 Offline · reisdata beschikbaar · AI vereist internet</span>
+<div id="top-banners" style="position:fixed;top:0;left:0;right:0;z-index:9997">
+  <div id="offline-banner" style="display:none;background:var(--ink-mid,#3A4740);color:white;padding:calc(env(safe-area-inset-top,10px) + 6px) 14px 8px;text-align:center">
+    <span class="mono" style="color:white;font-size:11px;font-weight:700">📡 Offline · reisdata beschikbaar · AI vereist internet</span>
+  </div>
+  <div id="sw-update-banner" style="display:none;background:var(--spruce);color:white;padding:calc(env(safe-area-inset-top,10px) + 6px) 14px 8px;text-align:center;cursor:pointer" onclick="applySwUpdate()">
+    <span class="mono" style="color:white;font-size:11px;font-weight:700">↻ Nieuwe versie beschikbaar — tik om te herladen</span>
+  </div>
 </div>
 
 <!-- ═══════════ SCRIPTS ═══════════ -->
