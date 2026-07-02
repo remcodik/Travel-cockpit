@@ -82,3 +82,47 @@ function openMapsForCoords(lat, lng, label) {
   const query = (lat && lng) ? `${lat},${lng}` : encodeURIComponent(label);
   window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}`, '_blank');
 }
+
+// ── Ingeklapte mini-kaart ──────────────────────────────────
+// Losse Leaflet-instantie van het hoofd-kaartscherm, zodat je
+// tijdens roadtrip-modus niet hoeft weg te navigeren om te zien
+// waar je bent t.o.v. de verblijven. Lazy-init pas bij het uitklappen.
+let roadtripMiniMap = null;
+
+function toggleRoadtripMiniMap() {
+  const container = document.getElementById('rt-minimap-container');
+  const chevron = document.getElementById('rt-minimap-chevron');
+  const isOpen = container.style.display !== 'none';
+
+  if (isOpen) {
+    container.style.display = 'none';
+    chevron.textContent = '›';
+    return;
+  }
+
+  container.style.display = 'block';
+  chevron.textContent = '⌄';
+
+  if (typeof L === 'undefined') {
+    container.innerHTML = `<p class="mono" style="padding:16px;text-align:center">Kaart kon niet laden — controleer internetverbinding.</p>`;
+    return;
+  }
+
+  if (!roadtripMiniMap) {
+    const acc = getActiveAccommodation();
+    roadtripMiniMap = L.map(container, { zoomControl: false, attributionControl: false }).setView([acc ? acc.lat : 61.0, acc ? acc.lng : 8.0], 9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(roadtripMiniMap);
+
+    ACCOMMODATIONS.forEach(a => {
+      const isActive = acc && acc.id === a.id;
+      const icon = L.divIcon({
+        html: `<div style="background:${a.color};width:${isActive ? 28 : 20}px;height:${isActive ? 28 : 20}px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:${isActive ? 14 : 11}px;box-shadow:0 2px 6px ${a.color}55">🏡</div>`,
+        className: '', iconSize: [30, 30], iconAnchor: [15, 15],
+      });
+      L.marker([a.lat, a.lng], { icon }).addTo(roadtripMiniMap)
+        .on('click', () => { AppState.viewingAccommodationId = a.id; navigateTo('accommodation'); });
+    });
+  }
+
+  setTimeout(() => { try { roadtripMiniMap.invalidateSize(); } catch (e) { console.error('Mini-kaart fout:', e); } }, 100);
+}

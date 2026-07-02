@@ -50,6 +50,7 @@ function navigateTo(screenId) {
     map: initMap,
     tickets: renderTicketsScreen,
     trips: renderTripsScreen,
+    settings: renderSettingsScreen,
   };
   if (renderers[screenId]) {
     try {

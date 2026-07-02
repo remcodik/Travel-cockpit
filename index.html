@@ -113,12 +113,8 @@
       <button onclick="toggleGPS()" id="gps-toggle-btn" class="chip">📍 GPS</button>
       <button onclick="toggleFullRoute()" class="chip" id="route-toggle-btn">NO</button>
     </div>
-    <div class="hscroll">
+    <div class="hscroll" id="map-filter-chips">
       <button data-filter-chip="all" onclick="setMapFilter(null)" class="chip on">Alles</button>
-      <button data-filter-chip="1" onclick="setMapFilter(1)" class="chip" style="border-color:var(--acc-1);color:var(--acc-1)">▲ Sgd</button>
-      <button data-filter-chip="2" onclick="setMapFilter(2)" class="chip" style="border-color:var(--acc-2);color:var(--acc-2)">▲ Skj</button>
-      <button data-filter-chip="3" onclick="setMapFilter(3)" class="chip" style="border-color:var(--acc-3);color:var(--acc-3)">▲ Val</button>
-      <button data-filter-chip="4" onclick="setMapFilter(4)" class="chip" style="border-color:var(--acc-4);color:var(--acc-4)">▲ Gjr</button>
     </div>
   </div>
   <div id="map-container">
@@ -221,7 +217,7 @@
     <div class="card" style="margin:0 16px;width:calc(100% - 32px)">
       <div class="card-row" onclick="navigateTo('map')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">◈</div><div style="flex:1"><p class="row-title">Kaart</p><p class="row-sub">OpenStreetMap + GPS-tracker</p></div><span class="chevron">›</span></div>
       <div class="card-row" onclick="navigateTo('discover')"><div class="icon-box" style="background:var(--summit-light);color:var(--summit)">◎</div><div style="flex:1"><p class="row-title">AI-ideeën</p><p class="row-sub">Op locatie en verblijf</p></div><span class="chevron">›</span></div>
-      <div class="card-row" onclick="showChargingStationsNearActiveAccommodation()"><div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div><div style="flex:1"><p class="row-title">Laadstations</p><p class="row-sub">4 binnen 25 km</p></div><span class="chevron">›</span></div>
+      <div class="card-row" onclick="openChargingStationsSheet()"><div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div><div style="flex:1"><p class="row-title">Laadstations</p><p class="row-sub">Binnen 25 km van je verblijf</p></div><span class="chevron">›</span></div>
     </div>
 
     <div class="px" style="margin-bottom:8px;margin-top:20px"><span class="eyebrow">Systeem</span></div>
@@ -259,7 +255,7 @@
       <div class="card">
         <div class="card-row" onclick="navigateTo('planning')"><div class="icon-box" style="background:var(--slope-light)">▲</div><span style="flex:1" class="row-title">Geplande activiteiten</span><span class="chevron">›</span></div>
         <div class="card-row" onclick="navigateTo('discover')"><div class="icon-box" style="background:var(--summit-light);color:var(--summit)">◎</div><span style="flex:1" class="row-title">AI-ideeën nabij</span><span class="chevron">›</span></div>
-        <div class="card-row" onclick="showChargingStationsNearActiveAccommodation()"><div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div><span style="flex:1" class="row-title">Laadstations</span><span class="chevron">›</span></div>
+        <div class="card-row" onclick="openChargingStationsSheet()"><div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div><span style="flex:1" class="row-title">Laadstations</span><span class="chevron">›</span></div>
         <div class="card-row" onclick="navigateTo('tickets')"><div class="icon-box" style="background:var(--slope-light)">🎟️</div><span style="flex:1" class="row-title">Tickets</span><span class="chevron">›</span></div>
         <div class="card-row" onclick="navigateTo('map')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">◈</div><span style="flex:1" class="row-title">Bekijk op kaart</span><span class="chevron">›</span></div>
       </div>
@@ -305,6 +301,14 @@
           <span class="mono" id="rt-next-date">—</span>
         </div>
       </div>
+      <div class="card" style="overflow:hidden">
+        <button onclick="toggleRoadtripMiniMap()" style="width:100%;display:flex;align-items:center;gap:13px;padding:13px 15px;background:none;border:none;cursor:pointer;text-align:left">
+          <div class="icon-box" style="background:var(--water-light);color:var(--water)">◈</div>
+          <span style="flex:1" class="row-title">Kaart</span>
+          <span class="chevron" id="rt-minimap-chevron">›</span>
+        </button>
+        <div id="rt-minimap-container" style="display:none;height:220px"></div>
+      </div>
       <div class="hero-panel topo-panel" id="rt-activity-card" style="padding:0">
         <svg class="topo-svg" data-topo="7" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
         <div class="topo-overlay-soft"></div>
@@ -320,7 +324,7 @@
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px">
         <button onclick="openMapsForAccommodation(AppState.viewingAccommodationId)" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--spruce);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--spruce)">◈</span><span class="eyebrow" style="font-size:8px">Navigeer</span></button>
-        <button onclick="showChargingStationsNearActiveAccommodation()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--water);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--water)">⚡</span><span class="eyebrow" style="font-size:8px">Laden</span></button>
+        <button onclick="openChargingStationsSheet()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--water);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--water)">⚡</span><span class="eyebrow" style="font-size:8px">Laden</span></button>
         <button onclick="navigateTo('discover')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--slope);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--slope)">◎</span><span class="eyebrow" style="font-size:8px">Ideeën</span></button>
         <button onclick="showToast('Tankstations: koppeling nog niet gebouwd')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;background:white;border:1px solid var(--line);border-top:3px solid var(--contour);border-radius:13px;cursor:pointer;box-shadow:var(--shadow-sm)"><span style="font-size:21px;color:var(--contour)">⛽</span><span class="eyebrow" style="font-size:8px">Tanken</span></button>
       </div>
@@ -388,17 +392,31 @@
     </div>
     <span class="eyebrow" style="display:block;margin-bottom:7px">Reisvoorkeur · voor AI</span>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
-      <button onclick="toggleTravelStyle(this,'natuur')" class="chip on">🏔️ Natuur</button>
-      <button onclick="toggleTravelStyle(this,'wandelen')" class="chip on">🥾 Wandelen</button>
-      <button onclick="toggleTravelStyle(this,'fotografie')" class="chip">📸 Fotografie</button>
-      <button onclick="toggleTravelStyle(this,'eten')" class="chip">🍽️ Eten</button>
-      <button onclick="toggleTravelStyle(this,'cultuur')" class="chip">🏛️ Cultuur</button>
-      <button onclick="toggleTravelStyle(this,'water')" class="chip">🛶 Water</button>
+      <button id="style-chip-natuur" onclick="toggleTravelStyle(this,'natuur')" class="chip on">🏔️ Natuur</button>
+      <button id="style-chip-wandelen" onclick="toggleTravelStyle(this,'wandelen')" class="chip on">🥾 Wandelen</button>
+      <button id="style-chip-fotografie" onclick="toggleTravelStyle(this,'fotografie')" class="chip">📸 Fotografie</button>
+      <button id="style-chip-eten" onclick="toggleTravelStyle(this,'eten')" class="chip">🍽️ Eten</button>
+      <button id="style-chip-cultuur" onclick="toggleTravelStyle(this,'cultuur')" class="chip">🏛️ Cultuur</button>
+      <button id="style-chip-geschiedenis" onclick="toggleTravelStyle(this,'geschiedenis')" class="chip">🎭 Geschiedenis</button>
+      <button id="style-chip-water" onclick="toggleTravelStyle(this,'water')" class="chip">🛶 Water</button>
+      <button id="style-chip-rust" onclick="toggleTravelStyle(this,'rust')" class="chip">🧘 Rust</button>
     </div>
     <span class="eyebrow" style="display:block;margin-bottom:9px">AI-ideeën</span>
-    <div class="card" style="margin-bottom:20px;padding:13px 15px;display:flex;align-items:center;gap:13px">
-      <div style="flex:1"><p class="row-title">AI-suggesties</p><p class="row-sub">Per accommodatie, op locatie</p></div>
-      <button onclick="toggleAiEnabled(this)" class="switch" style="background:var(--spruce)"><span class="switch-knob" style="left:calc(100% - 25px)"></span></button>
+    <div class="card" style="margin-bottom:20px;overflow:hidden">
+      <div class="card-row" style="cursor:default">
+        <div style="flex:1"><p class="row-title">AI-suggesties</p><p class="row-sub">Per accommodatie, op locatie</p></div>
+        <button id="ai-enabled-switch" onclick="toggleAiEnabled(this)" class="switch" style="background:var(--spruce)"><span class="switch-knob" style="left:calc(100% - 25px)"></span></button>
+      </div>
+      <div class="card-row" style="cursor:default">
+        <div style="flex:1"><p class="row-title">Weersuggesties</p><p class="row-sub">Pas ideeën aan op het weer</p></div>
+        <button id="weather-suggestions-switch" onclick="toggleWeatherSuggestions(this)" class="switch" style="background:var(--spruce)"><span class="switch-knob" style="left:calc(100% - 25px)"></span></button>
+      </div>
+    </div>
+    <span class="eyebrow" style="display:block;margin-bottom:7px">Taal · voor AI-suggesties</span>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+      <button id="lang-chip-nl" onclick="setLanguage(this,'nl')" class="chip on">🇳🇱 Nederlands</button>
+      <button id="lang-chip-en" onclick="setLanguage(this,'en')" class="chip">🇬🇧 English</button>
+      <button id="lang-chip-de" onclick="setLanguage(this,'de')" class="chip">🇩🇪 Deutsch</button>
     </div>
     <span class="eyebrow" style="display:block;margin-bottom:9px">App info</span>
     <div class="card" style="margin-bottom:24px;overflow:hidden">
@@ -466,17 +484,40 @@
   </div>
 </div>
 
-<!-- Plek-detail bij tik op kaart-pin -->
-<div class="sheet-backdrop" id="sheet-place-detail">
+<!-- Laadstations bij actief verblijf -->
+<div class="sheet-backdrop" id="sheet-charging">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-handle"></div>
-    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
-      <div id="pd-thumb" style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">📍</div>
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">
       <div style="flex:1;min-width:0">
-        <p id="pd-name" style="font-family:var(--font-display);font-size:19px;font-weight:800;letter-spacing:-0.3px">—</p>
-        <p id="pd-meta" class="mono" style="margin-top:3px">—</p>
+        <p class="sheet-title" style="margin-bottom:2px">LAADSTATIONS</p>
+        <p id="charging-sub" class="mono">—</p>
       </div>
-      <button onclick="closeSheet('sheet-place-detail')" style="background:none;border:none;font-size:20px;color:var(--ink-faint);cursor:pointer;padding:4px">✕</button>
+      <button onclick="closeSheet('sheet-charging')" style="background:none;border:none;font-size:20px;color:var(--ink-faint);cursor:pointer;padding:4px">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button id="charging-filter-all" onclick="setChargingFilter('all')" class="chip on">Alles</button>
+      <button id="charging-filter-dc" onclick="setChargingFilter('dc')" class="chip">⚡ DC snellader</button>
+      <button id="charging-filter-ac" onclick="setChargingFilter('ac')" class="chip">🔌 AC lader</button>
+    </div>
+    <div id="charging-list" style="max-height:50vh;overflow-y:auto"></div>
+    <button onclick="handleSearchChargingAlongRoute()" class="btn btn-outline" style="margin-top:12px">◈ Laadstations langs hele route</button>
+  </div>
+</div>
+
+<!-- Plek-detail bij tik op kaart-pin of activiteit-rij ─ visueel verrijkt (Fase C), alle bestaande acties behouden -->
+<div class="sheet-backdrop" id="sheet-place-detail">
+  <div class="sheet" onclick="event.stopPropagation()" style="padding-top:0;overflow:hidden">
+    <div id="pd-hero" style="margin:0 -20px 16px;padding:18px 20px 16px;position:relative;background:var(--spruce)">
+      <div class="sheet-handle" style="background:rgba(255,255,255,0.35);margin-bottom:14px"></div>
+      <button onclick="closeSheet('sheet-place-detail')" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.16);border:none;border-radius:50%;width:28px;height:28px;font-size:16px;color:white;cursor:pointer;line-height:1">✕</button>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div id="pd-thumb" style="width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;background:rgba(255,255,255,0.16)">📍</div>
+        <div style="flex:1;min-width:0">
+          <p id="pd-name" style="font-family:var(--font-display);font-size:20px;font-weight:800;letter-spacing:-0.3px;color:white">—</p>
+          <div id="pd-meta" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">—</div>
+        </div>
+      </div>
     </div>
     <p id="pd-desc" class="row-sub" style="margin-bottom:18px;line-height:1.5"></p>
     <div style="display:flex;gap:10px;margin-bottom:9px">
@@ -557,11 +598,15 @@
   <span style="width:7px;height:7px;border-radius:50%;background:white"></span>
   <span class="mono" style="color:white;font-size:9px;font-weight:700;letter-spacing:0.5px">GPS</span>
 </div>
+<div id="offline-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9997;background:var(--ink-mid,#3A4740);color:white;padding:calc(env(safe-area-inset-top,10px) + 6px) 14px 8px;text-align:center">
+  <span class="mono" style="color:white;font-size:11px;font-weight:700">📡 Offline · reisdata beschikbaar · AI vereist internet</span>
+</div>
 
 <!-- ═══════════ SCRIPTS ═══════════ -->
 <script src="js/firebase.js"></script>
 <script src="js/data.js"></script>
 <script src="js/gps.js"></script>
+<script src="js/offline.js"></script>
 <script src="js/state.js"></script>
 <script src="js/topo.js"></script>
 <script src="js/weather.js"></script>

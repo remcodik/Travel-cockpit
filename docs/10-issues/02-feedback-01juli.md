@@ -44,6 +44,12 @@ De gebruiker wil dat verblijven (accommodaties) volledig bewerkbaar zijn, niet a
 
 ---
 
+## Notitie voor Fase D (topografisch design)
+
+Verduidelijking (1 juli): **geen zelfgebouwde hoogtekaart/hoogteprofiel.** Dit schrapt het "hoogteprofiel-navigatie i.p.v. platte dagtabs"-idee uit het Fase D-plan als eigen bouwwerk. Wat wél gewenst is: bij een wandeling, indien mogelijk, de bestaande Komoot-hoogtegrafiek hergebruiken/tonen (Komoot-link bestaat al bij wandelsuggesties, zie D3 in `01-testronde-30juni.md` en de "🗺 Komoot"-knop in `js/screen-discover.js`) — dus embedden/doorlinken naar Komoot's eigen hoogteprofiel in plaats van zelf een hoogtekaart te bouwen. Te onderzoeken in Fase D of Komoot dit zonder API-sleutel ondersteunt (embed of alleen doorlink). Het overige topografische design (contourlijnen, kleur als wayfinding, iconen-unificatie) blijft ongewijzigd staan.
+
+---
+
 ## Volgende stap
 
-Fase C (functies overzetten uit Flutter) gaat nu eerst verder, zoals afgesproken. Fase E wordt opgepakt zodra bovenstaande vragen zijn beantwoord.
+Fase C (functies overzetten uit Flutter) gaat nu eerst verder, zoals afgesproken. Fase E wordt opgepakt zodra bovenstaande vragen zijn beantwoord. Fase D houdt rekening met de hierboven genoteerde afbakening.

@@ -25,6 +25,12 @@ function initMap() {
       }
       if (loadingEl) loadingEl.classList.add('hidden');
     }, 100);
+    // FIX: pins en filterchips opnieuw opbouwen bij elk bezoek — anders
+    // bleven ze na het wisselen van reis (Fase B) de vorige reis tonen,
+    // omdat dit vroeger alleen bij de allereerste kaart-load gebeurde.
+    mapFilterAccId = null;
+    renderMapFilterChips();
+    renderMapMarkers();
     return;
   }
 
@@ -63,6 +69,7 @@ function initMap() {
 
       gpsPolyline = L.polyline([], { color: '#C5512B', weight: 3, opacity: 0.85 }).addTo(leafletMap);
 
+      renderMapFilterChips();
       renderMapMarkers();
 
       // Nogmaals invalidateSize na de eerste render, voor de zekerheid.
@@ -89,6 +96,18 @@ function reportMapError(e) {
   }
 }
 
+// Filterchips zijn nu afgeleid van de actieve reis i.p.v. hardcoded
+// Noorwegen-verblijven — nodig sinds Fase B (multi-trip): een andere
+// reis heeft andere verblijven, en de chips moeten meegroeien.
+function renderMapFilterChips() {
+  const container = document.getElementById('map-filter-chips');
+  if (!container) return;
+  container.innerHTML = `<button data-filter-chip="all" onclick="setMapFilter(null)" class="chip${mapFilterAccId === null ? ' on' : ''}">Alles</button>` +
+    ACCOMMODATIONS.map(acc => `
+      <button data-filter-chip="${acc.id}" onclick="setMapFilter('${acc.id}')" class="chip${mapFilterAccId === acc.id ? ' on' : ''}" style="border-color:${acc.color};color:${acc.color}">▲ ${escapeHtml(acc.short)}</button>
+    `).join('');
+}
+
 function renderMapMarkers() {
   if (!leafletMap) return;
 
@@ -113,9 +132,17 @@ function renderMapMarkers() {
       </div>`;
     const icon = L.divIcon({ html, className: '', iconSize: [56, 64], iconAnchor: [28, 64] });
     const marker = L.marker([acc.lat, acc.lng], { icon }).addTo(leafletMap);
+    // Eerste tik filtert de activiteiten op dit verblijf (zoals de chips
+    // erboven); nogmaals tikken op hetzelfde, al gefilterde verblijf
+    // opent het accommodatiedetail — zo blijft de bestaande navigatie
+    // behouden naast de nieuwe filterfunctie.
     marker.on('click', () => {
-      AppState.viewingAccommodationId = acc.id;
-      navigateTo('accommodation');
+      if (mapFilterAccId === acc.id) {
+        AppState.viewingAccommodationId = acc.id;
+        navigateTo('accommodation');
+      } else {
+        setMapFilter(acc.id);
+      }
     });
     accommodationMarkers.push(marker);
   });
@@ -128,7 +155,16 @@ function renderMapMarkers() {
   filtered.filter(a => a.lat && a.lng).forEach(act => {
     const acc = ACCOMMODATIONS.find(a => a.id === act.accId);
     if (!acc) return;
-    const dayLabel = act.date ? `D${getDayNumber(act.date)}` : '';
+    // Dag-label met volgnummer ("D4-2") als er meerdere activiteiten op
+    // dezelfde dag zijn — anders zijn hun pins niet te onderscheiden.
+    let dayLabel = '';
+    if (act.date) {
+      const sameDay = AppState.activities
+        .filter(a => a.date && a.date.toDateString() === act.date.toDateString())
+        .sort((a, b) => a.id - b.id);
+      const seq = sameDay.findIndex(a => a.id === act.id) + 1;
+      dayLabel = sameDay.length > 1 ? `D${getDayNumber(act.date)}-${seq}` : `D${getDayNumber(act.date)}`;
+    }
     const opacity = act.status === 'done' ? 0.5 : 1;
     const html = `
       <div style="opacity:${opacity};text-align:center">
@@ -145,12 +181,16 @@ function renderMapMarkers() {
 // ── Detail-sheet bij tik op een activiteit-pin op de kaart ──
 let placeDetailContext = null; // { act, acc }
 
-function openPlaceDetailSheet(act, acc) {
-  placeDetailContext = { act, acc };
-
+// Gedeelde hero-header voor sheet-place-detail — gebruikt door zowel de
+// kaart (hier) als Planning (openActivityDetailSheet). Kleur komt van de
+// bijbehorende accommodatie, zodat de plek-detail visueel verbonden blijft
+// met "vanuit welk verblijf" — vergelijkbaar met Flutter's hero-scherm.
+function renderPdHero(act, acc) {
+  if (!act || !acc) return;
+  const hero = document.getElementById('pd-hero');
+  if (hero) hero.style.background = acc.color;
   const thumb = document.getElementById('pd-thumb');
   thumb.textContent = act.emoji;
-  thumb.style.background = acc.color + '20';
 
   document.getElementById('pd-name').textContent = act.name;
 
@@ -159,8 +199,16 @@ function openPlaceDetailSheet(act, acc) {
   if (act.distance && act.distance !== '—') metaParts.push(act.distance);
   if (act.duration && act.duration !== '—') metaParts.push(act.duration);
   if (act.level && act.level !== '—') metaParts.push(act.level);
-  document.getElementById('pd-meta').textContent = metaParts.join(' · ') || 'Geen details bekend';
+  const metaEl = document.getElementById('pd-meta');
+  metaEl.innerHTML = metaParts.length
+    ? metaParts.map(p => `<span class="mono" style="background:rgba(255,255,255,0.16);color:white;padding:3px 9px;border-radius:20px;font-size:11px">${escapeHtml(p)}</span>`).join('')
+    : `<span class="mono" style="color:rgba(255,255,255,0.7)">Geen details bekend</span>`;
+}
 
+function openPlaceDetailSheet(act, acc) {
+  placeDetailContext = { act, acc };
+
+  renderPdHero(act, acc);
   document.getElementById('pd-desc').textContent = act.desc || `Activiteit vanuit ${acc.name}.`;
 
   const alreadyPlanned = act.status === 'done' || act.date !== null;
@@ -195,12 +243,11 @@ function handlePlaceDetailRoute() {
 }
 
 function setMapFilter(accId) {
+  // FIX: accommodatie-ID's zijn strings (Firestore-doc-ID/UUID) sinds
+  // Fase B — parseInt() hier gaf altijd NaN behalve toevallig voor de
+  // Noorwegen-seed, en zelfs dan geen strikte match met een string-ID.
   mapFilterAccId = accId;
-  document.querySelectorAll('[data-filter-chip]').forEach(chip => {
-    const isOn = (accId === null && chip.dataset.filterChip === 'all') ||
-                 (accId !== null && parseInt(chip.dataset.filterChip) === accId);
-    chip.classList.toggle('on', isOn);
-  });
+  renderMapFilterChips();
   renderMapMarkers();
 }
 

@@ -167,7 +167,8 @@ async function handleLoadMoreSuggestions() {
     userPreferences: Array.from(AppState.travelStyles),
     alreadyPlanned: alreadyNamed,
     categoryFilter: currentCategoryFilter,
-    language: 'nl',
+    language: AppState.language || 'nl',
+    weatherAdaptation: AppState.weatherSuggestionsEnabled,
   };
 
   try {
@@ -210,11 +211,17 @@ function updateRefreshButtonState() {
 
 // ── Render states ──────────────────────────────────────────
 function showLoadingState() {
-  document.getElementById('discover-list').innerHTML = `
-    <div class="empty-state">
-      <div class="spinner" style="margin-bottom:14px"></div>
-      <p class="mono">AI-suggesties ophalen…</p>
+  const skeletonCard = `
+    <div class="card skeleton-card" style="display:flex;overflow:hidden">
+      <div class="skeleton-shimmer" style="width:80px;flex-shrink:0"></div>
+      <div style="flex:1;padding:12px;min-width:0">
+        <div class="skeleton-shimmer" style="height:11px;width:70px;border-radius:20px;margin-bottom:8px"></div>
+        <div class="skeleton-shimmer" style="height:15px;width:65%;border-radius:4px;margin-bottom:7px"></div>
+        <div class="skeleton-shimmer" style="height:11px;width:90%;border-radius:4px;margin-bottom:5px"></div>
+        <div class="skeleton-shimmer" style="height:11px;width:40%;border-radius:4px"></div>
+      </div>
     </div>`;
+  document.getElementById('discover-list').innerHTML = skeletonCard.repeat(3);
 }
 
 function showOfflineState() {
@@ -291,7 +298,7 @@ function renderSuggestionCard(suggestion, acc) {
         <p style="font-size:12px;color:var(--ink-mid);margin-top:2px;line-height:1.5">${escapeHtml(suggestion.description || '')}</p>
         ${suggestion.why_recommended ? `<p style="font-size:11px;color:var(--ink-faint);margin-top:4px;line-height:1.4">${escapeHtml(suggestion.why_recommended)}</p>` : ''}
         <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">
-          <button onclick="handleAddSuggestion('${escapeHtml(suggestion.name).replace(/'/g, "\\'")}', ${acc.id})"
+          <button onclick="handleAddSuggestion('${escapeHtml(suggestion.name).replace(/'/g, "\\'")}', '${acc.id}')"
             style="padding:6px 14px;background:${isAdded ? 'var(--slope)' : 'var(--spruce)'};color:white;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">
             ${isAdded ? '✓ Gepland' : '+ Plan'}
           </button>

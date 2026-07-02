@@ -12,8 +12,44 @@ const AppState = {
   vehicleType: 'ev',
   travelStyles: new Set(['natuur', 'wandelen']),
   aiEnabled: true,
+  weatherSuggestionsEnabled: true,
+  language: 'nl',
   dbUnsubscribers: [], // voor realtime listeners
 };
+
+// ── Instellingen-persistentie (device-eigen, geen Firestore) ──
+// Instellingen zijn per toestel, niet gedeeld tussen toestellen —
+// vandaar localStorage i.p.v. Firestore, zoals Flutter's SharedPreferences.
+const SETTINGS_STORAGE_KEY = 'travelCockpitSettings';
+
+function loadSettingsFromStorage() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.vehicleType) AppState.vehicleType = saved.vehicleType;
+    if (Array.isArray(saved.travelStyles)) AppState.travelStyles = new Set(saved.travelStyles);
+    if (typeof saved.aiEnabled === 'boolean') AppState.aiEnabled = saved.aiEnabled;
+    if (typeof saved.weatherSuggestionsEnabled === 'boolean') AppState.weatherSuggestionsEnabled = saved.weatherSuggestionsEnabled;
+    if (saved.language) AppState.language = saved.language;
+  } catch (err) {
+    console.error('Instellingen laden mislukt:', err);
+  }
+}
+
+function saveSettingsToStorage() {
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+      vehicleType: AppState.vehicleType,
+      travelStyles: Array.from(AppState.travelStyles),
+      aiEnabled: AppState.aiEnabled,
+      weatherSuggestionsEnabled: AppState.weatherSuggestionsEnabled,
+      language: AppState.language,
+    }));
+  } catch (err) {
+    console.error('Instellingen opslaan mislukt:', err);
+  }
+}
 
 // ── Datum / "vandaag" logica ──────────────────────────────
 // FIX: geeft altijd de echte huidige datum terug. Voorheen werd
@@ -275,6 +311,7 @@ function refreshAllScreens() {
 
 // ── Init ──────────────────────────────────────────────────
 function initAppState() {
+  loadSettingsFromStorage();
   AppState.selectedPlanningDay = getToday();
   AppState.viewingAccommodationId = getActiveAccommodation().id;
 

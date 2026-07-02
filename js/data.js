@@ -11,7 +11,7 @@ const WEEKDAYS = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
 // ── Accommodaties ─────────────────────────────────────────
 const ACCOMMODATIONS = [
   {
-    id: 1, name: 'Sogndal', short: 'Sgd', color: '#2d6a4f',
+    id: '1', name: 'Sogndal', short: 'Sgd', color: '#2d6a4f',
     checkIn: new Date(2026, 5, 16), checkOut: new Date(2026, 5, 19),
     address: 'Årøyvegen 202, 6857 Sogndal',
     elevation: 12, coord: '61.24°N 7.09°E', lat: 61.2435, lng: 7.0892,
@@ -19,7 +19,7 @@ const ACCOMMODATIONS = [
     phone: null,
   },
   {
-    id: 2, name: 'Skjåk Solside', short: 'Skj', color: '#1565c0',
+    id: '2', name: 'Skjåk Solside', short: 'Skj', color: '#1565c0',
     checkIn: new Date(2026, 5, 19), checkOut: new Date(2026, 5, 23),
     address: 'Skjåk Solside 799, 2690 Skjåk',
     elevation: 1100, coord: '61.91°N 8.41°E', lat: 61.9050, lng: 8.4100,
@@ -27,7 +27,7 @@ const ACCOMMODATIONS = [
     phone: null,
   },
   {
-    id: 3, name: 'Valdres / Noord-Aurdal', short: 'Val', color: '#ef6c00',
+    id: '3', name: 'Valdres / Noord-Aurdal', short: 'Val', color: '#ef6c00',
     checkIn: new Date(2026, 5, 23), checkOut: new Date(2026, 5, 27),
     address: 'Førsøddin 30, 2920 Leira i Valdres',
     elevation: 520, coord: '60.97°N 9.27°E', lat: 60.9695, lng: 9.2748,
@@ -35,7 +35,7 @@ const ACCOMMODATIONS = [
     phone: null,
   },
   {
-    id: 4, name: 'Gjerstad', short: 'Gjr', color: '#6a1b9a',
+    id: '4', name: 'Gjerstad', short: 'Gjr', color: '#6a1b9a',
     checkIn: new Date(2026, 5, 27), checkOut: new Date(2026, 5, 29),
     address: 'Løyteveien 14, 4980 Gjerstad',
     elevation: 155, coord: '58.89°N 8.96°E', lat: 58.8858, lng: 8.9578,
@@ -47,25 +47,25 @@ const ACCOMMODATIONS = [
 // ── Activiteiten ───────────────────────────────────────────
 // status: 'done' | 'planned' | 'todo'
 const ACTIVITIES = [
-  { id: 1, name: 'Molden', emoji: '🥾', accId: 1, status: 'done', date: new Date(2026, 5, 18), distance: '7 km', duration: '3–4 u', level: 'Gemiddeld', elevation: 1116, lat: 61.259, lng: 7.182, desc: 'Uitzichtwandeling boven de Lustrafjord.' },
-  { id: 2, name: 'Solvorn', emoji: '🏘️', accId: 1, status: 'done', date: new Date(2026, 5, 19), distance: '—', duration: '1–2 u', level: 'Makkelijk', elevation: 10, lat: 61.298, lng: 7.228, desc: 'Klein fjorddorpje met veerpont en haven.' },
-  { id: 3, name: 'Urnes Stavkyrkje', emoji: '⛪', accId: 1, status: 'done', date: new Date(2026, 5, 19), distance: '—', duration: '1–2 u', level: 'Makkelijk', elevation: 120, lat: 61.300, lng: 7.328, desc: 'UNESCO-staafkerk, oudste van Noorwegen.' },
-  { id: 4, name: 'Bøyabreen', emoji: '🧊', accId: 1, status: 'done', date: new Date(2026, 5, 19), distance: '1 km', duration: '30 m', level: 'Makkelijk', elevation: 160, lat: 61.669, lng: 6.823, desc: 'Korte stop bij de gletsjertong.' },
-  { id: 5, name: 'Lom sentrum', emoji: '🏕️', accId: 2, status: 'done', date: new Date(2026, 5, 20), distance: '—', duration: '1 u', level: 'Makkelijk', elevation: 382, lat: 61.838, lng: 8.567, desc: 'Bergdorp aan de rivier de Otta.' },
-  { id: 6, name: 'Bakeriet i Lom', emoji: '☕', accId: 2, status: 'done', date: new Date(2026, 5, 20), distance: '—', duration: 'koffie', level: '—', elevation: 382, lat: 61.838, lng: 8.568, desc: 'Beste bakkerij van het dal.' },
-  { id: 7, name: 'Lom Stavkyrkje', emoji: '⛪', accId: 2, status: 'done', date: new Date(2026, 5, 20), distance: '—', duration: '45 m', level: 'Makkelijk', elevation: 390, lat: 61.839, lng: 8.567, desc: 'Staafkerk uit 1158.' },
-  { id: 8, name: 'Klimapark 2469', emoji: '🧊', accId: 2, status: 'done', date: new Date(2026, 5, 21), distance: '—', duration: '3 u', level: 'Begeleid', elevation: 1841, lat: 61.676, lng: 8.344, desc: 'IJstunnel en permafrost bij Juvasshytta.' },
-  { id: 9, name: 'Vegaskjelet', emoji: '🥾', accId: 2, status: 'done', date: new Date(2026, 5, 21), distance: '5 km', duration: '2 u', level: 'Gemiddeld', elevation: 900, lat: 61.820, lng: 8.600, desc: 'Rondtocht vanuit Lom.' },
-  { id: 10, name: 'Dønfoss', emoji: '🌊', accId: 2, status: 'planned', date: new Date(2026, 5, 22), distance: '1 km', duration: '45 m', level: 'Makkelijk', elevation: 560, lat: 61.893, lng: 8.403, desc: 'Waterval in de Otta, dichtbij Skjåk.' },
-  { id: 11, name: 'Gjelbrue', emoji: '🥾', accId: 2, status: 'planned', date: new Date(2026, 5, 22), distance: '4 km', duration: '1–2 u', level: 'Gemiddeld', elevation: 650, lat: 61.913, lng: 8.275, desc: 'Kloof- en rivierwandeling, Tundragjelet.' },
-  { id: 12, name: 'Besseggen', emoji: '🏔️', accId: 3, status: 'todo', date: null, distance: '16 km', duration: '6–8 u', level: 'Zwaar', elevation: 1743, lat: 61.517, lng: 8.650, desc: 'De beroemde grat tussen Gjende en Bessvatnet. Alleen bij goed weer.' },
-  { id: 13, name: 'M/S Bitihorn', emoji: '🚢', accId: 3, status: 'todo', date: null, distance: '—', duration: '2–4 u', level: 'Makkelijk', elevation: 1060, lat: 61.380, lng: 8.800, desc: 'Bootvaart over het Bygdin meer.' },
-  { id: 14, name: 'Mjølkevegen', emoji: '🚴', accId: 3, status: 'todo', date: null, distance: '—', duration: '½ dag', level: 'Gemiddeld', elevation: 900, lat: 60.900, lng: 9.100, desc: 'Fietsroute langs oude veestapels (støler).' },
-  { id: 15, name: 'Snøhetta (Gomobu)', emoji: '🏔️', accId: 3, status: 'planned', date: new Date(2026, 5, 24), distance: '8 km', duration: '2–3 u', level: 'Gemiddeld', elevation: 1127, lat: 62.340, lng: 9.167, desc: 'Rondwandeling met panoramisch uitzicht.' },
-  { id: 16, name: 'Syndin', emoji: '🏞️', accId: 3, status: 'planned', date: new Date(2026, 5, 24), distance: '—', duration: '2–4 u', level: 'Makkelijk', elevation: 920, lat: 60.900, lng: 9.300, desc: 'Bergmeren en rustige routes.' },
-  { id: 17, name: 'Solhomfjell', emoji: '🌲', accId: 4, status: 'todo', date: null, distance: '11 km', duration: '3 u', level: 'Gemiddeld', elevation: 670, lat: 58.930, lng: 9.040, desc: 'Bos- en heuvellandschap.' },
-  { id: 18, name: 'Risør', emoji: '⚓', accId: 4, status: 'todo', date: null, distance: '—', duration: '2–3 u', level: 'Makkelijk', elevation: 5, lat: 58.718, lng: 9.233, desc: 'Wit houten kustplaatsje, "Skagerraks parel".' },
-  { id: 19, name: 'Tvedestrand', emoji: '⛵', accId: 4, status: 'todo', date: null, distance: '—', duration: '1–2 u', level: 'Makkelijk', elevation: 8, lat: 58.623, lng: 8.934, desc: 'Knus havenstadje aan de Skagerrak.' },
+  { id: 1, name: 'Molden', emoji: '🥾', accId: '1', status: 'done', date: new Date(2026, 5, 18), distance: '7 km', duration: '3–4 u', level: 'Gemiddeld', elevation: 1116, lat: 61.259, lng: 7.182, desc: 'Uitzichtwandeling boven de Lustrafjord.' },
+  { id: 2, name: 'Solvorn', emoji: '🏘️', accId: '1', status: 'done', date: new Date(2026, 5, 19), distance: '—', duration: '1–2 u', level: 'Makkelijk', elevation: 10, lat: 61.298, lng: 7.228, desc: 'Klein fjorddorpje met veerpont en haven.' },
+  { id: 3, name: 'Urnes Stavkyrkje', emoji: '⛪', accId: '1', status: 'done', date: new Date(2026, 5, 19), distance: '—', duration: '1–2 u', level: 'Makkelijk', elevation: 120, lat: 61.300, lng: 7.328, desc: 'UNESCO-staafkerk, oudste van Noorwegen.' },
+  { id: 4, name: 'Bøyabreen', emoji: '🧊', accId: '1', status: 'done', date: new Date(2026, 5, 19), distance: '1 km', duration: '30 m', level: 'Makkelijk', elevation: 160, lat: 61.669, lng: 6.823, desc: 'Korte stop bij de gletsjertong.' },
+  { id: 5, name: 'Lom sentrum', emoji: '🏕️', accId: '2', status: 'done', date: new Date(2026, 5, 20), distance: '—', duration: '1 u', level: 'Makkelijk', elevation: 382, lat: 61.838, lng: 8.567, desc: 'Bergdorp aan de rivier de Otta.' },
+  { id: 6, name: 'Bakeriet i Lom', emoji: '☕', accId: '2', status: 'done', date: new Date(2026, 5, 20), distance: '—', duration: 'koffie', level: '—', elevation: 382, lat: 61.838, lng: 8.568, desc: 'Beste bakkerij van het dal.' },
+  { id: 7, name: 'Lom Stavkyrkje', emoji: '⛪', accId: '2', status: 'done', date: new Date(2026, 5, 20), distance: '—', duration: '45 m', level: 'Makkelijk', elevation: 390, lat: 61.839, lng: 8.567, desc: 'Staafkerk uit 1158.' },
+  { id: 8, name: 'Klimapark 2469', emoji: '🧊', accId: '2', status: 'done', date: new Date(2026, 5, 21), distance: '—', duration: '3 u', level: 'Begeleid', elevation: 1841, lat: 61.676, lng: 8.344, desc: 'IJstunnel en permafrost bij Juvasshytta.' },
+  { id: 9, name: 'Vegaskjelet', emoji: '🥾', accId: '2', status: 'done', date: new Date(2026, 5, 21), distance: '5 km', duration: '2 u', level: 'Gemiddeld', elevation: 900, lat: 61.820, lng: 8.600, desc: 'Rondtocht vanuit Lom.' },
+  { id: 10, name: 'Dønfoss', emoji: '🌊', accId: '2', status: 'planned', date: new Date(2026, 5, 22), distance: '1 km', duration: '45 m', level: 'Makkelijk', elevation: 560, lat: 61.893, lng: 8.403, desc: 'Waterval in de Otta, dichtbij Skjåk.' },
+  { id: 11, name: 'Gjelbrue', emoji: '🥾', accId: '2', status: 'planned', date: new Date(2026, 5, 22), distance: '4 km', duration: '1–2 u', level: 'Gemiddeld', elevation: 650, lat: 61.913, lng: 8.275, desc: 'Kloof- en rivierwandeling, Tundragjelet.' },
+  { id: 12, name: 'Besseggen', emoji: '🏔️', accId: '3', status: 'todo', date: null, distance: '16 km', duration: '6–8 u', level: 'Zwaar', elevation: 1743, lat: 61.517, lng: 8.650, desc: 'De beroemde grat tussen Gjende en Bessvatnet. Alleen bij goed weer.' },
+  { id: 13, name: 'M/S Bitihorn', emoji: '🚢', accId: '3', status: 'todo', date: null, distance: '—', duration: '2–4 u', level: 'Makkelijk', elevation: 1060, lat: 61.380, lng: 8.800, desc: 'Bootvaart over het Bygdin meer.' },
+  { id: 14, name: 'Mjølkevegen', emoji: '🚴', accId: '3', status: 'todo', date: null, distance: '—', duration: '½ dag', level: 'Gemiddeld', elevation: 900, lat: 60.900, lng: 9.100, desc: 'Fietsroute langs oude veestapels (støler).' },
+  { id: 15, name: 'Snøhetta (Gomobu)', emoji: '🏔️', accId: '3', status: 'planned', date: new Date(2026, 5, 24), distance: '8 km', duration: '2–3 u', level: 'Gemiddeld', elevation: 1127, lat: 62.340, lng: 9.167, desc: 'Rondwandeling met panoramisch uitzicht.' },
+  { id: 16, name: 'Syndin', emoji: '🏞️', accId: '3', status: 'planned', date: new Date(2026, 5, 24), distance: '—', duration: '2–4 u', level: 'Makkelijk', elevation: 920, lat: 60.900, lng: 9.300, desc: 'Bergmeren en rustige routes.' },
+  { id: 17, name: 'Solhomfjell', emoji: '🌲', accId: '4', status: 'todo', date: null, distance: '11 km', duration: '3 u', level: 'Gemiddeld', elevation: 670, lat: 58.930, lng: 9.040, desc: 'Bos- en heuvellandschap.' },
+  { id: 18, name: 'Risør', emoji: '⚓', accId: '4', status: 'todo', date: null, distance: '—', duration: '2–3 u', level: 'Makkelijk', elevation: 5, lat: 58.718, lng: 9.233, desc: 'Wit houten kustplaatsje, "Skagerraks parel".' },
+  { id: 19, name: 'Tvedestrand', emoji: '⛵', accId: '4', status: 'todo', date: null, distance: '—', duration: '1–2 u', level: 'Makkelijk', elevation: 8, lat: 58.623, lng: 8.934, desc: 'Knus havenstadje aan de Skagerrak.' },
 ];
 
 // AI-suggesties komen niet meer uit een vaste lijst — zie js/screen-discover.js

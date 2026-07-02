@@ -23,7 +23,7 @@ function renderAccommodationScreen(accId) {
     const isViewing = a.id === acc.id;
     const isActive = activeAcc && a.id === activeAcc.id;
     return `
-      <button onclick="renderAccommodationScreen(${a.id})"
+      <button onclick="renderAccommodationScreen('${a.id}')"
         style="padding:6px 14px;border:1.5px solid ${a.color};border-radius:20px;background:${isViewing ? a.color : 'white'};color:${isViewing ? 'white' : a.color};font-size:11px;font-weight:700;text-transform:uppercase;cursor:pointer;position:relative;flex-shrink:0">
         ${a.short}
         ${isActive && !isViewing ? '<span style="position:absolute;top:-4px;right:-4px;width:8px;height:8px;background:#C5512B;border-radius:50%;border:1.5px solid white"></span>' : ''}
@@ -44,7 +44,7 @@ function renderAccommodationScreen(accId) {
         <p class="eyebrow">${row.label}</p>
         <p class="row-title" style="margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(row.value)}</p>
       </div>
-      ${row.hasMapsBtn ? `<button onclick="openMapsForAccommodation(${acc.id})" style="padding:5px 12px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;flex-shrink:0">Maps</button>` : ''}
+      ${row.hasMapsBtn ? `<button onclick="openMapsForAccommodation('${acc.id}')" style="padding:5px 12px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;flex-shrink:0">Maps</button>` : ''}
     </div>`).join('');
 
   document.getElementById('acc-notes').textContent = acc.notes;
@@ -55,7 +55,7 @@ function renderAccommodationScreen(accId) {
     const isActive = activeAcc && a.id === activeAcc.id;
     const isViewing = a.id === acc.id;
     return `
-      <button onclick="renderAccommodationScreen(${a.id})" style="display:flex;align-items:stretch;gap:10px;width:100%;background:none;border:none;cursor:pointer;text-align:left;padding:0">
+      <button onclick="renderAccommodationScreen('${a.id}')" style="display:flex;align-items:stretch;gap:10px;width:100%;background:none;border:none;cursor:pointer;text-align:left;padding:0">
         <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">
           <span class="mono" style="width:28px;height:28px;background:${isViewing ? a.color : 'white'};border:1.5px solid ${isViewing ? a.color : 'var(--line)'};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${isViewing ? 'white' : 'var(--ink-faint)'}">${i + 1}</span>
           ${i < ACCOMMODATIONS.length - 1 ? '<div style="width:1px;flex:1;background:var(--line);margin:2px 0;min-height:16px"></div>' : ''}

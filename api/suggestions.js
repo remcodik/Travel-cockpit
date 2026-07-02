@@ -31,6 +31,7 @@ export default async function handler(req, res) {
     alreadyPlanned,
     categoryFilter,
     language,
+    weatherAdaptation,
   } = req.body || {};
 
   // Basisvalidatie tegen misbruik/kosten-opblazen: dit endpoint is publiek
@@ -61,7 +62,7 @@ Regels die je ALTIJD volgt:
 6. Antwoord in de voorkeurstaal van de gebruiker.
 7. Verzin geen specifieke adressen, telefoonnummers of openingstijden die je niet zeker weet.
 8. Noem onzekerheid expliciet bij seizoensgebonden attracties.
-9. Bij slecht weer: neem minstens één optie binnenshuis op.
+9. Bij slecht weer: als weersuggesties aan staan, neem minstens één optie binnenshuis op. Staan ze uit, negeer het weer volledig voor je suggesties.
 10. Antwoord ALTIJD met geldige JSON. Nooit platte tekst of markdown.
 
 Retourneer een JSON array van precies 5 suggesties in dit formaat:
@@ -82,6 +83,7 @@ Retourneer een JSON array van precies 5 suggesties in dit formaat:
 Land: ${country}
 Vandaag: ${today}
 Weer: ${temperature}°C, ${weatherCondition}, ${rainProbability}% kans op regen
+Weersuggesties: ${weatherAdaptation === false ? 'uit — negeer het weer' : 'aan'}
 Voorkeuren reiziger: ${(userPreferences || []).join(', ') || 'geen specifieke voorkeuren'}
 Al gepland (niet dupliceren): ${(alreadyPlanned || []).join(', ') || 'nog niets'}
 ${categoryFilter && categoryFilter !== 'all' ? `Filter: alleen "${categoryFilter}"` : ''}
