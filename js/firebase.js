@@ -380,11 +380,19 @@ async function dbLoadTicketsForTrip(forTripId) {
 }
 
 // ── Accommodaties (per reis, onder trips/{tripId}/accommodations) ──
+// FIX: sorteerde voorheen op orderBy('order') — Firestore sluit
+// documenten zonder dat veld volledig uit van het resultaat. Alleen de
+// oorspronkelijke Noorwegen-seed kreeg ooit een order-waarde; elk via
+// "Reis toevoegen" aangemaakt verblijf miste 'm, waardoor de
+// accommodaties van elke nieuw aangemaakte reis nooit geladen werden.
+// checkIn staat altijd gegarandeerd op elk verblijf, en sorteert
+// chronologisch correct als ISO-string — dus geen reorder-UI nodig,
+// de volgorde volgt gewoon de data (op verzoek van de gebruiker).
 async function dbLoadAccommodations(forTripId) {
   const ref = db && db.collection('trips').doc(forTripId).collection('accommodations');
   if (!ref) return null;
   try {
-    const snap = await ref.orderBy('order').get();
+    const snap = await ref.orderBy('checkIn').get();
     return snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
   } catch (err) {
     console.error('Accommodaties laden mislukt:', err);

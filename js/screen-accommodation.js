@@ -122,10 +122,13 @@ function openMapsForAccommodation(accId) {
   window.open(`https://www.google.com/maps/dir/?api=1&destination=${acc.lat},${acc.lng}`, '_blank');
 }
 
-// ── Verblijf bewerken (Fase E) ──────────────────────────────
+// ── Verblijf bewerken (Fase E) / toevoegen (Fase F) ─────────
+// Beide gebruiken hetzelfde formulier — alleen de titel, voorgevulde
+// waarden en save-knop-actie verschillen.
 function openEditAccommodationSheet(accId) {
   const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, accId));
   if (!acc) return;
+  document.getElementById('edit-acc-sheet-title').textContent = 'VERBLIJF BEWERKEN';
   document.getElementById('edit-acc-name-input').value = acc.name;
   document.getElementById('edit-acc-address-input').value = acc.address || '';
   document.getElementById('edit-acc-checkin-input').value = acc.checkIn.toISOString().slice(0, 10);
@@ -138,16 +141,29 @@ function openEditAccommodationSheet(accId) {
   openSheet('sheet-edit-accommodation');
 }
 
-async function saveAccommodationEdit(accId) {
+function openAddAccommodationSheet() {
+  document.getElementById('edit-acc-sheet-title').textContent = 'VERBLIJF TOEVOEGEN';
+  document.getElementById('edit-acc-name-input').value = '';
+  document.getElementById('edit-acc-address-input').value = '';
+  document.getElementById('edit-acc-checkin-input').value = '';
+  document.getElementById('edit-acc-checkout-input').value = '';
+  document.getElementById('edit-acc-lat-input').value = '';
+  document.getElementById('edit-acc-lng-input').value = '';
+  document.getElementById('edit-acc-url-input').value = '';
+  document.getElementById('edit-acc-notes-input').value = '';
+  document.getElementById('edit-acc-save-btn').onclick = () => saveAccommodationCreate();
+  openSheet('sheet-edit-accommodation');
+}
+
+function readAccommodationFormFields() {
   const name = document.getElementById('edit-acc-name-input').value.trim();
-  if (!name) { showToast('Voer een naam in'); return; }
+  if (!name) { showToast('Voer een naam in'); return null; }
   const checkInStr = document.getElementById('edit-acc-checkin-input').value;
   const checkOutStr = document.getElementById('edit-acc-checkout-input').value;
-  if (!checkInStr || !checkOutStr) { showToast('Vul check-in en check-out in'); return; }
+  if (!checkInStr || !checkOutStr) { showToast('Vul check-in en check-out in'); return null; }
   const lat = parseFloat(document.getElementById('edit-acc-lat-input').value) || 0;
   const lng = parseFloat(document.getElementById('edit-acc-lng-input').value) || 0;
-
-  await updateAccommodation(accId, {
+  return {
     name,
     address: document.getElementById('edit-acc-address-input').value.trim(),
     checkIn: new Date(checkInStr),
@@ -156,10 +172,27 @@ async function saveAccommodationEdit(accId) {
     coord: lat && lng ? `${lat.toFixed(2)}°N ${lng.toFixed(2)}°E` : '—',
     url: document.getElementById('edit-acc-url-input').value.trim(),
     notes: document.getElementById('edit-acc-notes-input').value.trim(),
-  });
+  };
+}
+
+async function saveAccommodationEdit(accId) {
+  const fields = readAccommodationFormFields();
+  if (!fields) return;
+  await updateAccommodation(accId, fields);
   closeSheet('sheet-edit-accommodation');
-  showToast(`✓ ${name} bijgewerkt`);
+  showToast(`✓ ${fields.name} bijgewerkt`);
   renderAccommodationScreen(accId);
+  renderHomeScreen();
+  updateMeerSummary();
+}
+
+async function saveAccommodationCreate() {
+  const fields = readAccommodationFormFields();
+  if (!fields) return;
+  const acc = await createAccommodationForTrip(fields);
+  closeSheet('sheet-edit-accommodation');
+  showToast(`✓ ${fields.name} toegevoegd`);
+  renderAccommodationScreen(acc.id);
   renderHomeScreen();
   updateMeerSummary();
 }

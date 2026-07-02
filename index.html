@@ -263,7 +263,10 @@
       </div>
       <span class="eyebrow">Activiteiten van dit verblijf</span>
       <div id="acc-activities"></div>
-      <span class="eyebrow">Alle verblijven</span>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="eyebrow">Alle verblijven</span>
+        <button onclick="openAddAccommodationSheet()" style="padding:5px 12px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">+ Verblijf</button>
+      </div>
       <div id="acc-stops" style="display:flex;flex-direction:column;gap:7px"></div>
     </div>
     <div style="height:32px"></div>
@@ -480,6 +483,16 @@
   </div>
 </div>
 
+<!-- ═══════════ SHEET: welke reis wordt nu actief? (Fase F) ═══════════ -->
+<div class="sheet-backdrop" id="sheet-pick-active-trip">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">WELKE REIS WORDT ACTIEF?</p>
+    <p class="row-sub" style="margin-bottom:16px;line-height:1.5">Je actieve reis is verwijderd — kies welke reis nu actief moet zijn.</p>
+    <div id="pick-active-trip-list" class="card" style="overflow:hidden;margin-bottom:9px"></div>
+  </div>
+</div>
+
 <div class="sheet-backdrop" id="sheet-activity">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-handle"></div>
@@ -520,7 +533,7 @@
 <div class="sheet-backdrop" id="sheet-edit-accommodation">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-handle"></div>
-    <p class="sheet-title">VERBLIJF BEWERKEN</p>
+    <p class="sheet-title" id="edit-acc-sheet-title">VERBLIJF BEWERKEN</p>
     <input id="edit-acc-name-input" placeholder="Naam accommodatie"/>
     <input id="edit-acc-address-input" placeholder="Adres"/>
     <div style="display:flex;gap:10px">
