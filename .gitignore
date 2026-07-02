@@ -11,6 +11,9 @@ build/
 .env
 lib/core/env.g.dart
 
+# Node (Vercel API-functies)
+node_modules/
+
 # IDE
 .idea/
 .vscode/

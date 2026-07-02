@@ -22,6 +22,7 @@
 <!-- Firebase SDK (compat mode — werkt zonder build-stap) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
 /* Safe-area fix — tekst loopt niet meer door statusbalk */
 .safe-top { padding-top: max(14px, env(safe-area-inset-top, 14px)) !important; }
@@ -270,7 +271,7 @@
       <div id="acc-activities"></div>
       <div style="display:flex;align-items:center;justify-content:space-between">
         <span class="eyebrow">Alle verblijven</span>
-        <button onclick="openAddAccommodationSheet()" style="padding:5px 12px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">+ Verblijf</button>
+        <button onclick="openAddAccommodationSheet()" class="edit-only" style="padding:5px 12px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">+ Verblijf</button>
       </div>
       <div id="acc-stops" style="display:flex;flex-direction:column;gap:7px"></div>
     </div>
@@ -353,14 +354,14 @@
   <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <span class="page-title" style="flex:1">TICKETS</span>
-    <button onclick="openAddTicketSheet()" class="fab" style="background:var(--spruce);color:white">+</button>
+    <button onclick="openAddTicketSheet()" class="fab edit-only" style="background:var(--spruce);color:white">+</button>
   </div>
   <div class="scroll px" style="padding-top:15px">
     <span class="eyebrow" id="tickets-active-label" style="display:none;margin-bottom:9px">Actief</span>
     <div id="tickets-list"></div>
     <span class="eyebrow" id="tickets-archived-label" style="display:none;margin-bottom:9px;margin-top:16px">Gearchiveerd</span>
     <div id="tickets-archived-list"></div>
-    <button onclick="openAddTicketSheet()" class="btn btn-outline" style="margin-top:8px">+ Ticket toevoegen</button>
+    <button onclick="openAddTicketSheet()" class="btn btn-outline edit-only" style="margin-top:8px">+ Ticket toevoegen</button>
   </div>
 </div>
 
@@ -369,12 +370,12 @@
   <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <span class="page-title" style="flex:1">MIJN REIZEN</span>
-    <button onclick="openAddTripSheet()" class="fab" style="background:var(--spruce);color:white">+</button>
+    <button onclick="openAddTripSheet()" class="fab edit-only" style="background:var(--spruce);color:white">+</button>
   </div>
   <div class="scroll px" style="padding-top:15px">
     <span class="eyebrow" style="display:block;margin-bottom:9px">Actief</span>
     <div id="active-trip-card" style="margin-bottom:16px"></div>
-    <button onclick="openAddTripSheet()" class="card" style="width:100%;padding:17px;display:flex;align-items:center;gap:13px;border:2px dashed var(--line);background:white;cursor:pointer;text-align:left;box-shadow:none">
+    <button onclick="openAddTripSheet()" class="card edit-only" style="width:100%;padding:17px;display:flex;align-items:center;gap:13px;border:2px dashed var(--line);background:white;cursor:pointer;text-align:left;box-shadow:none">
       <span style="font-size:30px;color:var(--spruce)">+</span>
       <div><p style="font-weight:700;font-size:15px">Reis toevoegen</p><p class="mono">Naam, land, verblijven met data</p></div>
     </button>
@@ -433,6 +434,10 @@
     <span class="eyebrow" style="display:block;margin-bottom:9px">Backup</span>
     <div class="card" style="margin-bottom:24px;overflow:hidden">
       <div class="card-row" onclick="handleExportAllTrips()"><div class="icon-box" style="background:var(--slope-light)">⬇</div><div style="flex:1"><p class="row-title">Exporteer alle reisdata</p><p class="row-sub">Alle reizen als één JSON-bestand</p></div><span class="chevron">›</span></div>
+    </div>
+    <span class="eyebrow" style="display:block;margin-bottom:9px">Delen</span>
+    <div class="card" style="margin-bottom:24px;overflow:hidden">
+      <div class="card-row" onclick="openShareLinksSheet()"><div class="icon-box" style="background:var(--slope-light)">🔗</div><div style="flex:1"><p class="row-title">Deel-links beheren</p><p class="row-sub">Bekijken of bewerken, 1 reis of alle reizen</p></div><span class="chevron">›</span></div>
     </div>
   </div>
 </div>
@@ -495,6 +500,41 @@
     <p class="sheet-title">WELKE REIS WORDT ACTIEF?</p>
     <p class="row-sub" style="margin-bottom:16px;line-height:1.5">Je actieve reis is verwijderd — kies welke reis nu actief moet zijn.</p>
     <div id="pick-active-trip-list" class="card" style="overflow:hidden;margin-bottom:9px"></div>
+  </div>
+</div>
+
+<!-- ═══════════ SHEET: Deel-links beheren (Fase G) ═══════════ -->
+<div class="sheet-backdrop" id="sheet-share-links">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">DEEL-LINKS BEHEREN</p>
+
+    <div id="share-links-pin-gate">
+      <p class="row-sub" style="margin-bottom:14px;line-height:1.5">Voer je code in om deel-links te beheren.</p>
+      <input id="share-links-pin-input" type="password" inputmode="numeric" placeholder="Code" onkeydown="if(event.key==='Enter')unlockShareLinksSheet()"/>
+      <p id="share-links-pin-error" class="row-sub" style="color:#dc2626;display:none;margin:-8px 0 12px">Onjuiste code</p>
+      <button onclick="unlockShareLinksSheet()" class="btn btn-primary">Ontgrendelen</button>
+      <button onclick="closeSheet('sheet-share-links')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
+    </div>
+
+    <div id="share-links-content" style="display:none">
+      <p class="eyebrow" style="margin-bottom:9px">Nieuwe link</p>
+      <input id="share-links-label-input" placeholder="Label (optioneel, bv. \"voor Jan\")"/>
+      <select id="share-links-scope-select" style="margin-bottom:11px">
+        <option value="view">Alleen bekijken</option>
+        <option value="edit">Bekijken en bewerken</option>
+      </select>
+      <select id="share-links-trip-select" style="margin-bottom:18px">
+        <option value="">Alle reizen</option>
+      </select>
+      <button onclick="handleCreateShareLink()" class="btn btn-primary">Link aanmaken</button>
+
+      <p class="eyebrow" style="margin:22px 0 9px">Bestaande links</p>
+      <div id="share-links-list" class="card" style="overflow:hidden;margin-bottom:9px">
+        <p class="mono" style="padding:14px 16px">Nog geen deel-links.</p>
+      </div>
+      <button onclick="closeSheet('sheet-share-links')" class="btn btn-outline" style="margin-top:8px">Sluiten</button>
+    </div>
   </div>
 </div>
 

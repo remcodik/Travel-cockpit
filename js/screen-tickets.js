@@ -35,7 +35,7 @@ function renderTicketRow(ticket, isArchived) {
           <p style="font-weight:800;font-size:15.5px;flex:1">${escapeHtml(ticket.name)}</p>
           <div style="display:flex;gap:6px;margin-left:8px;flex-shrink:0">
             <button onclick="openEditTicketSheet('${ticket.id}')" class="edit-pencil-btn" title="Bewerken">✎</button>
-            <button onclick="handleRemoveTicket('${ticket.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px;padding:4px">✕</button>
+            <button onclick="handleRemoveTicket('${ticket.id}')" class="edit-only" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px;padding:4px">✕</button>
           </div>
         </div>
         ${ticket.venue ? `<p class="mono" style="margin-top:5px">${escapeHtml(ticket.venue)}</p>` : ''}
@@ -46,8 +46,8 @@ function renderTicketRow(ticket, isArchived) {
         ${ticket.code ? `<p class="mono" style="margin-top:6px;padding:4px 9px;background:var(--slope-light);color:var(--spruce);border-radius:6px;display:inline-block">${escapeHtml(ticket.code)}</p>` : ''}
         ${ticket.fileDataUrl ? renderTicketFilePreview(ticket) : ''}
         ${isArchived
-          ? `<button onclick="handleUnarchiveTicket('${ticket.id}')" style="margin-top:11px;padding:6px 12px;background:none;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">↺ Terugzetten</button>`
-          : `<button onclick="handleArchiveTicket('${ticket.id}')" style="margin-top:11px;padding:6px 12px;background:var(--paper-warm);border:none;border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">✓ Markeer als gebruikt</button>`}
+          ? `<button onclick="handleUnarchiveTicket('${ticket.id}')" class="edit-only" style="margin-top:11px;padding:6px 12px;background:none;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">↺ Terugzetten</button>`
+          : `<button onclick="handleArchiveTicket('${ticket.id}')" class="edit-only" style="margin-top:11px;padding:6px 12px;background:var(--paper-warm);border:none;border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">✓ Markeer als gebruikt</button>`}
       </div>
     </div>`;
 }
@@ -195,6 +195,15 @@ function renderTripsScreen() {
   const listContainer = document.getElementById('extra-trips-list');
   if (!activeContainer || !listContainer) return;
 
+  // Deel-link met vaste reis (Fase G): alleen díe ene reis tonen, geen
+  // wisselen/overzicht van andere reizen — dat mag deze bezoeker niet zien.
+  if (isTripLocked()) {
+    const locked = AppState.trips.find(t => t.id === getCurrentTripId());
+    activeContainer.innerHTML = locked ? renderTripCard(locked, true) : '';
+    listContainer.innerHTML = '';
+    return;
+  }
+
   const trips = AppState.trips.slice().sort((a, b) => (b.startDate || 0) - (a.startDate || 0));
   const active = trips.find(t => t.isActive);
   const others = trips.filter(t => !t.isActive);
@@ -220,13 +229,13 @@ function renderTripCard(trip, isActive) {
           <div style="display:flex;gap:7px;margin-top:11px">
             ${isActive
               ? `<button onclick="showToast('${escapeHtml(trip.name)} is al actief')" style="padding:7px 14px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">✓ Actief</button>
-                 ${AppState.trips.length > 1 ? `<button onclick="handleDeactivateTrip('${trip.id}')" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Deactiveren</button>` : ''}`
-              : `<button onclick="handleActivateTrip('${trip.id}')" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Activeren</button>`}
+                 ${AppState.trips.length > 1 ? `<button onclick="handleDeactivateTrip('${trip.id}')" class="edit-only" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Deactiveren</button>` : ''}`
+              : `<button onclick="handleActivateTrip('${trip.id}')" class="edit-only" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Activeren</button>`}
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <button onclick="openEditTripSheet('${trip.id}')" class="edit-pencil-btn" title="Bewerken">✎</button>
-          <button onclick="handleDeleteTrip('${trip.id}', '${escapeHtml(trip.name).replace(/'/g, "\\'")}')" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px">✕</button>
+          <button onclick="handleDeleteTrip('${trip.id}', '${escapeHtml(trip.name).replace(/'/g, "\\'")}')" class="edit-only" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px">✕</button>
         </div>
       </div>
     </div>`;
@@ -471,4 +480,125 @@ function setLanguage(chipEl, lang) {
   const labels = { nl: 'Nederlands', en: 'English', de: 'Deutsch' };
   showToast('Taal voor AI-suggesties: ' + labels[lang]);
   saveSettingsToStorage();
+}
+
+// ── Deel-links beheren (Fase G) ─────────────────────────────
+// De PIN wordt alleen in-memory onthouden (niet localStorage) — elke
+// keer dat je dit scherm opent na een herlaad moet je 'm opnieuw
+// intikken. Alle daadwerkelijke controle gebeurt server-side
+// (api/create-share.js e.d.); dit scherm is puur een UI eromheen.
+let ownerPinCache = null;
+
+function openShareLinksSheet() {
+  const gate = document.getElementById('share-links-pin-gate');
+  const content = document.getElementById('share-links-content');
+  document.getElementById('share-links-pin-input').value = '';
+  document.getElementById('share-links-pin-error').style.display = 'none';
+  if (ownerPinCache) {
+    gate.style.display = 'none';
+    content.style.display = 'block';
+    populateShareTripSelect();
+    loadShareLinksList();
+  } else {
+    gate.style.display = 'block';
+    content.style.display = 'none';
+  }
+  openSheet('sheet-share-links');
+}
+
+async function unlockShareLinksSheet() {
+  const pin = document.getElementById('share-links-pin-input').value.trim();
+  if (!pin) return;
+  try {
+    await callShareApi('/api/list-shares', { pin });
+    ownerPinCache = pin;
+    document.getElementById('share-links-pin-gate').style.display = 'none';
+    document.getElementById('share-links-content').style.display = 'block';
+    populateShareTripSelect();
+    loadShareLinksList();
+  } catch (err) {
+    document.getElementById('share-links-pin-error').style.display = 'block';
+  }
+}
+
+function populateShareTripSelect() {
+  const select = document.getElementById('share-links-trip-select');
+  const options = ['<option value="">Alle reizen</option>']
+    .concat(AppState.trips.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`));
+  select.innerHTML = options.join('');
+}
+
+async function loadShareLinksList() {
+  const listEl = document.getElementById('share-links-list');
+  try {
+    const data = await callShareApi('/api/list-shares', { pin: ownerPinCache });
+    renderShareLinksList(data.shares || []);
+  } catch (err) {
+    listEl.innerHTML = `<p class="mono" style="padding:14px 16px;color:#dc2626">Laden mislukt: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderShareLinksList(shares) {
+  const listEl = document.getElementById('share-links-list');
+  if (shares.length === 0) {
+    listEl.innerHTML = `<p class="mono" style="padding:14px 16px">Nog geen deel-links.</p>`;
+    return;
+  }
+  listEl.innerHTML = shares.map((s, i) => {
+    const trip = s.tripId ? AppState.trips.find(t => t.id === s.tripId) : null;
+    const scopeLabel = s.scope === 'edit' ? 'Bewerken' : 'Bekijken';
+    const tripLabel = s.tripId ? (trip ? trip.name : 'onbekende reis') : 'Alle reizen';
+    const url = `${window.location.origin}${window.location.pathname}?share=${s.shareId}`;
+    return `
+      <div class="card-row" style="cursor:default;${i === shares.length - 1 ? 'border-bottom:none' : ''};align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <p class="row-title">${escapeHtml(s.label) || tripLabel}</p>
+          <p class="mono" style="margin-top:2px">${scopeLabel} · ${tripLabel}${s.revoked ? ' · ingetrokken' : ''}</p>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          ${s.revoked
+            ? `<button onclick="handleRevokeShareLink('${s.shareId}', false)" style="padding:6px 11px;background:none;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Heractiveer</button>`
+            : `<button onclick="handleCopyShareLink('${url}')" style="padding:6px 11px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:10.5px;font-weight:700;text-transform:uppercase">Kopieer</button>
+               <button onclick="handleRevokeShareLink('${s.shareId}', true)" style="padding:6px 11px;background:none;border:1.5px solid #dc2626;border-radius:20px;cursor:pointer;font-size:10.5px;font-weight:700;text-transform:uppercase;color:#dc2626">Intrek</button>`}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function handleCreateShareLink() {
+  const label = document.getElementById('share-links-label-input').value.trim();
+  const scope = document.getElementById('share-links-scope-select').value;
+  const tripId = document.getElementById('share-links-trip-select').value || null;
+  try {
+    const data = await callShareApi('/api/create-share', { pin: ownerPinCache, scope, tripId, label });
+    document.getElementById('share-links-label-input').value = '';
+    await loadShareLinksList();
+    handleCopyShareLink(data.url);
+  } catch (err) {
+    showToast('Aanmaken mislukt: ' + err.message);
+  }
+}
+
+async function handleRevokeShareLink(shareId, revoked) {
+  try {
+    await callShareApi('/api/revoke-share', { pin: ownerPinCache, shareId, revoked });
+    showToast(revoked ? '✓ Link ingetrokken' : '✓ Link heractiveerd');
+    loadShareLinksList();
+  } catch (err) {
+    showToast('Bijwerken mislukt: ' + err.message);
+  }
+}
+
+function handleCopyShareLink(url) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast('✓ Link gekopieerd'));
+  } else {
+    const el = document.createElement('textarea');
+    el.value = url;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('✓ Link gekopieerd');
+  }
 }

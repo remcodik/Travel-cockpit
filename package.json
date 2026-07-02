@@ -1,0 +1,9 @@
+{
+  "name": "travel-cockpit",
+  "private": true,
+  "type": "module",
+  "description": "Serverless API-functies voor Travel Cockpit (Vercel) — vanilla frontend heeft geen build-stap.",
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

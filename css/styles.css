@@ -116,6 +116,12 @@ button { font-family: inherit; }
 }
 .edit-pencil-btn:active { background: var(--slope-light); color: var(--spruce); }
 
+/* Deel-links met view-only-rechten (Fase G): verbergt alle
+   bewerk/toevoeg/verwijder-knoppen. Puur UI — de echte afdwinging zit in
+   firestore.rules, zie docs/10-issues/07-deel-links-permissies-plan.md. */
+body.read-only-mode .edit-only,
+body.read-only-mode .edit-pencil-btn { display: none !important; }
+
 /* ── 7. Hero panels ─────────────────────────────────────── */
 .hero-panel {
   border-radius: 18px; position: relative; overflow: hidden;

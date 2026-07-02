@@ -1,7 +1,7 @@
 # Deel-links met view/edit-rechten — architectuurplan
 
 **Document ID:** TC-ISSUES-007
-**Status:** Plan klaar, wacht op akkoord vóór bouw
+**Status:** Route A gebouwd (code klaar, nog niet actief). Wacht op de handmatige setup hieronder + jouw akkoord vóór de nieuwe `firestore.rules` gepubliceerd worden — tot die tijd verandert er niets aan hoe de app vandaag werkt.
 **Bron:** Verzoek 5 uit `docs/10-issues/06-vijf-nieuwe-verzoeken.md`
 
 ---
@@ -52,16 +52,35 @@ Dat "ergens" kan op twee manieren:
 - **Een gelekte deel-link geeft nog steeds toegang tot het bijbehorende niveau, totdat hij herroepen wordt** — dat is inherent aan "link = toegang" (net als een Google Docs-deelinkje). Verbetering t.o.v. nu: dit kan tenminste per link herroepen worden; nu kan dat helemaal niet.
 - **Omvang:** dit is realistisch de grootste losse ingreep van het hele traject tot nu toe — groter dan Fase B (de multi-trip-migratie). Verdient een eigen sessie, niet een instapje naast andere werk.
 
-## Voorstel voor volgorde, als je akkoord gaat
+## Wat er nu al gebouwd is (code, nog niet actief)
 
-1. Firebase Anonymous Authentication aanzetten (jouw actie in de Console).
-2. Eigenaar-PIN + `/api/owner-login` + jouw eigen toestel eenmalig laten inloggen.
-3. `shares`-collectie + `/api/create-share` + `/api/redeem-share`.
-4. Firestore-rules herschrijven, eerst getest in de Emulator Suite.
-5. Een klein "Deel-links beheren"-schermpje (in Instellingen/Meer) om links aan te maken/te herroepen, met de vier vaste combinaties als knoppen (1 reis bekijken / 1 reis bewerken / alle reizen bekijken / alle reizen bewerken).
+| Onderdeel | Bestand |
+|---|---|
+| Firebase Admin-init + PIN-check | `api/_lib/firebaseAdmin.js` |
+| Eigenaar-login (PIN → custom token) | `api/owner-login.js` |
+| Deel-link aanmaken (PIN-gated) | `api/create-share.js` |
+| Deel-links opvragen (PIN-gated) | `api/list-shares.js` |
+| Deel-link intrekken/heractiveren (PIN-gated) | `api/revoke-share.js` |
+| Deel-link inwisselen (publiek, alleen de shareId zelf is het geheim) | `api/redeem-share.js` |
+| Client-auth (owner-login, `?share=`-redemption) | `js/firebase.js` — `initAuthFlow()`, `signInAsOwner()`, `redeemShareLink()` |
+| View-only + single-trip-lock in de UI | `.edit-only`/`.edit-pencil-btn` verbergen via `body.read-only-mode` (`css/styles.css`), `isTripLocked()` in `renderTripsScreen()` |
+| "Deel-links beheren"-scherm | Instellingen → Delen, `sheet-share-links` in `index.html`, logica in `js/screen-tickets.js` |
+| Herschreven `firestore.rules` | Candidate-versie klaar, **nog niet gepubliceerd** |
 
----
+Belangrijk: zolang de oude `firestore.rules` (met `allow read: if true`) actief blijft in de Firebase Console, verandert er voor jou **niets** — de app werkt exact zoals nu. Deel-links kun je al aanmaken, maar ze geven pas écht afgedwongen rechten zodra de nieuwe rules gepubliceerd zijn.
 
-## Vraag
+## Setup-checklist — in deze volgorde, elke stap eerst verifiëren
 
-Wil je dat ik dit nu daadwerkelijk ga bouwen (dan begin ik bij stap 1-2 hierboven, met bevestiging per stap gezien de gevoeligheid), of blijft dit voorlopig alleen dit plan totdat je er klaar voor bent?
+1. **Firebase Anonymous Authentication aanzetten.** Firebase Console → jouw project → Authentication → Sign-in method → "Anonymous" → inschakelen.
+2. **Service-account-sleutel genereren.** Firebase Console → ⚙️ Projectinstellingen → Service accounts → "Genereer nieuwe privésleutel" (downloadt een JSON-bestand). Base64-encodeer de hele inhoud (bv. `base64 -i sleutel.json | pbcopy` op macOS) en zet dat als Vercel-omgevingsvariabele `FIREBASE_SERVICE_ACCOUNT_KEY` (Vercel-project → Settings → Environment Variables). **Bewaar dit JSON-bestand ook zelf ergens veilig** — net als bij de Open Charge Map-sleutel (G3) kan een verkeerd geplakte waarde niet worden teruggelezen, alleen overschreven.
+3. **Eigenaar-PIN kiezen.** Verzin zelf een code (geen verjaardag/simpel patroon) en zet 'm als Vercel-omgevingsvariabele `OWNER_PIN`.
+4. **Herdeployen** zodat Vercel de nieuwe environment variables + `package.json`-dependency (`firebase-admin`) meeneemt.
+5. **Zelf inloggen testen** — vóórdat je iets aan de rules verandert: open de app, ga naar Instellingen → Delen → "Deel-links beheren", voer je PIN in. Lukt dit? Dan werkt de hele keten (Vercel env vars, service-account, Firebase Auth) al, terwijl de data nog steeds voor iedereen leesbaar is zoals vandaag.
+6. **Een deel-link aanmaken en zelf testen** (in een incognito-venster, zodat je niet je eigen ingelogde sessie gebruikt) — open de link, bevestig dat de juiste reis/rechten van toepassing lijken (de UI verbergt bewerk-knoppen bij "Alleen bekijken"). De data zelf is op dit punt nog niet echt afgeschermd — dat is exact de volgende stap.
+7. **Pas ná stap 5 en 6 succesvol:** de nieuwe `firestore.rules` publiceren (Firebase Console → Firestore Database → Rules → plak de inhoud van dit bestand → Publiceren). Vanaf dit moment is de toegang écht afgedwongen — test meteen daarna nogmaals dat jouw eigen (ingelogde) sessie nog gewoon alles kan zien en bewerken.
+
+## Bekende beperkingen van wat er nu gebouwd is
+
+- **View-only in de UI is best-effort, niet uitputtend getest op elke knop.** De belangrijkste bewerk/toevoeg/verwijder-knoppen zijn verborgen (`class="edit-only"`), maar dit is met de hand langsgelopen, niet systematisch elk scherm. De échte bescherming zit in de Firestore-rules (stap 7) — een gemiste knop in de UI kan dan nooit meer dan een mislukte, geweigerde schrijfpoging opleveren, geen echte datawijziging.
+- **Geen wachtwoord-reset-mechanisme voor de eigenaar-PIN** — vergeet je 'm, dan moet je een nieuwe kiezen via de Vercel-omgevingsvariabele (geen probleem, maar geen "wachtwoord vergeten"-flow).
+- **Deel-links verlopen niet automatisch** — ze blijven geldig totdat je ze zelf intrekt. Geen ingebouwde vervaldatum in deze eerste versie.

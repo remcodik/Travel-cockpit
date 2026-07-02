@@ -91,7 +91,7 @@ function renderAccommodationScreen(accId) {
         </button>
         <div style="display:flex;flex-direction:column;gap:6px;justify-content:center">
           <button onclick="openEditAccommodationSheet('${a.id}')" class="edit-pencil-btn" title="Bewerken">✎</button>
-          <button onclick="openDeleteAccommodationSheet('${a.id}')" style="width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;background:var(--paper-warm);color:#dc2626;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Verwijderen">✕</button>
+          <button onclick="openDeleteAccommodationSheet('${a.id}')" class="edit-only" style="width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;background:var(--paper-warm);color:#dc2626;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Verwijderen">✕</button>
         </div>
       </div>`;
   }).join('');
