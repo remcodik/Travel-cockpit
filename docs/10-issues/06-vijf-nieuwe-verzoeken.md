@@ -1,7 +1,7 @@
 # Vijf nieuwe verzoeken — analyse en plan
 
 **Document ID:** TC-ISSUES-006
-**Status:** (a) label-bug gefixt. Rest: analyse klaar, wacht op keuzes.
+**Status:** Afgerond. (1) short-label-bug gefixt. (2) Google Maps-linkherkenning gebouwd + best-effort adres uit boekingslinks (`api/extract-listing.js`). (3) Reis handmatig deactiveren gebouwd (`handleDeactivateTrip()`). (4) Icoon: gebruiker leverde uiteindelijk zelf een kant-en-klaar Europa-icoon aan (met pin op Nederland), ingebakken randlijn verwijderd. (5) Deel-links met view/edit-rechten: apart plan geschreven (`docs/10-issues/07-deel-links-permissies-plan.md`), nog niet gebouwd — wacht op akkoord.
 **Bron:** Live gebruikersverzoek, vijf punten in één bericht.
 
 ---
