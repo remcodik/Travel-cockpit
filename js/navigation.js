@@ -55,6 +55,7 @@ function navigateTo(screenId) {
     tickets: renderTicketsScreen,
     trips: renderTripsScreen,
     settings: renderSettingsScreen,
+    notes: renderNotesScreen,
   };
   if (renderers[screenId]) {
     try {
