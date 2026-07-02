@@ -178,22 +178,51 @@ function extractPlaceNameFromMapsUrl(url) {
   catch { return null; }
 }
 
-function handleExtractFromMapsLink() {
+function fillExtractedLocation(coords, name, address) {
+  if (coords) {
+    document.getElementById('edit-acc-lat-input').value = coords.lat;
+    document.getElementById('edit-acc-lng-input').value = coords.lng;
+  }
+  const addressEl = document.getElementById('edit-acc-address-input');
+  if (!addressEl.value.trim() && (address || name)) addressEl.value = address || name;
+  const nameEl = document.getElementById('edit-acc-name-input');
+  if (!nameEl.value.trim() && name) nameEl.value = name;
+}
+
+async function handleExtractFromMapsLink() {
   const url = document.getElementById('edit-acc-url-input').value.trim();
-  if (!url) { showToast('Plak eerst een Google Maps-link in het linkveld'); return; }
+  if (!url) { showToast('Plak eerst een link in het linkveld'); return; }
+
   const coords = extractLatLngFromMapsUrl(url);
-  if (!coords) {
-    showToast(url.includes('goo.gl') || url.includes('app.goo.gl')
-      ? 'Verkorte Maps-link — open de link eerst in de browser en kopieer de volledige link'
-      : 'Geen coördinaten gevonden in deze link');
+  if (coords) {
+    fillExtractedLocation(coords, extractPlaceNameFromMapsUrl(url), null);
+    showToast('✓ Locatie overgenomen uit link');
     return;
   }
-  document.getElementById('edit-acc-lat-input').value = coords.lat;
-  document.getElementById('edit-acc-lng-input').value = coords.lng;
-  const addressEl = document.getElementById('edit-acc-address-input');
-  const placeName = extractPlaceNameFromMapsUrl(url);
-  if (placeName && !addressEl.value.trim()) addressEl.value = placeName;
-  showToast('✓ Locatie overgenomen uit link');
+  if (url.includes('goo.gl')) {
+    showToast('Verkorte Maps-link — open de link eerst in de browser en kopieer de volledige link');
+    return;
+  }
+
+  // Geen Google Maps-link: best-effort proberen via de boekingspagina zelf
+  // (JSON-LD/og-tags, zie api/extract-listing.js). Lukt dit niet, dan
+  // blijven de velden gewoon leeg voor handmatige invoer — geen gok.
+  showToast('Bezig met ophalen…', 4000);
+  try {
+    const resp = await fetch(`/api/extract-listing?url=${encodeURIComponent(url)}`);
+    const data = await resp.json();
+    if (data && data.found) {
+      fillExtractedLocation(
+        data.lat != null && data.lng != null ? { lat: data.lat, lng: data.lng } : null,
+        data.name, data.address
+      );
+      showToast('✓ Gegevens overgenomen uit link');
+    } else {
+      showToast('Geen gegevens gevonden in deze link — vul handmatig aan');
+    }
+  } catch {
+    showToast('Geen gegevens gevonden in deze link — vul handmatig aan');
+  }
 }
 
 function readAccommodationFormFields() {
