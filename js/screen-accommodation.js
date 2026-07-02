@@ -57,6 +57,18 @@ function renderAccommodationScreen(accId) {
 
   document.getElementById('acc-notes').textContent = acc.notes;
 
+  // Notitie-knop voor dit verblijf (apart van de beschrijving in acc.notes)
+  const accNoteBtn = document.getElementById('acc-note-btn');
+  if (accNoteBtn) {
+    accNoteBtn.onclick = () => openNoteScreen('accommodation', acc.id, acc.name);
+    // Laad preview asynchroon
+    dbLoadNote('accommodation', acc.id).then(text => {
+      accNoteBtn.style.color = text ? 'var(--spruce)' : 'var(--ink-faint)';
+      accNoteBtn.style.borderColor = text ? 'var(--spruce)' : 'var(--line)';
+      accNoteBtn.title = text ? 'Notitie bewerken' : 'Notitie toevoegen';
+    });
+  }
+
   // Alle verblijven (tijdlijn) — met bewerken/verwijderen per rij (Fase E)
   document.getElementById('acc-stops').innerHTML = ACCOMMODATIONS.map((a, i) => {
     const n = Math.round((a.checkOut - a.checkIn) / 86400000);
