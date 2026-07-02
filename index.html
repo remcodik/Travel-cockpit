@@ -416,11 +416,15 @@
       <button id="lang-chip-de" onclick="setLanguage(this,'de')" class="chip">🇩🇪 Deutsch</button>
     </div>
     <span class="eyebrow" style="display:block;margin-bottom:9px">App info</span>
-    <div class="card" style="margin-bottom:24px;overflow:hidden">
+    <div class="card" style="margin-bottom:20px;overflow:hidden">
       <div class="card-row" style="cursor:default"><span style="flex:1;font-weight:600;font-size:14px">Versie</span><span class="mono">v6.0</span></div>
       <div class="card-row" style="cursor:default"><span style="flex:1;font-weight:600;font-size:14px">Kaart</span><span class="mono">OpenStreetMap</span></div>
       <div class="card-row" style="cursor:default"><span style="flex:1;font-weight:600;font-size:14px">Weer</span><span class="mono">Open-Meteo</span></div>
       <div class="card-row" style="cursor:default"><span style="flex:1;font-weight:600;font-size:14px">AI</span><span class="mono">Claude</span></div>
+    </div>
+    <span class="eyebrow" style="display:block;margin-bottom:9px">Backup</span>
+    <div class="card" style="margin-bottom:24px;overflow:hidden">
+      <div class="card-row" onclick="handleExportAllTrips()"><div class="icon-box" style="background:var(--slope-light)">⬇</div><div style="flex:1"><p class="row-title">Exporteer alle reisdata</p><p class="row-sub">Alle reizen als één JSON-bestand</p></div><span class="chevron">›</span></div>
     </div>
   </div>
 </div>
@@ -681,6 +685,7 @@
 <script src="js/screen-accommodation.js"></script>
 <script src="js/screen-roadtrip.js"></script>
 <script src="js/screen-tickets.js"></script>
+<script src="js/export.js"></script>
 <script>
   // FIX: fouten zichtbaar maken op het toestel zelf — console.error alleen
   // was onzichtbaar op een telefoon. Vangt ook fouten in async code (bv.

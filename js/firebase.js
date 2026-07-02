@@ -349,6 +349,36 @@ async function dbDeleteTripMeta(tripIdToDelete) {
   }
 }
 
+// Alleen voor export (N6) — laadt activiteiten/tickets van een
+// willekeurige reis, i.p.v. tripRef()'s vaste "huidige reis". Wisselt
+// bewust niets in de actieve app-state.
+async function dbLoadActivitiesForTrip(forTripId) {
+  const ref = db && db.collection('trips').doc(forTripId).collection('activities');
+  if (!ref) return [];
+  try {
+    const snap = await ref.get();
+    return snap.docs.map(doc => {
+      const d = doc.data();
+      return { ...d, id: doc.id };
+    });
+  } catch (err) {
+    console.error('Activiteiten laden voor export mislukt:', err);
+    return [];
+  }
+}
+
+async function dbLoadTicketsForTrip(forTripId) {
+  const ref = db && db.collection('trips').doc(forTripId).collection('tickets');
+  if (!ref) return [];
+  try {
+    const snap = await ref.get();
+    return snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+  } catch (err) {
+    console.error('Tickets laden voor export mislukt:', err);
+    return [];
+  }
+}
+
 // ── Accommodaties (per reis, onder trips/{tripId}/accommodations) ──
 async function dbLoadAccommodations(forTripId) {
   const ref = db && db.collection('trips').doc(forTripId).collection('accommodations');
