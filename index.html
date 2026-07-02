@@ -252,7 +252,12 @@
   <div class="scroll">
     <div class="px" style="padding-top:16px;display:flex;flex-direction:column;gap:13px">
       <div class="card" id="acc-info" style="overflow:hidden"></div>
-      <div style="padding:13px 15px;background:var(--slope-light);border-left:3px solid var(--slope);border-radius:0 12px 12px 0;font-size:13px;line-height:1.65;color:var(--spruce)" id="acc-notes"></div>
+      <div style="position:relative">
+        <div style="padding:13px 15px;background:var(--slope-light);border-left:3px solid var(--slope);border-radius:0 12px 12px 0;font-size:13px;line-height:1.65;color:var(--spruce)" id="acc-notes"></div>
+        <button id="acc-note-btn"
+          style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:8px;border:1.5px solid var(--line);background:white;cursor:pointer;font-size:12px;color:var(--ink-faint);display:flex;align-items:center;justify-content:center"
+          title="Notitie toevoegen">✎</button>
+      </div>
       <span class="eyebrow">Vanaf hier</span>
       <div class="card">
         <div class="card-row" onclick="navigateTo('planning')"><div class="icon-box" style="background:var(--slope-light)">▲</div><span style="flex:1" class="row-title">Geplande activiteiten</span><span class="chevron">›</span></div>
@@ -654,6 +659,28 @@
   </div>
 </div>
 
+
+<!-- ═══════════ NOTITIES ═══════════ -->
+<div id="screen-notes" class="screen" style="padding-bottom:0">
+  <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center;gap:11px">
+    <button onclick="saveNoteAndGoBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer">‹</button>
+    <div style="flex:1;min-width:0">
+      <p class="eyebrow" id="note-back-label">Terug</p>
+      <p class="row-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="note-screen-title">Notitie</p>
+    </div>
+    <span id="note-saved-indicator" class="mono" style="font-size:11px;color:var(--slope);flex-shrink:0"></span>
+    <button onclick="saveCurrentNote()" style="padding:6px 14px;background:var(--spruce);color:white;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;flex-shrink:0">Opslaan</button>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;padding:16px">
+    <textarea id="note-textarea"
+      oninput="handleNoteInput()"
+      placeholder="Schrijf hier je notitie…"
+      style="flex:1;width:100%;border:1.5px solid var(--line);border-radius:14px;padding:16px;font-size:16px;font-family:inherit;line-height:1.65;resize:none;background:var(--white);color:var(--ink);outline:none;min-height:300px"
+    ></textarea>
+    <p class="mono" style="margin-top:10px;color:var(--ink-faint);font-size:10px;text-align:center">Automatisch opgeslagen · gedeeld met reisgenoten</p>
+  </div>
+</div>
+
 <nav class="bottom-nav">
   <button onclick="navigateTo('home')" id="nav-home" class="active">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>Vandaag
@@ -703,6 +730,7 @@
 <script src="js/screen-accommodation.js"></script>
 <script src="js/screen-roadtrip.js"></script>
 <script src="js/screen-tickets.js"></script>
+<script src="js/notes.js"></script>
 <script src="js/export.js"></script>
 <script>
   // FIX: fouten zichtbaar maken op het toestel zelf — console.error alleen
