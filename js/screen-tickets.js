@@ -270,9 +270,33 @@ async function handleDeleteTrip(tripId, name) {
     return;
   }
   window._deleteTripConfirm = null;
-  await deleteTrip(tripId);
+  const wasActive = await deleteTrip(tripId);
   showToast(`🗑 ${name} verwijderd`);
   renderTripsScreen();
+  // FIX (Fase F): geen stille auto-switch meer — als de actieve reis
+  // net verwijderd is, kies je zelf welke reis nu actief wordt.
+  if (wasActive && AppState.trips.length > 0) {
+    openPickActiveTripSheet();
+  }
+}
+
+// ── Kiezen welke reis actief wordt na het verwijderen van de
+// actieve reis (Fase F) ─────────────────────────────────────
+function openPickActiveTripSheet() {
+  const listEl = document.getElementById('pick-active-trip-list');
+  if (!listEl) return;
+  listEl.innerHTML = AppState.trips.map(t => `
+    <button onclick="handlePickActiveTrip('${t.id}')" class="card-row" style="width:100%;background:none;border:none;cursor:pointer;text-align:left">
+      <span style="font-size:24px">${t.countryFlag || '🌍'}</span>
+      <div style="flex:1;min-width:0"><p class="row-title">${escapeHtml(t.name)}</p></div>
+      <span class="chevron">›</span>
+    </button>`).join('');
+  openSheet('sheet-pick-active-trip');
+}
+
+async function handlePickActiveTrip(tripId) {
+  closeSheet('sheet-pick-active-trip');
+  await switchToTrip(tripId);
 }
 
 let pendingNewAccommodations = [];

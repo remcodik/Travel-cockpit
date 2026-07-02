@@ -193,8 +193,11 @@ function applyTripData(trip, accommodations) {
   TRIP_END.setTime(trip.endDate.getTime());
 
   ACCOMMODATIONS.length = 0;
+  // Sorteert op check-in datum i.p.v. het (onbetrouwbare, vaak
+  // ontbrekende) order-veld — zie de FIX-toelichting bij
+  // dbLoadAccommodations() in js/firebase.js.
   snapshot
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .sort((a, b) => new Date(a.checkIn) - new Date(b.checkIn))
     .forEach(acc => ACCOMMODATIONS.push({
       ...acc,
       checkIn: new Date(acc.checkIn),
@@ -247,13 +250,48 @@ async function updateTripMeta(tripId, changes) {
   return trip;
 }
 
+// FIX (Fase F): schakelde voorheen stil naar trips[0] (geen vaste
+// volgorde) als de actieve reis verweesd werd — dat kon aanvoelen als
+// "er werd zomaar een andere reis geactiveerd". Reis-activering moet
+// altijd een expliciete keuze zijn; de aanroeper (handleDeleteTrip)
+// laat de gebruiker nu zelf kiezen welke reis actief wordt.
 async function deleteTrip(tripId) {
   const wasActive = AppState.trips.find(t => t.id === tripId)?.isActive;
   await dbDeleteTripMeta(tripId);
   AppState.trips = AppState.trips.filter(t => t.id !== tripId);
-  if (wasActive && AppState.trips.length > 0) {
-    await switchToTrip(AppState.trips[0].id);
-  }
+  return wasActive;
+}
+
+// ── Verblijf toevoegen aan een bestaande reis (Fase F) ─────
+// Zelfde velden als het bewerkformulier; short/color/elevation krijgen
+// dezelfde defaults als bij het aanmaken van een gloednieuwe reis
+// (saveTrip() in js/screen-tickets.js) voor visuele consistentie.
+async function createAccommodationForTrip(fields) {
+  const id = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : `acc-${Date.now()}-${Math.random()}`;
+  const acc = {
+    id,
+    name: fields.name,
+    address: fields.address,
+    checkIn: fields.checkIn,
+    checkOut: fields.checkOut,
+    lat: fields.lat,
+    lng: fields.lng,
+    coord: fields.coord,
+    url: fields.url,
+    notes: fields.notes,
+    short: (fields.name || 'Vbl').slice(0, 3),
+    color: '#5B8C7B',
+    elevation: 0,
+    phone: null,
+  };
+  ACCOMMODATIONS.push(acc);
+  await dbSaveAccommodation(getCurrentTripId(), {
+    ...acc,
+    checkIn: acc.checkIn.toISOString(),
+    checkOut: acc.checkOut.toISOString(),
+  });
+  await recalculateTripDates();
+  return acc;
 }
 
 // ── Verblijf bewerken/verwijderen (Fase E) ─────────────────
