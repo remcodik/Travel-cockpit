@@ -155,6 +155,47 @@ function openAddAccommodationSheet() {
   openSheet('sheet-edit-accommodation');
 }
 
+// ── Locatie uit een Google Maps-link halen ──────────────────
+// Werkt alleen met "volledige" Maps-URL's die coördinaten in de URL zelf
+// bevatten (bv. .../@60.123,10.456,15z of ?q=60.123,10.456). Verkorte
+// links (maps.app.goo.gl/...) bevatten geen coördinaten totdat ze door de
+// browser bezocht worden — dat kan hier niet client-side opgelost worden.
+function extractLatLngFromMapsUrl(url) {
+  if (!url) return null;
+  const atMatch = url.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+  const qMatch = url.match(/[?&]q=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
+  const llMatch = url.match(/[?&]ll=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if (llMatch) return { lat: parseFloat(llMatch[1]), lng: parseFloat(llMatch[2]) };
+  return null;
+}
+
+function extractPlaceNameFromMapsUrl(url) {
+  const placeMatch = url && url.match(/\/maps\/place\/([^/@]+)/);
+  if (!placeMatch) return null;
+  try { return decodeURIComponent(placeMatch[1].replace(/\+/g, ' ')); }
+  catch { return null; }
+}
+
+function handleExtractFromMapsLink() {
+  const url = document.getElementById('edit-acc-url-input').value.trim();
+  if (!url) { showToast('Plak eerst een Google Maps-link in het linkveld'); return; }
+  const coords = extractLatLngFromMapsUrl(url);
+  if (!coords) {
+    showToast(url.includes('goo.gl') || url.includes('app.goo.gl')
+      ? 'Verkorte Maps-link — open de link eerst in de browser en kopieer de volledige link'
+      : 'Geen coördinaten gevonden in deze link');
+    return;
+  }
+  document.getElementById('edit-acc-lat-input').value = coords.lat;
+  document.getElementById('edit-acc-lng-input').value = coords.lng;
+  const addressEl = document.getElementById('edit-acc-address-input');
+  const placeName = extractPlaceNameFromMapsUrl(url);
+  if (placeName && !addressEl.value.trim()) addressEl.value = placeName;
+  showToast('✓ Locatie overgenomen uit link');
+}
+
 function readAccommodationFormFields() {
   const name = document.getElementById('edit-acc-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return null; }
@@ -165,6 +206,7 @@ function readAccommodationFormFields() {
   const lng = parseFloat(document.getElementById('edit-acc-lng-input').value) || 0;
   return {
     name,
+    short: name.slice(0, 3),
     address: document.getElementById('edit-acc-address-input').value.trim(),
     checkIn: new Date(checkInStr),
     checkOut: new Date(checkOutStr),
