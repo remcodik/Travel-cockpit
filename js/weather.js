@@ -170,6 +170,28 @@ async function fillRoadtripWeather(lat, lng, date) {
   condEl.textContent = `${weather.condition} · ${weather.rainProbability}% regen`;
 }
 
+// Vult een meerdaagse weerstrip (N8) — hergebruikt dezelfde 16-daagse
+// forecast die al wordt opgehaald, dus geen extra API-aanroepen nodig.
+async function fillWeatherStrip(containerId, lat, lng, days = 5) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const today = getToday();
+  const items = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    const weather = await getWeatherForDate(lat, lng, d);
+    items.push({ date: d, weather });
+  }
+
+  container.innerHTML = items.map(({ date, weather }, i) => `
+    <div style="flex:1;min-width:52px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;background:rgba(232,228,217,0.08);border-radius:10px">
+      <span class="mono" style="color:rgba(232,228,217,0.5);font-size:9px;font-weight:700;text-transform:uppercase">${i === 0 ? 'Vandaag' : WEEKDAYS[date.getDay()]}</span>
+      <span style="font-size:19px">${weather ? weather.emoji : '—'}</span>
+      <span class="mono" style="color:white;font-size:11px;font-weight:700">${weather ? `${weather.temperatureMax ?? weather.temperature}°` : '—'}</span>
+    </div>`).join('');
+}
+
 // DIAGNOSE: toont nu de ECHTE foutmelding (lastWeatherError) ipv
 // de generieke "Kon weer niet ophalen" — tijdelijk, om het probleem
 // te vinden. Wordt teruggedraaid naar een vriendelijke tekst zodra

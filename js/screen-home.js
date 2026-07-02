@@ -126,10 +126,24 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-function handleToggleActivity(id) {
-  const act = toggleActivityStatus(id);
+async function handleToggleActivity(id) {
+  // FIX: ontbrekende await zorgde ervoor dat `act` hier altijd een
+  // (altijd truthy) Promise was i.p.v. de activiteit — de toast toonde
+  // daardoor altijd "Heropend", ook bij het afvinken.
+  const act = await toggleActivityStatus(id);
   if (!act) return;
-  showToast(act.status === 'done' ? '✓ Voltooid' : 'Heropend');
+  if (act.status === 'done') {
+    // N3: na afvinken, met locatie bekend, meteen kunnen doorspringen
+    // naar Discover met déze plek als basis i.p.v. het verblijf.
+    const hasLocation = act.lat && act.lng;
+    showToast(
+      hasLocation ? '✓ Voltooid — iets zoeken in de buurt?' : '✓ Voltooid',
+      hasLocation ? 4500 : 2400,
+      hasLocation ? () => openDiscoverNearActivity(act) : null
+    );
+  } else {
+    showToast('Heropend');
+  }
   renderHomeScreen();
   if (document.getElementById('screen-planning').classList.contains('active')) renderPlanningScreen();
   if (document.getElementById('screen-roadtrip').classList.contains('active')) renderRoadtripScreen();

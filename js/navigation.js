@@ -8,11 +8,15 @@ let navigationStack = ['home'];
 let toastTimer = null;
 // DIAGNOSE: duration optioneel zodat foutmeldingen langer blijven
 // staan en je ze kunt lezen voordat ze verdwijnen.
-function showToast(message, duration) {
+// onAction (optioneel, N3): maakt de toast zelf tikbaar, voor korte
+// vervolgacties zoals "iets zoeken in de buurt?" na het afvinken.
+function showToast(message, duration, onAction) {
   const el = document.getElementById('toast');
   if (!el) return;
-  el.textContent = message;
+  el.textContent = onAction ? `${message}  ›` : message;
   el.classList.add('show');
+  el.style.cursor = onAction ? 'pointer' : '';
+  el.onclick = onAction ? () => { el.classList.remove('show'); onAction(); } : null;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), duration || 2400);
 }

@@ -7,10 +7,37 @@
 // ═══════════════════════════════════════════════════════════
 
 let currentSuggestions = [];
+const DISCOVER_SUGGESTIONS_LIMIT = 15; // H4: voorkomt oneindig groeien bij herhaaldelijk verversen
 let currentCategoryFilter = null;
 let isLoadingSuggestions = false;
-let discoverMode = 'accommodation'; // 'accommodation' | 'here'
+let discoverMode = 'accommodation'; // 'accommodation' | 'here' | 'activity'
 let discoverGpsLocation = null; // { lat, lng } als mode = 'here'
+let discoverActivityContext = null; // { lat, lng, name } als mode = 'activity' (N3)
+
+// Eén plek die bepaalt welke locatie Discover als basis gebruikt,
+// ongeacht modus — voorkomt dat elke aanroepplek zijn eigen if/else
+// over discoverMode moet herhalen.
+function getDiscoverBaseLocation(acc) {
+  if (discoverMode === 'here' && discoverGpsLocation) {
+    return { lat: discoverGpsLocation.lat, lng: discoverGpsLocation.lng, label: `Hier · ${discoverGpsLocation.lat.toFixed(3)}°N` };
+  }
+  if (discoverMode === 'activity' && discoverActivityContext) {
+    return { lat: discoverActivityContext.lat, lng: discoverActivityContext.lng, label: `Bij ${discoverActivityContext.name}` };
+  }
+  if (acc) {
+    return { lat: acc.lat, lng: acc.lng, label: `${acc.short} · ${acc.coord}` };
+  }
+  return null;
+}
+
+// N3: springt vanuit een net afgevinkte activiteit naar Discover, met
+// die activiteit (i.p.v. het verblijf) als basis voor nieuwe suggesties.
+function openDiscoverNearActivity(act) {
+  discoverMode = 'activity';
+  discoverActivityContext = { lat: act.lat, lng: act.lng, name: act.name };
+  navigateTo('discover');
+  showToast(`📍 Bij ${act.name} — tik ↻ voor suggesties`);
+}
 
 function renderDiscoverScreen() {
   const acc = getActiveAccommodation();
@@ -34,31 +61,27 @@ function renderDiscoverScreen() {
 function updateDiscoverHeader(acc) {
   const el = document.getElementById('discover-location');
   if (!el) return;
-  const loc = acc ? `${acc.short} · ${acc.coord}` : '—';
-  el.textContent = `… · ${loc}`;
+  const base = getDiscoverBaseLocation(acc);
+  el.textContent = `… · ${base ? base.label : '—'}`;
 
-  // Topografisch patroon volgt de daadwerkelijke locatie (GPS in "Hier"-
-  // modus, anders de accommodatie) i.p.v. altijd hetzelfde vaste patroon.
-  const topoLat = discoverMode === 'here' && discoverGpsLocation ? discoverGpsLocation.lat : (acc ? acc.lat : null);
-  const topoLng = discoverMode === 'here' && discoverGpsLocation ? discoverGpsLocation.lng : (acc ? acc.lng : null);
+  // Topografisch patroon volgt de daadwerkelijke basis-locatie (verblijf,
+  // GPS, of een net afgevinkte activiteit) i.p.v. altijd hetzelfde
+  // decoratieve vaste patroon.
   const topoSvg = document.querySelector('#screen-discover .topo-svg');
-  if (topoSvg && topoLat != null && topoLng != null) {
-    topoSvg.dataset.topo = topoSeedForLocation(topoLat, topoLng, acc ? acc.elevation : undefined);
+  if (topoSvg && base) {
+    topoSvg.dataset.topo = topoSeedForLocation(base.lat, base.lng, acc ? acc.elevation : undefined);
     if (acc) topoSvg.dataset.topoElevation = acc.elevation;
     initAllTopoPanels();
   }
 
-  if (acc) {
-    getWeatherForDate(acc.lat, acc.lng, getToday()).then(w => {
+  if (base) {
+    getWeatherForDate(base.lat, base.lng, getToday()).then(w => {
       if (!el) return;
       const tempLabel = w ? (w.isForecast
         ? `${w.temperatureMin}°–${w.temperatureMax}°`
         : `${w.temperature}°`) : '—°';
       const emoji = w ? w.emoji : '';
-      const loc2 = discoverMode === 'here' && discoverGpsLocation
-        ? `Hier · ${discoverGpsLocation.lat.toFixed(3)}°N`
-        : (acc ? `${acc.short} · ${acc.coord}` : '—');
-      el.textContent = `${emoji} ${tempLabel} · ${loc2}`;
+      el.textContent = `${emoji} ${tempLabel} · ${base.label}`;
     });
   }
 }
@@ -118,6 +141,7 @@ function setDiscoverMode(mode, btnEl) {
   } else {
     discoverMode = 'accommodation';
     discoverGpsLocation = null;
+    discoverActivityContext = null;
     updateDiscoverHeader(getActiveAccommodation());
   }
 }
@@ -154,22 +178,24 @@ async function handleLoadMoreSuggestions() {
     return;
   }
 
-  // Bepaal locatie op basis van modus
-  const baseLat = discoverMode === 'here' && discoverGpsLocation
-    ? discoverGpsLocation.lat : acc.lat;
-  const baseLng = discoverMode === 'here' && discoverGpsLocation
-    ? discoverGpsLocation.lng : acc.lng;
+  // Bepaal locatie op basis van modus (verblijf, GPS, of een net
+  // afgevinkte activiteit — N3)
+  const base = getDiscoverBaseLocation(acc);
+  const baseLat = base.lat;
+  const baseLng = base.lng;
 
   const alreadyNamed = AppState.activities.map(a => a.name);
   const liveWeather = await getWeatherForDate(baseLat, baseLng, getToday());
 
   const payload = {
-    accommodationName: discoverMode === 'here'
-      ? `Huidige locatie (${baseLat.toFixed(3)}°N, ${baseLng.toFixed(3)}°E)`
-      : acc.name,
-    accommodationLocation: discoverMode === 'here'
-      ? `${baseLat.toFixed(4)}, ${baseLng.toFixed(4)}`
-      : acc.address,
+    accommodationName: discoverMode === 'accommodation'
+      ? acc.name
+      : discoverMode === 'activity'
+        ? discoverActivityContext.name
+        : `Huidige locatie (${baseLat.toFixed(3)}°N, ${baseLng.toFixed(3)}°E)`,
+    accommodationLocation: discoverMode === 'accommodation'
+      ? acc.address
+      : `${baseLat.toFixed(4)}, ${baseLng.toFixed(4)}`,
     country: 'Noorwegen',
     today: formatShortDate(getToday()),
     temperature: liveWeather ? liveWeather.temperature : 12,
@@ -192,11 +218,16 @@ async function handleLoadMoreSuggestions() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Onbekende fout');
 
+    // FIX (H4): nieuwe suggesties toevoegen i.p.v. de hele lijst vervangen
+    // — anders raakte je suggesties kwijt die je nog niet had bekeken.
+    // Dedupe op naam, en begrens de lijst zodat hij niet oneindig groeit.
     const newSuggestions = (data.suggestions || []).map(s => ({ ...s, accId: acc.id }));
-    currentSuggestions = newSuggestions;
+    const existingNames = new Set(currentSuggestions.map(s => s.name));
+    const uniqueNew = newSuggestions.filter(s => !existingNames.has(s.name));
+    currentSuggestions = [...uniqueNew, ...currentSuggestions].slice(0, DISCOVER_SUGGESTIONS_LIMIT);
     await saveSuggestionsToCache(acc.id, currentSuggestions);
     renderSuggestionList();
-    showToast(`✓ ${newSuggestions.length} nieuwe ideeën`);
+    showToast(`✓ ${uniqueNew.length} nieuwe ideeën`);
   } catch (err) {
     console.error('AI fetch mislukt:', err);
     const cached = await loadCachedSuggestions(acc);
@@ -307,7 +338,7 @@ function renderSuggestionCard(suggestion, acc) {
       </div>
       <div style="flex:1;padding:12px;min-width:0">
         <div class="from-acc-badge" style="background:${acc.color}18;color:${acc.color};display:inline-block;margin-bottom:5px">
-          ${discoverMode === 'here' ? '📍 HIER' : `VANUIT ${acc.short.toUpperCase()}`}
+          ${discoverMode === 'here' ? '📍 HIER' : discoverMode === 'activity' ? `📍 ${escapeHtml((discoverActivityContext.name || '').toUpperCase())}` : `VANUIT ${acc.short.toUpperCase()}`}
         </div>
         <p style="font-weight:800;font-size:15px;letter-spacing:-0.2px">${escapeHtml(suggestion.name)}</p>
         <p style="font-size:12px;color:var(--ink-mid);margin-top:2px;line-height:1.5">${escapeHtml(suggestion.description || '')}</p>
