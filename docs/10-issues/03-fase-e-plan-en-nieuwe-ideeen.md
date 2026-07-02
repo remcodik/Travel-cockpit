@@ -1,7 +1,7 @@
 # Fase E — plan: verblijf/reis/ticket-CRUD + rode-team-bevindingen + nieuwe ideeën
 
 **Document ID:** TC-ISSUES-003
-**Status:** Plan ter bespreking — **niet bouwen voordat de vragen onderaan beantwoord zijn**
+**Status:** Fase E afgerond en gemerged (2026-07-02, PR's #18–#20). N1/N2/N6/N8/H4 staan nog open als snelle vervolgstap, N3/N7 apart te bespreken.
 **Bron:** Red-team code-review van de hele app (backlog `01-testronde-30juni.md` + `02-feedback-01juli.md` + `docs/09-roadmap/01-mvp.md` opnieuw langsgelopen tegen de huidige code) + brainstorm nieuwe functies
 
 ---
