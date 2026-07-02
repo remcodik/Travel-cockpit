@@ -37,6 +37,17 @@ function updateDiscoverHeader(acc) {
   const loc = acc ? `${acc.short} · ${acc.coord}` : '—';
   el.textContent = `… · ${loc}`;
 
+  // Topografisch patroon volgt de daadwerkelijke locatie (GPS in "Hier"-
+  // modus, anders de accommodatie) i.p.v. altijd hetzelfde vaste patroon.
+  const topoLat = discoverMode === 'here' && discoverGpsLocation ? discoverGpsLocation.lat : (acc ? acc.lat : null);
+  const topoLng = discoverMode === 'here' && discoverGpsLocation ? discoverGpsLocation.lng : (acc ? acc.lng : null);
+  const topoSvg = document.querySelector('#screen-discover .topo-svg');
+  if (topoSvg && topoLat != null && topoLng != null) {
+    topoSvg.dataset.topo = topoSeedForLocation(topoLat, topoLng, acc ? acc.elevation : undefined);
+    if (acc) topoSvg.dataset.topoElevation = acc.elevation;
+    initAllTopoPanels();
+  }
+
   if (acc) {
     getWeatherForDate(acc.lat, acc.lng, getToday()).then(w => {
       if (!el) return;
@@ -273,8 +284,7 @@ function renderSuggestionList() {
 function renderSuggestionCard(suggestion, acc) {
   const key = acc.short + '-' + suggestion.name;
   const isAdded = AppState.discoveredAdded.has(key);
-  const categoryEmojis = { activity: '🏔️', restaurant: '🍽️', cafe: '☕', viewpoint: '🌄' };
-  const categoryEmoji = categoryEmojis[suggestion.category] || '📍';
+  const categoryEmoji = CATEGORY_EMOJIS[suggestion.category] || CATEGORY_EMOJIS.default;
   const isWalking = suggestion.category === 'activity';
 
   const durationLabel = suggestion.duration_minutes
@@ -298,7 +308,7 @@ function renderSuggestionCard(suggestion, acc) {
         <p style="font-size:12px;color:var(--ink-mid);margin-top:2px;line-height:1.5">${escapeHtml(suggestion.description || '')}</p>
         ${suggestion.why_recommended ? `<p style="font-size:11px;color:var(--ink-faint);margin-top:4px;line-height:1.4">${escapeHtml(suggestion.why_recommended)}</p>` : ''}
         <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">
-          <button onclick="handleAddSuggestion('${escapeHtml(suggestion.name).replace(/'/g, "\\'")}', '${acc.id}')"
+          <button onclick="handleAddSuggestion('${escapeHtml(suggestion.name).replace(/'/g, "\\'")}', '${acc.id}', '${suggestion.category || ''}')"
             style="padding:6px 14px;background:${isAdded ? 'var(--slope)' : 'var(--spruce)'};color:white;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">
             ${isAdded ? '✓ Gepland' : '+ Plan'}
           </button>
@@ -331,7 +341,7 @@ function openRouteOptionsSheet(name, mapsQuery) {
   openSheet('sheet-route-options');
 }
 
-async function handleAddSuggestion(name, accId) {
+async function handleAddSuggestion(name, accId, category) {
   const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, accId));
   const key = acc.short + '-' + name;
   if (AppState.discoveredAdded.has(key)) {
@@ -339,8 +349,13 @@ async function handleAddSuggestion(name, accId) {
     return;
   }
 
+  // FIX: het categorie-icoon (🏔️/🍽️/☕/🌄) ging verloren zodra een
+  // AI-suggestie werd ingepland — in Planning/Kaart/Vandaag werd alles
+  // een generieke 📍. Nu draagt het icoon mee, consistent met Discover.
+  const emoji = CATEGORY_EMOJIS[category] || CATEGORY_EMOJIS.default;
+
   // Voeg toe zonder datum zodat het als "beschikbaar" verschijnt
-  await addActivity({ name, accId, date: null, emoji: '📍' });
+  await addActivity({ name, accId, date: null, emoji });
   AppState.discoveredAdded.add(key);
   showToast(`✓ "${name}" toegevoegd aan planning`);
   renderSuggestionList(); // herrender met bijgewerkte staat

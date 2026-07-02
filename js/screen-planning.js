@@ -367,11 +367,23 @@ function openAddActivitySheetForCurrentDay() {
   ).join('');
 
   document.getElementById('activity-name-input').value = '';
+  selectedActivityCategory = 'activity';
+  document.querySelectorAll('#activity-category-chips .chip').forEach((c, i) => c.classList.toggle('on', i === 0));
   openSheet('sheet-activity');
 }
 
 function openAddActivitySheet() {
   openAddActivitySheetForCurrentDay();
+}
+
+// Soort bepaalt het icoon — zelfde iconenset als Discover, zodat een
+// handmatig toegevoegde activiteit er niet anders uitziet dan een
+// vanuit AI-suggesties ingeplande (CATEGORY_EMOJIS in js/data.js).
+let selectedActivityCategory = 'activity';
+function setActivityCategory(chipEl, category) {
+  selectedActivityCategory = category;
+  document.querySelectorAll('#activity-category-chips .chip').forEach(c => c.classList.remove('on'));
+  chipEl.classList.add('on');
 }
 
 async function saveActivity() {
@@ -381,7 +393,8 @@ async function saveActivity() {
   // FIX: accId is sinds Fase B altijd een string (Firestore-doc-ID/UUID).
   const accId = document.getElementById('activity-acc-select').value;
   const date = dateStr ? new Date(dateStr) : null;
-  await addActivity({ name, accId, date });
+  const emoji = CATEGORY_EMOJIS[selectedActivityCategory] || CATEGORY_EMOJIS.default;
+  await addActivity({ name, accId, date, emoji });
   closeSheet('sheet-activity');
   showToast(`✓ ${name} toegevoegd`);
   if (date) AppState.selectedPlanningDay = date;
