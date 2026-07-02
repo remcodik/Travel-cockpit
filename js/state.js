@@ -75,6 +75,18 @@ function getDayNumber(date) {
   return Math.floor((d - TRIP_START) / 86400000) + 1;
 }
 
+// Vandaag, geklemd binnen het reisvenster — voor een reis die nog moet
+// beginnen of al voorbij is, is "vandaag" zelf geen geldige dagtab
+// (buiten TRIP_START..TRIP_END), waardoor Planning geen dag kon
+// selecteren. Geeft in dat geval de dichtstbijzijnde geldige dag terug
+// (eerste of laatste dag van de reis).
+function getClosestTripDay() {
+  const today = getToday();
+  if (today < TRIP_START) return new Date(TRIP_START);
+  if (today > TRIP_END) return new Date(TRIP_END);
+  return today;
+}
+
 function getAccommodationForDate(date) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   return ACCOMMODATIONS.find(acc => d >= acc.checkIn && d < acc.checkOut) || null;
@@ -222,7 +234,7 @@ async function switchToTrip(tripId) {
 
   AppState.activities = [];
   AppState.tickets = [];
-  AppState.selectedPlanningDay = getToday();
+  AppState.selectedPlanningDay = getClosestTripDay();
   AppState.viewingAccommodationId = getActiveAccommodation() ? getActiveAccommodation().id : null;
 
   startFirebaseSync();
@@ -407,7 +419,7 @@ function refreshAllScreens() {
 // ── Init ──────────────────────────────────────────────────
 function initAppState() {
   loadSettingsFromStorage();
-  AppState.selectedPlanningDay = getToday();
+  AppState.selectedPlanningDay = getClosestTripDay();
   AppState.viewingAccommodationId = getActiveAccommodation().id;
 
   // Firebase sync starten zodra db klaar is
@@ -452,7 +464,7 @@ function initAppState() {
 
     const accs = await dbLoadAccommodations(targetTripId);
     applyTripData(targetTrip, accs && accs.length > 0 ? accs : ACCOMMODATIONS);
-    AppState.selectedPlanningDay = getToday();
+    AppState.selectedPlanningDay = getClosestTripDay();
     AppState.viewingAccommodationId = getActiveAccommodation() ? getActiveAccommodation().id : null;
 
     startFirebaseSync();

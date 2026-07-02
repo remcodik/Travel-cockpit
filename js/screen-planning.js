@@ -5,7 +5,7 @@
 let planningFilter = 'all'; // 'all' | 'planned'
 
 function renderPlanningScreen() {
-  if (!AppState.selectedPlanningDay) AppState.selectedPlanningDay = getToday();
+  if (!AppState.selectedPlanningDay) AppState.selectedPlanningDay = getClosestTripDay();
   buildDayTabs();
   renderPlanningDay();
 }
@@ -290,14 +290,18 @@ async function saveMoveActivity(id) {
 async function handleDeleteActivity(id) {
   const act = AppState.activities.find(a => a.id === id);
   if (!act) return;
-  closeSheet('sheet-place-detail');
 
+  // FIX: het sheet sloot voorheen meteen bij de eerste tik, vóór de
+  // dubbel-tik-bevestiging — de "tik nogmaals"-knop was daarmee al
+  // verdwenen, dus je moest de activiteit opnieuw openen om te
+  // bevestigen. Sheet blijft nu open totdat er echt verwijderd wordt.
   if (!window._deleteConfirm || window._deleteConfirm !== id) {
     window._deleteConfirm = id;
     showToast(`Tik nogmaals op verwijderen om "${act.name}" te verwijderen`, 3000);
     return;
   }
   window._deleteConfirm = null;
+  closeSheet('sheet-place-detail');
   await deleteActivity(id);
   showToast(`🗑 ${act.name} verwijderd`);
   renderPlanningScreen();
@@ -378,7 +382,7 @@ async function applyAiEnrichment(id, enriched) {
 // Dag en verblijf worden automatisch ingevuld — je hoeft ze niet
 // opnieuw in te voeren als je al op de juiste dag in Planning bent.
 function openAddActivitySheetForCurrentDay() {
-  const day = AppState.selectedPlanningDay || getToday();
+  const day = AppState.selectedPlanningDay || getClosestTripDay();
   const acc = getAccommodationForDate(day) || getActiveAccommodation();
 
   document.getElementById('activity-day-select').innerHTML =
