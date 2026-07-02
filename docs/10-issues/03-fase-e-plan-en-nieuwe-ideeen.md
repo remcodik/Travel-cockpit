@@ -60,6 +60,32 @@ N7 (grote scope, eigen fase), N3 (leuk maar niet urgent), H7 (lost zichzelf vanz
 
 ---
 
+## Antwoorden (2026-07-02) — definitief bouwplan
+
+1. **Indeling akkoord.** H1, H2+N4, H3, H5, H6, N5 worden nu in Fase E gebouwd. N1/N2/N6/N8/H4 volgen als snelle vervolgstap. N7 (echte routing) en N3 (Discover "bij activiteit") apart later.
+2. **Bewerk-UI (H6):** los potlood-icoontje per rij/kaart — niet via het detail-sheet.
+3. **Archiveren (N4):** direct, geen dubbel-tik-bevestiging (niet destructief, terug te zetten).
+4. **Export/import (N6):** geparkeerd als backlog-item, geen keuze gemaakt over import — wordt behandeld als losse vervolgstap, niet in Fase E zelf.
+5. **Fase E verblijf-CRUD, definitief:**
+   - Reis start/einddatum groeit automatisch mee met verblijf-wijzigingen (herberekend uit min/max van alle verblijf-data, zoals bij aanmaken).
+   - Oude verblijven zijn terug-navigeerbaar naar hun activiteiten van toen (niet alleen een lijst).
+   - Verblijf krijgt alleen een klikbare URL (hotel/Airbnb-link) — geen apart boekingsnummer/telefoonveld, dat kan later als het nodig blijkt.
+   - Verblijf verwijderen: **vraagt het elke keer** wat er met de bijbehorende activiteiten moet gebeuren (verwijderen of onaangeroerd laten zonder verblijf).
+
+### Concreet bouwplan Fase E
+
+1. **Verblijf bewerken** — potlood-icoon per verblijf-rij (Mijn reizen, accommodatie-switcher-tijdlijn) opent een bewerkformulier: naam, adres, check-in/uit, lat/lng, notities, URL. Opslaan herberekent de reis start/einddatum uit alle verblijven.
+2. **Verblijf verwijderen met keuze** — bij verwijderen een sheet/dialoog: "Ook de X activiteiten van deze dagen verwijderen?" met twee knoppen (verwijderen / laten staan zonder verblijf).
+3. **Oude verblijven terug-navigeerbaar** — de bestaande "alle verblijven"-tijdlijn (in het accommodatiescherm) krijgt filtering op datum-in-het-verleden mogelijk maken, en een tik op zo'n oud verblijf toont de activiteiten van toen (niet per se "vandaag").
+4. **Reis bewerken** — potlood-icoon op de actieve-reis-kaart in "Mijn reizen": naam/land wijzigen.
+5. **Ticket bewerken + archiveren** — potlood-icoon per ticket-rij voor bewerken; een "markeer als gebruikt"-knop verplaatst 'm naar een echte (dynamische) Gearchiveerd-sectie, direct, geen bevestiging. De hardcoded "Klimapark 2469" wordt een gewoon (eerste) archief-ticket-object.
+6. **Activiteit bewerken** — potlood-icoon in de activiteit-detail-sheet-rij binnen Planning voor naam/beschrijving (niet alleen dag/verblijf zoals nu al kan via "Verplaatsen").
+7. **H1 fix** — "Laders: 04" op Vandaag-scherm eerlijk maken (geen los getal tonen).
+8. **H3 fix** — "Eten & café"-filter toont ook cafés.
+9. **H5 fix** — kaart-pin-detail-sheet krijgt dezelfde Verplaatsen/AI-verrijking/Verwijderen-acties als vanuit Planning.
+
+---
+
 ## Volgende stap
 
 Zodra bovenstaande vragen beantwoord zijn, wordt dit document samengevoegd met de bestaande Fase E-aantekeningen in `02-feedback-01juli.md` tot één concreet bouwplan, en pas dán wordt er gebouwd.
