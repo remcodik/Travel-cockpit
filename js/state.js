@@ -164,12 +164,17 @@ async function toggleActivityStatus(id) {
   return act;
 }
 
-async function addActivity({ name, accId, date, emoji = '📍', desc = '', level = 'Makkelijk' }) {
+async function addActivity({
+  name, accId, date, emoji = '📍', desc = '', level = 'Makkelijk',
+  distance = '—', duration = '—', elevation = 0, lat = 0, lng = 0,
+  googleMapsQuery = '', whyRecommended = '',
+}) {
   const existingIds = AppState.activities.map(a => typeof a.id === 'number' ? a.id : 0);
   const newId = Math.max(...existingIds, 0) + 1;
   const activity = {
     id: newId, name, emoji, accId, status: 'planned', date: date || null,
-    distance: '—', duration: '—', level, elevation: 0, lat: 0, lng: 0, desc,
+    distance, duration, level, elevation, lat, lng, desc,
+    googleMapsQuery, whyRecommended,
   };
   AppState.activities.push(activity);
   await dbSaveActivity(activity);

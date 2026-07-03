@@ -171,9 +171,12 @@ function renderUnscheduledRow(act, index, total) {
 
 // Zoekt restaurants/cafés rond een punt via Google Maps' nearby-zoekactie
 // (zelfde aanpak als openGoogleMapsPlace() in js/charging.js).
-function openNearbySearch(category, lat, lng) {
+function openNearbySearch(category, lat, lng, fallbackLabel) {
   const label = category === 'restaurant' ? 'restaurant' : 'café';
-  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(label + ' near ' + lat + ',' + lng)}`, '_blank');
+  // Coördinaten als bekend, anders de meegekregen naam/zoekopdracht als
+  // tekst — AI-suggesties hebben zelden lat/lng, wel een bruikbare naam.
+  const locationPart = (lat && lng) ? `${lat},${lng}` : (fallbackLabel || '');
+  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(label + ' near ' + locationPart)}`, '_blank');
 }
 
 // "Inplannen" op een niet-ingeplande activiteit vraagt niet meer via een
@@ -209,6 +212,20 @@ function openActivityDetailSheet(id) {
   const descEl = document.getElementById('pd-desc');
   if (descEl) descEl.textContent = act.desc || `Activiteit vanuit ${acc.name}.`;
 
+  // "Waarom relevant" — AI-context die vroeger verloren ging zodra een
+  // suggestie werd ingepland (zie FIX in handleAddSuggestion()).
+  const whyEl = document.getElementById('pd-why');
+  if (whyEl) {
+    if (act.whyRecommended) {
+      whyEl.textContent = `💡 ${act.whyRecommended}`;
+      whyEl.style.display = 'block';
+      if (descEl) descEl.style.marginBottom = '6px';
+    } else {
+      whyEl.style.display = 'none';
+      if (descEl) descEl.style.marginBottom = '18px';
+    }
+  }
+
   // Plan-knop: toon status
   const addBtn = document.getElementById('pd-add-btn');
   if (addBtn) {
@@ -218,37 +235,40 @@ function openActivityDetailSheet(id) {
     addBtn.onclick = () => { handleToggleActivity(id); closeSheet('sheet-place-detail'); };
   }
 
-  // Route knop
+  // Locatiereferentie voor Route/Komoot/nearby-links: coördinaten als die
+  // bekend zijn, anders de meegekregen AI-zoekopdracht of gewoon de naam.
+  // FIX: AI-suggesties hebben geen lat/lng (alleen een tekst-zoekopdracht),
+  // dus deze knoppen bleven eerder altijd verborgen voor élke vanuit
+  // Discover ingeplande activiteit — verreweg de meeste activiteiten.
+  const locationQuery = act.googleMapsQuery || act.name;
+
+  // Route knop — altijd tonen, er is altijd minstens een naam/tekst-
+  // bestemming (openMapsForCoords() valt daar zelf al netjes op terug).
   const routeBtn = document.getElementById('pd-route-btn');
-  if (routeBtn && act.lat && act.lng) {
+  if (routeBtn) {
     routeBtn.style.display = 'flex';
-    routeBtn.onclick = () => openMapsForCoords(act.lat, act.lng, act.name);
-  } else if (routeBtn) {
-    routeBtn.style.display = 'none';
+    routeBtn.onclick = () => openMapsForCoords(act.lat, act.lng, locationQuery);
   }
 
   // Snelkoppelingen: Komoot (alleen bij een wandeling), restaurant/café
-  // in de buurt (altijd, zolang er coördinaten bekend zijn).
+  // in de buurt — altijd zolang er een naam/zoekopdracht is.
   const nearbyEl = document.getElementById('pd-nearby-links');
   if (nearbyEl) {
-    if (act.lat && act.lng) {
-      const isWalk = act.emoji === CATEGORY_EMOJIS.activity;
-      nearbyEl.innerHTML = `
-        ${isWalk ? `<a href="https://www.komoot.com/smart-tour?sport=hike&q=${encodeURIComponent(act.name + ' ' + acc.name)}" target="_blank"
+    const isWalk = act.emoji === CATEGORY_EMOJIS.activity;
+    const safeQuery = escapeHtml(locationQuery).replace(/'/g, "\\'");
+    nearbyEl.innerHTML = `
+        ${isWalk ? `<a href="https://www.komoot.com/smart-tour?sport=hike&q=${encodeURIComponent(locationQuery)}" target="_blank"
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;display:inline-block">
           🥾 Komoot
         </a>` : ''}
-        <button onclick="openNearbySearch('restaurant', ${act.lat}, ${act.lng})"
+        <button onclick="openNearbySearch('restaurant', ${act.lat || 0}, ${act.lng || 0}, '${safeQuery}')"
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           🍽️ Eten nabij
         </button>
-        <button onclick="openNearbySearch('cafe', ${act.lat}, ${act.lng})"
+        <button onclick="openNearbySearch('cafe', ${act.lat || 0}, ${act.lng || 0}, '${safeQuery}')"
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           ☕ Café nabij
         </button>`;
-    } else {
-      nearbyEl.innerHTML = '';
-    }
   }
 
   // Extra acties voor planning-context
