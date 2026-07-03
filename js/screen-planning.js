@@ -494,4 +494,7 @@ async function saveActivity() {
   if (date) AppState.selectedPlanningDay = date;
   renderPlanningScreen();
   renderHomeScreen();
+  if (document.getElementById('screen-accommodation').classList.contains('active')) {
+    renderAccommodationScreen(AppState.viewingAccommodationId);
+  }
 }

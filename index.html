@@ -247,11 +247,15 @@
     <button onclick="openMapsForAccommodation(AppState.viewingAccommodationId)" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">◈</span><span class="eyebrow" style="font-size:8px">Route</span></button>
     <button onclick="navigateTo('map')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">⊕</span><span class="eyebrow" style="font-size:8px">Kaart</span></button>
     <button onclick="showWeatherDetailForActiveAccommodation()" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">☀</span><span class="eyebrow" style="font-size:8px">Weer</span></button>
-    <button onclick="showToast('Geen telefoonnummer opgeslagen voor dit verblijf')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">☎</span><span class="eyebrow" style="font-size:8px">Bel</span></button>
+    <button id="acc-call-btn" onclick="showToast('Geen telefoonnummer opgeslagen voor dit verblijf')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;border-right:1px solid var(--line-soft);cursor:pointer"><span style="font-size:20px;color:var(--spruce)">☎</span><span class="eyebrow" style="font-size:8px">Bel</span></button>
     <button onclick="openEditAccommodationSheet(AppState.viewingAccommodationId)" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px;background:none;border:none;cursor:pointer"><span style="font-size:20px;color:var(--spruce)">✎</span><span class="eyebrow" style="font-size:8px">Bewerk</span></button>
   </div>
   <div class="scroll">
     <div class="px" style="padding-top:16px;display:flex;flex-direction:column;gap:13px">
+      <div style="background:var(--spruce-deep);border-radius:16px;padding:12px" id="acc-weather-strip-card">
+        <p class="eyebrow eyebrow-light" style="margin-bottom:8px">Weer tijdens verblijf</p>
+        <div id="acc-weather-strip" style="display:flex;gap:6px"></div>
+      </div>
       <div class="card" id="acc-info" style="overflow:hidden"></div>
       <div style="position:relative">
         <div style="padding:13px 15px;background:var(--slope-light);border-left:3px solid var(--slope);border-radius:0 12px 12px 0;font-size:13px;line-height:1.65;color:var(--spruce)" id="acc-notes"></div>
@@ -267,8 +271,15 @@
         <div class="card-row" onclick="navigateTo('tickets')"><div class="icon-box" style="background:var(--slope-light)">🎟️</div><span style="flex:1" class="row-title">Tickets</span><span class="chevron">›</span></div>
         <div class="card-row" onclick="navigateTo('map')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">◈</div><span style="flex:1" class="row-title">Bekijk op kaart</span><span class="chevron">›</span></div>
       </div>
-      <span class="eyebrow">Activiteiten van dit verblijf</span>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="eyebrow">Activiteiten van dit verblijf</span>
+        <button onclick="openAddActivityForAccommodation(AppState.viewingAccommodationId)" class="edit-only" style="padding:5px 12px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">+ Activiteit</button>
+      </div>
       <div id="acc-activities"></div>
+      <div id="acc-tickets-section" style="display:none">
+        <span class="eyebrow" style="display:block;margin-bottom:9px">Tickets bij dit verblijf</span>
+        <div id="acc-tickets" class="card" style="overflow:hidden"></div>
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between">
         <span class="eyebrow">Alle verblijven</span>
         <button onclick="openAddAccommodationSheet()" class="edit-only" style="padding:5px 12px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">+ Verblijf</button>
@@ -454,6 +465,8 @@
       <input id="ticket-date-input" type="date" value="2026-06-22" style="margin-bottom:0"/>
       <input id="ticket-time-input" type="time" value="10:00" style="margin-bottom:0"/>
     </div>
+    <p class="eyebrow" style="margin-bottom:5px">Hoort bij verblijf (optioneel)</p>
+    <select id="ticket-acc-select" style="margin-bottom:11px"><option value="">Geen specifiek verblijf</option></select>
     <label class="file-upload" id="ticket-file-upload" for="ticket-file-input">
       <div class="file-upload-icon">📎</div>
       <div class="file-upload-text">
@@ -587,14 +600,26 @@
         <input id="edit-acc-checkin-input" type="date"/>
       </div>
       <div style="flex:1">
+        <p class="eyebrow" style="margin-bottom:5px">Tijd</p>
+        <input id="edit-acc-checkin-time-input" type="time" value="15:00"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1">
         <p class="eyebrow" style="margin-bottom:5px">Check-out</p>
         <input id="edit-acc-checkout-input" type="date"/>
       </div>
+      <div style="flex:1">
+        <p class="eyebrow" style="margin-bottom:5px">Tijd</p>
+        <input id="edit-acc-checkout-time-input" type="time" value="11:00"/>
+      </div>
     </div>
+    <input id="edit-acc-phone-input" type="tel" placeholder="Telefoonnummer (optioneel)"/>
     <div style="display:flex;gap:8px;align-items:center">
       <input id="edit-acc-url-input" type="url" placeholder="Link (hotel/Airbnb, optioneel)" style="flex:1"/>
       <button type="button" onclick="handleExtractFromMapsLink()" title="Locatie/adres uit link halen (Google Maps, of best-effort uit boekingslink)" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">📍</button>
     </div>
+    <input id="edit-acc-booking-ref-input" placeholder="Reserveringsnummer (optioneel)"/>
     <details style="margin-bottom:14px">
       <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.4px;padding:2px 0 8px">Coördinaten handmatig aanpassen</summary>
       <div style="display:flex;gap:10px">
