@@ -213,15 +213,15 @@ function openActivityDetailSheet(id) {
   if (extraEl) {
     extraEl.innerHTML = `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-        <button onclick="closeSheet('sheet-place-detail');openMoveActivitySheet(${id})"
+        <button onclick="closeSheet('sheet-place-detail');openMoveActivitySheet(${id})" class="edit-only"
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           ↕ Verplaatsen
         </button>
-        <button onclick="closeSheet('sheet-place-detail');openAiEnrichSheet(${id})"
+        <button onclick="closeSheet('sheet-place-detail');openAiEnrichSheet(${id})" class="edit-only"
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           ◎ AI-verrijking
         </button>
-        <button onclick="handleDeleteActivity(${id})"
+        <button onclick="handleDeleteActivity(${id})" class="edit-only"
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid #dc2626;background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:#dc2626;cursor:pointer">
           🗑 Verwijder
         </button>

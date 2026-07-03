@@ -345,6 +345,7 @@ function renderSuggestionCard(suggestion, acc) {
         ${suggestion.why_recommended ? `<p style="font-size:11px;color:var(--ink-faint);margin-top:4px;line-height:1.4">${escapeHtml(suggestion.why_recommended)}</p>` : ''}
         <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">
           <button onclick="handleAddSuggestion('${escapeHtml(suggestion.name).replace(/'/g, "\\'")}', '${acc.id}', '${suggestion.category || ''}')"
+            class="edit-only"
             style="padding:6px 14px;background:${isAdded ? 'var(--slope)' : 'var(--spruce)'};color:white;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">
             ${isAdded ? '✓ Gepland' : '+ Plan'}
           </button>

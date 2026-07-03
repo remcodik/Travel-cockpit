@@ -31,7 +31,27 @@ function onDbReady(fn) {
   dbReadyCallbacks.push(fn);
 }
 
-function initFirebase() {
+// ── Toegang: eigenaar-PIN of deel-link (Fase G — deel-links met rechten) ──
+// Standaard (geen link, geen PIN) blijft dit vol-toegang — exact het
+// gedrag van vandaag. Alleen een deel-link met scope:'view' of een
+// vaste tripId beperkt dit. Dit wordt pas écht afgedwongen zodra de
+// eigenaar de nieuwe firestore.rules publiceert (zie
+// docs/10-issues/07-deel-links-permissies-plan.md) — tot die tijd is
+// dit puur UI-gedrag.
+let accessState = {
+  scope: 'edit',       // 'view' | 'edit'
+  lockedTripId: null,  // niet-null = alleen deze reis tonen, geen wisselen
+  isOwner: false,
+  isShareLink: false,
+};
+
+function getAccessState() { return accessState; }
+function canEdit() { return accessState.scope !== 'view'; }
+function isTripLocked() { return !!accessState.lockedTripId; }
+
+const OWNER_SESSION_KEY = 'tc_owner_session';
+
+async function initFirebase() {
   try {
     const params = new URLSearchParams(window.location.search);
     if (params.get('trip')) tripId = params.get('trip');
@@ -42,6 +62,8 @@ function initFirebase() {
     // Optimistische offline-ondersteuning — Firestore cachet lokaal
     db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
 
+    await initAuthFlow(params);
+
     dbReady = true;
     dbReadyCallbacks.forEach(fn => fn());
     dbReadyCallbacks = [];
@@ -50,6 +72,93 @@ function initFirebase() {
     console.error('Firebase init mislukt:', err);
     // App blijft werken met in-memory data
   }
+}
+
+// Wordt vóór het laden van reisdata afgewacht, zodat een eventuele
+// deel-link-sessie al actief is voordat de eerste Firestore-lezing
+// gebeurt. Faalt dit (ongeldige/ingetrokken link, geen internet), dan
+// gaat de app gewoon door zonder ingelogde sessie — vandaag verandert
+// dat niets omdat de Firestore-rules nog niets afdwingen.
+async function initAuthFlow(params) {
+  const shareId = params.get('share');
+  if (shareId) {
+    await redeemShareLink(shareId);
+    return;
+  }
+  // Geen deel-link: als er al een eerdere eigenaar-sessie was (Firebase
+  // Auth onthoudt dit zelf tussen bezoeken), wachten we die kort af zodat
+  // canEdit()/isTripLocked() meteen kloppen. Geen PIN-scherm afdwingen —
+  // dat blijft een bewuste actie via "Deel-links beheren".
+  try {
+    await Promise.race([
+      new Promise(resolve => {
+        const unsub = firebase.auth().onAuthStateChanged(user => {
+          unsub();
+          if (user && localStorage.getItem(OWNER_SESSION_KEY) === '1') {
+            accessState = { scope: 'edit', lockedTripId: null, isOwner: true, isShareLink: false };
+          }
+          resolve();
+        });
+      }),
+      new Promise(resolve => setTimeout(resolve, 1500)),
+    ]);
+  } catch { /* geen blokkerende fout — app werkt door met standaardtoegang */ }
+}
+
+async function redeemShareLink(shareId) {
+  try {
+    const resp = await fetch(`/api/redeem-share?id=${encodeURIComponent(shareId)}`);
+    const data = await resp.json();
+    if (!resp.ok || !data.token) {
+      console.error('Deel-link ongeldig:', data.error);
+      onDbReady(() => showToast && showToast('⚠️ Deze deel-link is ongeldig of ingetrokken'));
+      return;
+    }
+    await firebase.auth().signInWithCustomToken(data.token);
+    accessState = {
+      scope: data.scope,
+      lockedTripId: data.tripId || null,
+      isOwner: false,
+      isShareLink: true,
+    };
+    if (data.tripId) tripId = data.tripId;
+  } catch (err) {
+    console.error('Deel-link inwisselen mislukt:', err);
+  }
+}
+
+// Eigenaar-login vanuit "Deel-links beheren" (js/screen-tickets.js).
+// Geeft true/false terug zodat de UI een foutmelding kan tonen.
+async function signInAsOwner(pin) {
+  try {
+    const resp = await fetch('/api/owner-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.token) return false;
+    await firebase.auth().signInWithCustomToken(data.token);
+    accessState = { scope: 'edit', lockedTripId: null, isOwner: true, isShareLink: false };
+    localStorage.setItem(OWNER_SESSION_KEY, '1');
+    return true;
+  } catch (err) {
+    console.error('Eigenaar-login mislukt:', err);
+    return false;
+  }
+}
+
+// Roept de owner-PIN-gated API's aan (create/list/revoke-share) met
+// consistente foutafhandeling.
+async function callShareApi(path, body) {
+  const resp = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.error || `${path} mislukt`);
+  return data;
 }
 
 function tripRef(collection) {

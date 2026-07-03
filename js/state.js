@@ -416,6 +416,13 @@ function refreshAllScreens() {
   });
 }
 
+// Zet body.read-only-mode aan/uit op basis van de huidige toegang
+// (eigenaar, deel-link view/edit, of standaard vol-toegang). Puur UI —
+// zie css/styles.css voor de .edit-only/.edit-pencil-btn-verberging.
+function applyAccessStateToUI() {
+  document.body.classList.toggle('read-only-mode', !canEdit());
+}
+
 // ── Init ──────────────────────────────────────────────────
 function initAppState() {
   loadSettingsFromStorage();
@@ -424,6 +431,7 @@ function initAppState() {
 
   // Firebase sync starten zodra db klaar is
   onDbReady(async () => {
+    applyAccessStateToUI();
     // Reizen laden; als de trips-collectie nog nooit is gevuld (eerste
     // keer ooit), de standaardreis + haar accommodaties zaaien —
     // zelfde patroon als de bestaande activiteiten-seed hieronder.
@@ -453,8 +461,12 @@ function initAppState() {
     // staat. Wijst de URL naar een trip-ID die niet (meer) bestaat, dan
     // valt de app terug op de eerste beschikbare reis — geen automatische
     // Noorwegen-kloon meer voor een onbekende/lege reis.
+    // Een deel-link met een vaste reis (isTripLocked()) overstemt alles —
+    // die bezoeker mag alleen die ene reis zien, punt uit.
     const urlHadExplicitTrip = !!new URLSearchParams(window.location.search).get('trip');
-    let targetTripId = urlHadExplicitTrip ? getCurrentTripId() : (getActiveTrip() || trips[0]).id;
+    let targetTripId = isTripLocked()
+      ? getCurrentTripId()
+      : (urlHadExplicitTrip ? getCurrentTripId() : (getActiveTrip() || trips[0]).id);
     let targetTrip = trips.find(t => t.id === targetTripId);
     if (!targetTrip) {
       targetTrip = trips[0];

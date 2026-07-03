@@ -1,57 +1,95 @@
 rules_version = '2';
 
-// Travel Cockpit — basisbeveiliging voor Firestore.
+// Travel Cockpit — Firestore-rules met echte toegangscontrole (Fase G).
 //
-// BELANGRIJK: dit bestand wordt niet automatisch actief. Activeren moet
-// handmatig via Firebase Console → Firestore Database → Rules → plak deze
-// inhoud → Publiceren. Zie docs/00-product/02-decision-log.md (Fase B)
-// voor de achtergrond.
+// ⚠️  NIET PUBLICEREN VOORDAT DIT GETEST IS. Zodra deze rules actief
+// staan, werkt de app alleen nog met een geldige Firebase Auth-sessie
+// (eigenaar-PIN of een deel-link). Zonder zo'n sessie — dus ook je eigen
+// dagelijkse gebruik zonder ooit ingelogd te zijn — worden alle lees- en
+// schrijfacties geweigerd. Volg eerst de checklist in
+// docs/10-issues/07-deel-links-permissies-plan.md: Anonymous
+// Authentication aanzetten, de service-account-sleutel + OWNER_PIN in
+// Vercel zetten, en zelf succesvol inloggen via "Deel-links beheren"
+// (Instellingen) vóórdat je dit bestand in de Firebase Console plakt.
+// Activeren blijft, zoals altijd, een handmatige stap in Firebase
+// Console → Firestore Database → Rules → Publiceren.
 //
-// Wat dit wel/niet oplost:
-// - Wel: blokkeert lege/misvormde documenten (schema-validatie), en
-//   voorkomt dat iemand willekeurige, te grote documenten dumpt.
-// - Niet: dit is geen echte toegangscontrole — er is geen login-systeem
-//   in de app, dus wie de trip-ID kent (bv. via de gedeelde reislink)
-//   kan nog steeds legitiem-ogende data lezen/schrijven. Een echte
-//   oplossing vereist Firebase Authentication, wat een grotere,
-//   aparte stap is dan deze basisbescherming.
+// Rolverdeling:
+// - Eigenaar (owner:true, via de PIN): volledige toegang tot alles.
+// - Deel-link met scope 'edit': lezen én schrijven, beperkt tot de
+//   tripId van die link (of alle reizen als tripId ontbreekt).
+// - Deel-link met scope 'view': alleen lezen, zelfde reis-beperking.
+// - Geen geldige sessie: niets — dit is de daadwerkelijke afdwinging die
+//   in de vorige versie van dit bestand ontbrak (die stond alles open
+//   te lezen, zie git-historie).
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function hasSession() {
+      return request.auth != null;
+    }
+    function isOwner() {
+      return hasSession() && request.auth.token.owner == true;
+    }
+    function canRead(tripId) {
+      return isOwner()
+        || (hasSession() && request.auth.token.allTrips == true)
+        || (hasSession() && request.auth.token.tripId == tripId);
+    }
+    function canWrite(tripId) {
+      return isOwner()
+        || (hasSession() && request.auth.token.scope == 'edit'
+            && (request.auth.token.allTrips == true || request.auth.token.tripId == tripId));
+    }
+
     match /trips/{tripId} {
-      allow read: if true;
-      allow write: if request.resource.data.name is string
+      allow read: if canRead(tripId);
+      allow write: if canWrite(tripId)
+                   && request.resource.data.name is string
                    && request.resource.data.name.size() > 0
                    && request.resource.data.name.size() < 200;
 
       match /activities/{activityId} {
-        allow read: if true;
-        allow write: if request.resource.data.name is string
+        allow read: if canRead(tripId);
+        allow write: if canWrite(tripId)
+                     && request.resource.data.name is string
                      && request.resource.data.name.size() > 0
                      && request.resource.data.name.size() < 300;
       }
 
       match /accommodations/{accId} {
-        allow read: if true;
-        allow write: if request.resource.data.name is string
+        allow read: if canRead(tripId);
+        allow write: if canWrite(tripId)
+                     && request.resource.data.name is string
                      && request.resource.data.name.size() > 0
                      && request.resource.data.name.size() < 200;
       }
 
       match /tickets/{ticketId} {
-        allow read: if true;
-        allow write: if request.resource.data.name is string
+        allow read: if canRead(tripId);
+        allow write: if canWrite(tripId)
+                     && request.resource.data.name is string
                      && request.resource.data.name.size() > 0
                      && request.resource.data.name.size() < 300;
       }
 
       match /ai_cache/{accId} {
-        allow read, write: if true;
+        allow read: if canRead(tripId);
+        allow write: if canWrite(tripId);
       }
     }
 
-    // Alles buiten trips/** expliciet dicht.
+    // shares/{shareId} wordt uitsluitend server-side beheerd via de
+    // Firebase Admin SDK (api/create-share.js, api/redeem-share.js, …),
+    // die de rules volledig omzeilt. Vanuit de browser (client SDK) is
+    // dit dus altijd dicht — geen enkele geldige sessie mag deze
+    // collectie rechtstreeks lezen of schrijven.
+    match /shares/{shareId} {
+      allow read, write: if false;
+    }
+
+    // Alles buiten trips/** en shares/** expliciet dicht.
     match /{document=**} {
       allow read, write: if false;
     }
