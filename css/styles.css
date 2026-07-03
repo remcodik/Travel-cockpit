@@ -42,6 +42,39 @@
   --font-mono: 'SF Mono', 'JetBrains Mono', 'Courier New', monospace;
 }
 
+/* ── 1b. Regio-thema's (Restplan #2) ───────────────────────
+   Zelfde tokens, andere waarden — alleen kleuren wisselen per reisland,
+   het contourlijnen-patroon zelf (js/topo.js) blijft ongewijzigd.
+   applyCountryTheme() in js/state.js zet body[data-theme] bij het
+   wisselen/laden van de actieve reis. Geen data-theme = het oorspronkelijke
+   Scandinavische/alpiene thema (de :root-waarden hierboven). */
+body[data-theme="mediterranean"] {
+  --spruce: #8B4226;
+  --spruce-deep: #5C2A18;
+  --slope: #A67C52;
+  --slope-light: #F5EDE1;
+  --summit: #1E6E7A;
+  --summit-light: #DCEEEF;
+  --water: #1E5F74;
+  --water-light: #DCEAEE;
+  --contour: #B08968;
+  --paper: #F0E4D0;
+  --paper-warm: #F5EEDF;
+}
+body[data-theme="continental"] {
+  --spruce: #35513B;
+  --spruce-deep: #1E2F22;
+  --slope: #7C8B6F;
+  --slope-light: #EDEFE7;
+  --summit: #A6432B;
+  --summit-light: #F2E1DB;
+  --water: #3A6B7A;
+  --water-light: #E3EBED;
+  --contour: #8C8368;
+  --paper: #E8E2D4;
+  --paper-warm: #EFEBDD;
+}
+
 /* ── 2. Reset ───────────────────────────────────────────── */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; }

@@ -1,7 +1,7 @@
 # Restplan — wat er nu echt nog openstaat
 
 **Document ID:** TC-ISSUES-008
-**Status:** Plan klaar, prioriteit/keuzes nog te bepalen
+**Status:** Punten 1, 2 en 4 (D5) gebouwd (2026-07-03) — 1 vereist nog een API-sleutel van jou. Punt 3 (zoekfunctie) nog niet opgepakt.
 **Bron:** Opschoning van `01-testronde-30juni.md` (bijna alles daar is inmiddels gebouwd of afgewezen) + de nog niet afgehandelde punten uit latere plan-documenten.
 
 ---
@@ -13,30 +13,29 @@
 
 ---
 
-## 1. N7 — Echte routing via wegen/water (grootste post)
+## 1. N7 — Echte routing via wegen/water ✅ Gebouwd, wacht op API-sleutel
 
-**Wat er nu is:** routes (Nijmegen→Hirtshals, ferry, Hamburg-omweg) zijn handgetekende rechte lijnen in `DRIVE_PATHS`/`FERRY_PATHS` (`js/data.js`) — geen echte wegen, vandaar de rare knikken en het feit dat een ferry-lijn soms over land lijkt te lopen.
+**Gekozen:** OpenRouteService (gratis tier, geen eigen server nodig).
 
-**Wat nodig is:** een routing-API voor het autogedeelte. Realistische opties:
-- **OSRM** (open-source, gratis te hosten of een publieke demo-server gebruiken — niet voor productie bedoeld maar wel om te proberen) — rijroute tussen twee punten, volgt echte wegen.
-- **OpenRouteService** — gratis tier met API-key, vergelijkbaar met OSRM maar geen eigen server nodig.
-- **GraphHopper** — vergelijkbaar, ook een gratis tier.
+**Gebouwd:**
+- `api/route.js` — nieuwe Vercel-functie, roept OpenRouteService's Directions-API aan met de bestaande waypoints uit `DRIVE_PATHS` en geeft de wegen-volgende routegeometrie terug.
+- `js/screen-map.js` — elke rijroute tekent meteen de bestaande rechte lijn (nooit een lege kaart), en vraagt op de achtergrond de echte route op via `fetchRealRoute()`; komt die binnen, dan vervangt hij de rechte lijn. Resultaten worden in `localStorage` gecached (voorkomt herhaalde aanroepen bij elk bezoek, respecteert de gratis-tier rate limit). Lukt het ophalen niet (geen sleutel, netwerkfout, rate limit), dan blijft gewoon de rechte lijn staan — geen zichtbare fout.
+- Ferry-segmenten blijven bewust rechte lijnen — daar bestaat geen "auto-routing"-equivalent voor.
 
-Voor het ferry-gedeelte bestaat geen "auto-routing"-equivalent — een zee-/ferryroute kan niet automatisch berekend worden zoals een rijroute. Praktische aanpak: rijroutes via een API, ferry-segmenten blijven een (verbeterde, met een paar tussenpunten) handgetekende lijn die niet over land loopt.
-
-**Vraag:** welke van de drie routing-diensten heeft de voorkeur, of wil je dat ik er één kies (dan ga ik voor OpenRouteService — gratis tier zonder eigen server nodig, in dezelfde stijl als de bestaande Vercel-functies)?
+**Nog nodig van jou:** een gratis API-sleutel op [openrouteservice.org](https://openrouteservice.org/dev/#/signup), als Vercel-omgevingsvariabele `ORS_API_KEY`. Zonder die sleutel blijft de kaart gewoon de rechte lijnen tonen zoals nu — niets breekt, het is puur een verbetering die aan staat te wachten.
 
 ---
 
-## 2. Design/thema per reisland
+## 2. Design/thema per reisland ✅ Gebouwd
 
-**Wat er nu is:** het hele kleurenpalet en topografische thema (spruce-green, Noorse contourlijnen) is nog steeds hardcoded voor Noorwegen, ongeacht welke reis actief is — een Italië- of Spanje-reis ziet er identiek uit.
+**Gekozen:** automatisch op basis van land, alleen kleuren wisselen (contourlijnen-patroon blijft overal gelijk).
 
-Dit is twee keer eerder geparkeerd (Fase F Deel 4, en bij het icoon-verzoek) omdat het een designbeslissing is, geen bugfix. Belangrijkste keuzes die eerst gemaakt moeten worden:
-- Eén vast kleurenpalet per land/regio (bv. mediterraan warm voor Zuid-Europa, alpien voor bergland), of een kleiner aantal thema's die je zelf per reis kiest?
-- Blijft de topografische contourlijnen-stijl overal hetzelfde, of verandert ook dát per regio (bv. vlakkere lijnen voor een kustreis)?
+**Gebouwd:** drie thema's (`css/styles.css`, `body[data-theme=...]`), automatisch toegepast via `applyCountryTheme()` in `js/state.js` zodra een reis geladen/geactiveerd wordt:
+- **Scandinavisch/alpien** (standaard, ongewijzigd) — Noorwegen, Zweden, IJsland, Zwitserland, Oostenrijk.
+- **Mediterraan** (warm terracotta/roest, dieptzee-teal, zanderig papier) — Italië, Spanje, Portugal, Griekenland, Kroatië.
+- **Continentaal** (koeler bos-groen, brandhout-accent) — Duitsland, Frankrijk.
 
-**Vraag:** wil je dit nu oppakken (dan heb ik antwoord op de twee punten hierboven nodig), of blijft dit geparkeerd?
+De topografische contourlijnen (`js/topo.js`) volgen automatisch mee via CSS-variabelen (`var(--summit)`/`var(--paper)`) — geen aparte logica per thema nodig.
 
 ---
 
@@ -55,10 +54,10 @@ Nooit concreet beantwoord (vraag 5 uit `05-reis-levenscyclus-plan.md`). Klein, l
 | B5 | Accommodatiepins van bestaande/oude reizen staan op plaatscentrum, niet exact adres | Nieuwe verblijven kunnen dit al zelf oplossen via de 📍-knop (Google Maps-link of boekingslink). Voor bestaande verblijven: zelf de coördinaten even opnieuw invullen via bewerken — geen losse migratie nodig, tenzij je dat liever automatisch wilt. |
 | B6 | GPS-trackline visueel onderscheid tussen ferry/auto/fiets/lopen | Nog uit te denken (automatisch via snelheid, of handmatige modus-keuze) — nice-to-have, geen bekende vraag ernaar sindsdien. |
 | B7 | Alternatieve, uitgebreidere kaartstijl (Google Maps-achtig) | Afweging meerwaarde vs. bouwcomplexiteit — voorstel: laten liggen tenzij je de huidige kaart concreet te beperkt vindt. |
-| D5 | Numeriek hoogteverschil tonen per AI-suggestie (géén kaart/grafiek) | Laagste prioriteit van dit hele document, puur optioneel. |
+| D5 | ~~Numeriek hoogteverschil tonen per AI-suggestie~~ | **✅ Gebouwd** — `elevation_gain_m` toegevoegd aan het AI-schema (`api/suggestions.js`), getoond als "▲ 150m" naast afstand/duur (`js/screen-discover.js`), alleen bij een relevante wandeling — geen kaart/grafiek. |
 
 ---
 
 ## Volgende stap
 
-Zeg welke van de vier bovenstaande punten (of geen enkele voorlopig) je wilt oppakken — bij 1 en 2 heb ik eerst een keuze van jou nodig voordat ik kan bouwen, 3 kan direct als je 'm wilt, en 4 zijn losse, optionele kleinigheden die geen haast hebben.
+Nog open: **punt 3** (zoekfunctie Mijn reizen) — zeg of je die gebouwd wilt hebben. Punt 1 werkt pas zichtbaar zodra je zelf een `ORS_API_KEY` hebt aangevraagd en in Vercel gezet.

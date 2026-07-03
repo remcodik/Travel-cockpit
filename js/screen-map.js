@@ -11,6 +11,43 @@ let activityMarkers = [];
 let mapFilterAccId = null;
 let mapShowFullRoute = false;
 
+// ── Echte routing via wegen (N7) ────────────────────────────
+// In-memory + localStorage-cache zodat de kaart niet bij elk bezoek
+// opnieuw dezelfde route bij OpenRouteService opvraagt (respecteert de
+// rate limit van de gratis tier, en is meteen sneller bij een herbezoek).
+const routeMemoryCache = {};
+const ROUTE_CACHE_PREFIX = 'tc_route_';
+
+function routeCacheKey(waypoints) {
+  return waypoints.map(p => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join(';');
+}
+
+async function fetchRealRoute(waypoints) {
+  const key = routeCacheKey(waypoints);
+  if (routeMemoryCache[key]) return routeMemoryCache[key];
+
+  try {
+    const cached = localStorage.getItem(ROUTE_CACHE_PREFIX + key);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      routeMemoryCache[key] = parsed;
+      return parsed;
+    }
+  } catch { /* corrupte cache-entry negeren, gewoon opnieuw ophalen */ }
+
+  try {
+    const resp = await fetch(`/api/route?coords=${encodeURIComponent(key)}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (!data.route || !Array.isArray(data.route)) return null;
+    routeMemoryCache[key] = data.route;
+    try { localStorage.setItem(ROUTE_CACHE_PREFIX + key, JSON.stringify(data.route)); } catch { /* quota vol, geen probleem */ }
+    return data.route;
+  } catch {
+    return null;
+  }
+}
+
 function initMap() {
   const loadingEl = document.getElementById('map-loading');
 
@@ -60,9 +97,19 @@ function initMap() {
 
       L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
 
+      // Rijroutes: meteen de handgetekende lijn tonen (nooit een lege
+      // kaart), en op de achtergrond de echte, wegen-volgende route erbij
+      // vragen (N7) — vervangt de rechte lijn zodra die binnen is. Faalt
+      // dat (geen ORS_API_KEY ingesteld, netwerkfout, rate limit), dan
+      // blijft gewoon de rechte lijn staan — geen zichtbare fout.
       DRIVE_PATHS.forEach(path => {
-        L.polyline(path, { color: '#0E3A2E', weight: 2.5, opacity: 0.65 }).addTo(leafletMap);
+        const line = L.polyline(path, { color: '#0E3A2E', weight: 2.5, opacity: 0.65 }).addTo(leafletMap);
+        fetchRealRoute(path).then(real => {
+          if (real && real.length > 1) line.setLatLngs(real);
+        }).catch(() => {});
       });
+      // Ferryroutes blijven rechte lijnen — er bestaat geen "auto-routing"-
+      // equivalent voor zeeroutes (zie 08-restplan-openstaande-punten.md).
       FERRY_PATHS.forEach(path => {
         L.polyline(path, { color: '#1B5A8A', weight: 2.5, opacity: 0.7, dashArray: '8,5' }).addTo(leafletMap);
       });

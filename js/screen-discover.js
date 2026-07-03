@@ -335,6 +335,7 @@ function renderSuggestionCard(suggestion, acc) {
         <span style="font-size:28px">${categoryEmoji}</span>
         ${suggestion.distance_km ? `<span class="mono" style="color:rgba(255,255,255,.8);font-weight:700;font-size:11px">${suggestion.distance_km} km</span>` : ''}
         ${durationLabel ? `<span class="mono" style="color:rgba(255,255,255,.6);font-size:10px">${durationLabel}</span>` : ''}
+        ${suggestion.elevation_gain_m ? `<span class="mono" style="color:rgba(255,255,255,.6);font-size:10px">▲ ${suggestion.elevation_gain_m}m</span>` : ''}
       </div>
       <div style="flex:1;padding:12px;min-width:0">
         <div class="from-acc-badge" style="background:${acc.color}18;color:${acc.color};display:inline-block;margin-bottom:5px">

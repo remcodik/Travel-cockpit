@@ -73,11 +73,14 @@ Retourneer een JSON array van precies 5 suggesties in dit formaat:
     "description": "Korte beschrijving, max 2 zinnen.",
     "distance_km": 14,
     "duration_minutes": 240,
+    "elevation_gain_m": 150,
     "difficulty": "easy" | "medium" | "hard",
     "why_recommended": "Korte uitleg waarom dit relevant is voor deze gebruiker.",
     "google_maps_query": "Zoekterm voor Google Maps"
   }
-]`;
+]
+
+"elevation_gain_m": alleen invullen bij een wandeling/hike met een reële hoogtewinst (schatting op basis van bekende terreinkenmerken is prima). Weglaten of 0 bij een suggestie zonder relevant hoogteverschil (restaurant, café, vlak uitzichtpunt).`;
 
   const userMessage = `Huidig verblijf: ${accommodationName}, ${accommodationLocation}
 Land: ${country}
