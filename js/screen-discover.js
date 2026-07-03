@@ -392,8 +392,25 @@ async function handleAddSuggestion(name, accId, category) {
   // een generieke 📍. Nu draagt het icoon mee, consistent met Discover.
   const emoji = CATEGORY_EMOJIS[category] || CATEGORY_EMOJIS.default;
 
+  // FIX: afstand/duur/hoogteverschil/zoekopdracht/"waarom relevant" gingen
+  // eerder volledig verloren zodra een suggestie werd ingepland — het
+  // activiteit-detailscherm had daardoor niets om Route/Komoot/Eten-nabij
+  // op te baseren (geen lat/lng in AI-suggesties, alleen een tekst-
+  // zoekopdracht). Nu wordt de volledige suggestie meegenomen.
+  const suggestion = currentSuggestions.find(s => s.name === name);
+
   // Voeg toe zonder datum zodat het als "beschikbaar" verschijnt
-  await addActivity({ name, accId, date: null, emoji });
+  await addActivity({
+    name, accId, date: null, emoji,
+    desc: suggestion?.description || '',
+    distance: suggestion?.distance_km ? `${suggestion.distance_km} km` : '—',
+    duration: suggestion?.duration_minutes
+      ? (suggestion.duration_minutes >= 60 ? `${Math.round(suggestion.duration_minutes / 60)} u` : `${suggestion.duration_minutes} min`)
+      : '—',
+    elevation: suggestion?.elevation_gain_m || 0,
+    googleMapsQuery: suggestion?.google_maps_query || name,
+    whyRecommended: suggestion?.why_recommended || '',
+  });
   AppState.discoveredAdded.add(key);
   showToast(`✓ "${name}" toegevoegd aan planning`);
   renderSuggestionList(); // herrender met bijgewerkte staat
