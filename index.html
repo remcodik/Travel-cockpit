@@ -173,7 +173,7 @@
     <div style="position:relative;z-index:1;display:flex;align-items:center;gap:13px;padding:14px 16px">
       <div style="width:46px;height:46px;background:rgba(197,81,43,0.2);border:1.5px solid rgba(197,81,43,0.45);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:23px;flex-shrink:0">◎</div>
       <div style="flex:1"><p style="font-weight:700;color:var(--white);font-size:15.5px">Wat ligt er voor je?</p><p class="mono" style="color:rgba(232,228,217,0.55);margin-top:4px" id="discover-location">laden…</p></div>
-      <button onclick="handleLoadMoreSuggestions()" style="background:none;border:none;color:rgba(232,228,217,0.55);font-size:19px;cursor:pointer">↻</button>
+      <button id="discover-top-refresh-btn" onclick="handleLoadMoreSuggestions()" style="display:flex;align-items:center;gap:6px;padding:8px 13px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.22);border-radius:20px;color:white;font-size:11px;font-weight:700;text-transform:uppercase;cursor:pointer;flex-shrink:0">↻ Nieuwe ideeën</button>
     </div>
   </div>
   <div class="hscroll px" style="padding-top:11px;padding-bottom:11px;background:var(--white);border-bottom:1px solid var(--line-soft)">
@@ -570,6 +570,22 @@
       <button type="button" onclick="setActivityCategory(this,'cafe')" class="chip">☕ Café</button>
       <button type="button" onclick="setActivityCategory(this,'viewpoint')" class="chip">🌄 Uitzicht</button>
     </div>
+    <details style="margin-bottom:14px">
+      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.4px;padding:2px 0 8px">Wandelinfo toevoegen (optioneel)</summary>
+      <div style="display:flex;gap:10px">
+        <input id="activity-distance-input" placeholder="Afstand (bijv. 8 km)" style="flex:1"/>
+        <input id="activity-duration-input" placeholder="Duur (bijv. 3 u)" style="flex:1"/>
+      </div>
+      <div style="display:flex;gap:10px">
+        <input id="activity-elevation-input" type="number" placeholder="Hoogtewinst (m)" style="flex:1"/>
+        <select id="activity-level-select" style="flex:1">
+          <option value="Makkelijk">Makkelijk</option>
+          <option value="Gemiddeld">Gemiddeld</option>
+          <option value="Zwaar">Zwaar</option>
+        </select>
+      </div>
+      <input id="activity-komoot-input" type="url" placeholder="Komoot-routelink (voor echt hoogteprofiel)"/>
+    </details>
     <button onclick="saveActivity()" class="btn btn-primary">Toevoegen</button>
     <button onclick="closeSheet('sheet-activity')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
   </div>
@@ -581,7 +597,23 @@
     <div class="sheet-handle"></div>
     <p class="sheet-title">ACTIVITEIT BEWERKEN</p>
     <input id="edit-activity-name-input" placeholder="Naam activiteit"/>
-    <textarea id="edit-activity-desc-input" placeholder="Beschrijving (optioneel)" rows="3" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:14.5px;margin-bottom:18px;font-family:inherit;resize:vertical"></textarea>
+    <textarea id="edit-activity-desc-input" placeholder="Beschrijving (optioneel)" rows="3" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:14.5px;margin-bottom:11px;font-family:inherit;resize:vertical"></textarea>
+    <details style="margin-bottom:14px">
+      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.4px;padding:2px 0 8px">Wandelinfo (optioneel)</summary>
+      <div style="display:flex;gap:10px">
+        <input id="edit-activity-distance-input" placeholder="Afstand (bijv. 8 km)" style="flex:1"/>
+        <input id="edit-activity-duration-input" placeholder="Duur (bijv. 3 u)" style="flex:1"/>
+      </div>
+      <div style="display:flex;gap:10px">
+        <input id="edit-activity-elevation-input" type="number" placeholder="Hoogtewinst (m)" style="flex:1"/>
+        <select id="edit-activity-level-select" style="flex:1">
+          <option value="Makkelijk">Makkelijk</option>
+          <option value="Gemiddeld">Gemiddeld</option>
+          <option value="Zwaar">Zwaar</option>
+        </select>
+      </div>
+      <input id="edit-activity-komoot-input" type="url" placeholder="Komoot-routelink (voor echt hoogteprofiel)"/>
+    </details>
     <button id="edit-activity-save-btn" class="btn btn-primary">Opslaan</button>
     <button onclick="closeSheet('sheet-edit-activity')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
   </div>
@@ -677,18 +709,19 @@
 <!-- Plek-detail bij tik op kaart-pin of activiteit-rij ─ visueel verrijkt (Fase C), alle bestaande acties behouden -->
 <div class="sheet-backdrop" id="sheet-place-detail">
   <div class="sheet" onclick="event.stopPropagation()" style="padding-top:0;overflow:hidden;max-height:92vh">
-    <div id="pd-hero" style="margin:0 -20px 18px;padding:22px 20px 22px;position:relative;background:var(--spruce);overflow:hidden">
+    <div id="pd-hero" style="margin:0 -20px 18px;padding:26px 20px 28px;position:relative;background:var(--spruce);overflow:hidden">
       <svg class="topo-svg" id="pd-topo-svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;opacity:.4"></svg>
       <div class="sheet-handle" style="background:rgba(255,255,255,0.35);margin-bottom:16px;position:relative"></div>
       <button onclick="closeSheet('sheet-place-detail')" style="position:absolute;top:18px;right:18px;background:rgba(255,255,255,0.16);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;color:white;cursor:pointer;line-height:1;z-index:1">✕</button>
       <div style="display:flex;align-items:center;gap:16px;position:relative">
-        <div id="pd-thumb" style="width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:38px;flex-shrink:0;background:rgba(255,255,255,0.16)">📍</div>
+        <div id="pd-thumb" style="width:80px;height:80px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:42px;flex-shrink:0;background:rgba(255,255,255,0.16)">📍</div>
         <div style="flex:1;min-width:0">
-          <p id="pd-name" style="font-family:var(--font-display);font-size:23px;font-weight:800;letter-spacing:-0.3px;color:white">—</p>
-          <div id="pd-meta" style="margin-top:7px;display:flex;flex-wrap:wrap;gap:6px">—</div>
+          <p id="pd-name" style="font-family:var(--font-display);font-size:25px;font-weight:800;letter-spacing:-0.3px;color:white">—</p>
+          <div id="pd-meta" style="margin-top:7px;display:flex;flex-wrap:wrap;gap:6px"></div>
         </div>
       </div>
     </div>
+    <div id="pd-stats" style="display:none;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:8px;margin-bottom:14px"></div>
     <p id="pd-desc" class="row-sub" style="margin-bottom:6px;line-height:1.5"></p>
     <p id="pd-why" style="display:none;font-size:12px;color:var(--ink-faint);line-height:1.4;margin-bottom:18px;padding:10px 12px;background:var(--paper-warm);border-radius:10px"></p>
     <div style="display:flex;gap:10px;margin-bottom:9px">
@@ -696,6 +729,7 @@
       <button id="pd-route-btn" class="btn btn-outline" style="flex:1">◈ Route</button>
     </div>
     <div id="pd-nearby-links" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:9px"></div>
+    <div id="pd-elevation-embed" style="display:none;margin-bottom:9px;border-radius:13px;overflow:hidden;border:1.5px solid var(--line)"></div>
     <div id="pd-extra-actions"></div>
     <button onclick="closeSheet('sheet-place-detail')" class="btn btn-outline" style="margin-top:8px">Sluiten</button>
   </div>

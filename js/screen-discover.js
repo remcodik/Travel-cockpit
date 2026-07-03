@@ -246,9 +246,15 @@ async function handleLoadMoreSuggestions() {
 
 function updateRefreshButtonState() {
   const btn = document.getElementById('discover-more-btn');
-  if (!btn) return;
-  btn.disabled = isLoadingSuggestions;
-  btn.textContent = isLoadingSuggestions ? 'Laden…' : '↻ Nieuwe ideeën';
+  if (btn) {
+    btn.disabled = isLoadingSuggestions;
+    btn.textContent = isLoadingSuggestions ? 'Laden…' : '↻ Nieuwe ideeën';
+  }
+  const topBtn = document.getElementById('discover-top-refresh-btn');
+  if (topBtn) {
+    topBtn.disabled = isLoadingSuggestions;
+    topBtn.textContent = isLoadingSuggestions ? 'Laden…' : '↻ Nieuwe ideeën';
+  }
 }
 
 // ── Render states ──────────────────────────────────────────
@@ -355,7 +361,7 @@ function renderSuggestionCard(suggestion, acc) {
             Route
           </button>
           ${isWalking ? `
-          <a href="https://www.komoot.com/smart-tour?sport=hike&q=${encodeURIComponent(suggestion.name + ' ' + (acc ? acc.name : ''))}" target="_blank"
+          <a href="${komootSearchUrl(suggestion.name + ' ' + (acc ? acc.name : ''))}" target="_blank"
             style="padding:6px 12px;border:1.5px solid #6fbe6f;background:white;border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:#3d8c3d;text-decoration:none;display:inline-flex;align-items:center;gap:4px">
             🗺 Komoot
           </a>` : ''}

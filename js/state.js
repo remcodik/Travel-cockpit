@@ -114,6 +114,16 @@ function formatLatLng(lat, lng, decimals = 2) {
   return `${Math.abs(lat).toFixed(decimals)}°${latDir} ${Math.abs(lng).toFixed(decimals)}°${lngDir}`;
 }
 
+// FIX: de eerdere Komoot-link (komoot.com/smart-tour?...) is geen bestaande
+// pagina — die 404't/werkt niet. Komoot's echte zoekfunctie is een JS-app
+// zonder gedocumenteerde publieke "zoek op tekst"-URL, dus in plaats van
+// nóg een gok te wagen op een Komoot-interne route linken we naar een
+// Google-zoekopdracht die specifiek naar komoot.com scoped is — dat opent
+// altijd echte resultaten, nooit een dode link.
+function komootSearchUrl(query) {
+  return `https://www.google.com/search?q=${encodeURIComponent(query + ' wandeling site:komoot.com')}`;
+}
+
 function getAllTripDays() {
   const days = [];
   const d = new Date(TRIP_START);
@@ -167,18 +177,28 @@ async function toggleActivityStatus(id) {
 async function addActivity({
   name, accId, date, emoji = '📍', desc = '', level = 'Makkelijk',
   distance = '—', duration = '—', elevation = 0, lat = 0, lng = 0,
-  googleMapsQuery = '', whyRecommended = '',
+  googleMapsQuery = '', whyRecommended = '', komootTourUrl = '',
 }) {
   const existingIds = AppState.activities.map(a => typeof a.id === 'number' ? a.id : 0);
   const newId = Math.max(...existingIds, 0) + 1;
   const activity = {
     id: newId, name, emoji, accId, status: 'planned', date: date || null,
     distance, duration, level, elevation, lat, lng, desc,
-    googleMapsQuery, whyRecommended,
+    googleMapsQuery, whyRecommended, komootTourUrl,
   };
   AppState.activities.push(activity);
   await dbSaveActivity(activity);
   return activity;
+}
+
+// Alleen een echte komoot.com/tour/{id}-link accepteren — dit wordt
+// gebruikt om een iframe-src te bouwen (embed?profile=1, zie
+// openActivityDetailSheet), dus moet strikt gevalideerd zijn om te
+// voorkomen dat een willekeurige URL in een iframe terechtkomt.
+function extractKomootTourId(url) {
+  if (!url) return null;
+  const match = url.match(/^https:\/\/(?:www\.)?komoot\.com\/tour\/(\d+)/);
+  return match ? match[1] : null;
 }
 
 async function updateActivity(id, changes) {

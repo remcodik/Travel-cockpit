@@ -9,7 +9,7 @@
 ## Uitdrukkelijk buiten dit plan
 
 - **Firebase-setup voor de deel-links** (`docs/10-issues/07-deel-links-permissies-plan.md`) — jij pakt dit later zelf op, geen actie van mijn kant totdat je erom vraagt.
-- **Hoogtekaart/hoogteprofiel in welke vorm dan ook** — al op 1 juli afgewezen (`02-feedback-01juli.md`), nu nogmaals bevestigd. Dit komt niet meer terug in een plan, ook niet als kleiner "simpel getal"-variant (D5 hieronder blijft daarom bewust laaste prioriteit en optioneel, niet als voorstel).
+- **Hoogtekaart van de hele autoroute** — op 1 juli afgewezen (`02-feedback-01juli.md`). Verduidelijkt op 2026-07-03: die afwijzing ging specifiek over de rijroute op de kaart, niet over het hoogteprofiel van een losse wandeling — dat laatste is inmiddels wél gebouwd (Komoot-embed bij een opgeslagen routelink, zie `docs/10-issues/10-activiteit-detail-feedback.md`). Een zelfgebouwde hoogtekaart/-grafiek voor de auto-route blijft uitgesloten.
 
 ---
 

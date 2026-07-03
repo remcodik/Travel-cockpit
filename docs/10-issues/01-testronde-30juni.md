@@ -54,10 +54,11 @@ Vanaf nu: **eerst overleg, dan pas bouwen.** Elk punt hieronder wordt besproken,
 |---|---|---|
 | D1 | ~~Onduidelijk of suggesties automatisch verversen of alleen via de knop~~ | **✅ Opgelost — H4: suggesties worden toegevoegd, niet vervangen bij verversen.** |
 | D2 | ~~"Route"-knop bij een suggestie doet niets~~ | **✅ Opgelost — echte route-keuze (vanaf verblijf / vanaf hier) via openRouteOptionsSheet.** |
-| D3 | ~~Wens: Komoot-link toevoegen bij wandelsuggesties voor meer detail~~ | **✅ Opgelost — Komoot-links bestaan al bij wandelsuggesties.** |
+| D3 | ~~Wens: Komoot-link toevoegen bij wandelsuggesties voor meer detail~~ | **✅ Opgelost (2026-07-03) — de eerdere link bleek een niet-bestaande URL (`komoot.com/smart-tour`); vervangen door een werkende Komoot-zoekopdracht. Zie `docs/10-issues/10-activiteit-detail-feedback.md`.** |
 | D4 | ~~Cursieve "waarom relevant"-tekst is lastig leesbaar~~ | **✅ Opgelost — geen cursieve stijl meer op de "waarom relevant"-tekst.** |
-| D5 | ~~Gewenst: tijd, afstand én hoogteverschil altijd zichtbaar per suggestie~~ | **Nog open, lage prioriteit — zie 08-restplan (uitdrukkelijk geen hoogtekaart, alleen een simpel getal).** |
-| D6 | ~~Wens: hoogtekaart van de hele route~~ | **Afgewezen (2026-07-02) — niet bouwen, blijft buiten scope.** |
+| D5 | ~~Gewenst: tijd, afstand én hoogteverschil altijd zichtbaar per suggestie~~ | **✅ Opgelost — getal bij elke suggestie, plus nu ook als grote statistiekkaart op het (vergrote) activiteit-detailscherm.** |
+| D6 | ~~Wens: hoogtekaart van de hele route~~ | **Afgewezen (2026-07-02), blijft afgewezen — dit ging over een hoogtekaart van de hele **autoroute**, niet over het hoogteprofiel van een losse wandeling. Zie D6b hieronder voor de (wel gebouwde) verduidelijking.** |
+| D6b | Verduidelijking (2026-07-03): een écht hoogteprofiel bij een wandelactiviteit specifiek — geen zelfgebouwde grafiek (geen route-data beschikbaar om er echte cijfers voor te verzinnen), wel Komoot's eigen officiële embed met het echte profiel als je een Komoot-routelink opslaat bij de activiteit. | **✅ Gebouwd — zie `docs/10-issues/10-activiteit-detail-feedback.md`.** |
 | D7 | ~~Onduidelijk of suggesties gebaseerd zijn op accommodatie of actuele live locatie~~ | **✅ Opgelost — "Hier"-modus (live GPS) bestaat naast accommodatie-modus.** |
 | D8 | ~~Wens: als een activiteit afgelopen is, wil de gebruiker een café in de buurt van de activiteit zien — niet terug naar het verblijf~~ | **✅ Opgelost — N3: "bij deze activiteit"-suggesties na afvinken.** |
 | D9 | ~~Onduidelijk of "eten"-categorie ook cafés omvat, niet alleen restaurants~~ | **✅ Opgelost — H3: eten-filter toont nu ook cafés.** |

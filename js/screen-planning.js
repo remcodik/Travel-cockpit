@@ -257,7 +257,7 @@ function openActivityDetailSheet(id) {
     const isWalk = act.emoji === CATEGORY_EMOJIS.activity;
     const safeQuery = escapeHtml(locationQuery).replace(/'/g, "\\'");
     nearbyEl.innerHTML = `
-        ${isWalk ? `<a href="https://www.komoot.com/smart-tour?sport=hike&q=${encodeURIComponent(locationQuery)}" target="_blank"
+        ${isWalk ? `<a href="${komootSearchUrl(locationQuery)}" target="_blank"
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;display:inline-block">
           🥾 Komoot
         </a>` : ''}
@@ -269,6 +269,24 @@ function openActivityDetailSheet(id) {
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           ☕ Café nabij
         </button>`;
+  }
+
+  // Echt hoogteprofiel (geen zelfgebouwde grafiek — dat zou verzonnen data
+  // zijn zonder een echt wandelpad). Als er een Komoot-routelink is
+  // opgeslagen, embedden we Komoot's eigen officiële widget met het echte
+  // altitude-profiel van die tour (support.komoot.com iframe-embed,
+  // embed?profile=1). Zonder link: gewoon niets, de Komoot-zoekknop hierboven
+  // blijft de manier om alsnog een route te vinden.
+  const elevationEl = document.getElementById('pd-elevation-embed');
+  if (elevationEl) {
+    const tourId = extractKomootTourId(act.komootTourUrl);
+    if (tourId) {
+      elevationEl.style.display = 'block';
+      elevationEl.innerHTML = `<iframe src="https://www.komoot.com/tour/${tourId}/embed?profile=1" width="100%" height="220" frameborder="0" scrolling="no" title="Hoogteprofiel op Komoot"></iframe>`;
+    } else {
+      elevationEl.style.display = 'none';
+      elevationEl.innerHTML = '';
+    }
   }
 
   // Extra acties voor planning-context
@@ -300,6 +318,11 @@ function openEditActivitySheet(id) {
   if (!act) return;
   document.getElementById('edit-activity-name-input').value = act.name;
   document.getElementById('edit-activity-desc-input').value = act.desc || '';
+  document.getElementById('edit-activity-distance-input').value = act.distance && act.distance !== '—' ? act.distance : '';
+  document.getElementById('edit-activity-duration-input').value = act.duration && act.duration !== '—' ? act.duration : '';
+  document.getElementById('edit-activity-elevation-input').value = act.elevation || '';
+  document.getElementById('edit-activity-level-select').value = act.level && act.level !== '—' ? act.level : 'Makkelijk';
+  document.getElementById('edit-activity-komoot-input').value = act.komootTourUrl || '';
   document.getElementById('edit-activity-save-btn').onclick = () => saveActivityEdit(id);
   openSheet('sheet-edit-activity');
 }
@@ -308,7 +331,14 @@ async function saveActivityEdit(id) {
   const name = document.getElementById('edit-activity-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return; }
   const desc = document.getElementById('edit-activity-desc-input').value.trim();
-  await updateActivity(id, { name, desc });
+  const distance = document.getElementById('edit-activity-distance-input').value.trim();
+  const duration = document.getElementById('edit-activity-duration-input').value.trim();
+  const elevation = parseInt(document.getElementById('edit-activity-elevation-input').value, 10) || 0;
+  const level = document.getElementById('edit-activity-level-select').value;
+  const komootTourUrl = document.getElementById('edit-activity-komoot-input').value.trim();
+  await updateActivity(id, {
+    name, desc, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl,
+  });
   closeSheet('sheet-edit-activity');
   showToast('✓ Activiteit bijgewerkt');
   renderPlanningScreen();
@@ -419,7 +449,7 @@ async function openAiEnrichSheet(id) {
           </div>` : ''}
         ${enriched.best_time ? `<p class="mono" style="margin-bottom:12px">⏰ ${escapeHtml(enriched.best_time)}</p>` : ''}
         <button onclick="applyAiEnrichment(${id}, ${JSON.stringify(enriched).replace(/"/g, '&quot;')})" class="btn btn-primary" style="margin-bottom:9px">✓ Opslaan</button>
-        ${enriched.komoot_search ? `<a href="https://www.komoot.com/smart-tour?sport=hike&q=${encodeURIComponent(enriched.komoot_search)}" target="_blank" style="display:block;padding:13px;border-radius:13px;border:1.5px solid #6fbe6f;text-align:center;font-size:13px;font-weight:700;text-transform:uppercase;color:#3d8c3d;text-decoration:none">🗺 Bekijk op Komoot</a>` : ''}`;
+        ${enriched.komoot_search ? `<a href="${komootSearchUrl(enriched.komoot_search)}" target="_blank" style="display:block;padding:13px;border-radius:13px;border:1.5px solid #6fbe6f;text-align:center;font-size:13px;font-weight:700;text-transform:uppercase;color:#3d8c3d;text-decoration:none">🗺 Bekijk op Komoot</a>` : ''}`;
     } else {
       document.getElementById('enrich-result').innerHTML = `<p class="mono" style="color:var(--summit)">Geen verrijking ontvangen</p>`;
     }
@@ -461,6 +491,7 @@ function openAddActivitySheetForCurrentDay() {
   ).join('');
 
   document.getElementById('activity-name-input').value = '';
+  resetActivityFormExtras();
   selectedActivityCategory = 'activity';
   document.querySelectorAll('#activity-category-chips .chip').forEach((c, i) => c.classList.toggle('on', i === 0));
   openSheet('sheet-activity');
@@ -468,6 +499,17 @@ function openAddActivitySheetForCurrentDay() {
 
 function openAddActivitySheet() {
   openAddActivitySheetForCurrentDay();
+}
+
+// Wandelinfo-velden (optioneel, zie sheet-activity) — leeg bij elk nieuw
+// formulier, zodat de afstand/duur van de vorige activiteit niet blijft
+// hangen.
+function resetActivityFormExtras() {
+  document.getElementById('activity-distance-input').value = '';
+  document.getElementById('activity-duration-input').value = '';
+  document.getElementById('activity-elevation-input').value = '';
+  document.getElementById('activity-level-select').value = 'Makkelijk';
+  document.getElementById('activity-komoot-input').value = '';
 }
 
 // Soort bepaalt het icoon — zelfde iconenset als Discover, zodat een
@@ -488,7 +530,12 @@ async function saveActivity() {
   const accId = document.getElementById('activity-acc-select').value;
   const date = dateStr ? new Date(dateStr) : null;
   const emoji = CATEGORY_EMOJIS[selectedActivityCategory] || CATEGORY_EMOJIS.default;
-  await addActivity({ name, accId, date, emoji });
+  const distance = document.getElementById('activity-distance-input').value.trim();
+  const duration = document.getElementById('activity-duration-input').value.trim();
+  const elevation = parseInt(document.getElementById('activity-elevation-input').value, 10) || 0;
+  const level = document.getElementById('activity-level-select').value;
+  const komootTourUrl = document.getElementById('activity-komoot-input').value.trim();
+  await addActivity({ name, accId, date, emoji, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl });
   closeSheet('sheet-activity');
   showToast(`✓ ${name} toegevoegd`);
   if (date) AppState.selectedPlanningDay = date;

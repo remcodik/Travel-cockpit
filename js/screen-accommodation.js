@@ -203,6 +203,7 @@ function openAddActivityForAccommodation(accId) {
   ).join('');
 
   document.getElementById('activity-name-input').value = '';
+  resetActivityFormExtras();
   selectedActivityCategory = 'activity';
   document.querySelectorAll('#activity-category-chips .chip').forEach((c, i) => c.classList.toggle('on', i === 0));
   openSheet('sheet-activity');
