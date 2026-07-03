@@ -67,7 +67,7 @@ function toggleRoadtripGPS() {
   } else {
     const started = startGpsTracking('roadtrip', pos => {
       document.getElementById('rt-position').textContent =
-        `${pos.coords.latitude.toFixed(4)}°N ${pos.coords.longitude.toFixed(4)}°E`;
+        formatLatLng(pos.coords.latitude, pos.coords.longitude, 4);
     }, () => {
       dot.style.background = 'rgba(232,228,217,0.4)';
       label.textContent = 'GPS UIT';

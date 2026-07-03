@@ -192,7 +192,7 @@ async function handleLoadMoreSuggestions() {
       ? acc.name
       : discoverMode === 'activity'
         ? discoverActivityContext.name
-        : `Huidige locatie (${baseLat.toFixed(3)}°N, ${baseLng.toFixed(3)}°E)`,
+        : `Huidige locatie (${formatLatLng(baseLat, baseLng, 3)})`,
     accommodationLocation: discoverMode === 'accommodation'
       ? acc.address
       : `${baseLat.toFixed(4)}, ${baseLng.toFixed(4)}`,

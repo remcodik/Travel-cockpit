@@ -101,6 +101,19 @@ function getActiveAccommodation() {
   return ACCOMMODATIONS[0];
 }
 
+// Correct N/S en E/W bepalen op basis van het teken — FIX: eerdere
+// code liet altijd "°N ... °E" zien, ook bij een negatieve breedte-
+// (zuidelijk halfrond) of lengtegraad (westelijk halfrond), wat de
+// coördinaten van elke niet-Noorse/niet-Europese reis fout liet lezen.
+function formatLatLng(lat, lng, decimals = 2) {
+  // N/E/S/W (internationale kaartconventie) i.p.v. Nederlandse afkortingen
+  // — zo blijft dit consistent met de bestaande, hardcoded seed-coördinaten
+  // in js/data.js (bv. "61.24°N 7.09°E").
+  const latDir = lat >= 0 ? 'N' : 'S';
+  const lngDir = lng >= 0 ? 'E' : 'W';
+  return `${Math.abs(lat).toFixed(decimals)}°${latDir} ${Math.abs(lng).toFixed(decimals)}°${lngDir}`;
+}
+
 function getAllTripDays() {
   const days = [];
   const d = new Date(TRIP_START);
@@ -314,6 +327,7 @@ async function createAccommodationForTrip(fields) {
     lng: fields.lng,
     coord: fields.coord,
     url: fields.url,
+    photoDataUrl: fields.photoDataUrl || null,
     notes: fields.notes,
     short: (fields.name || 'Vbl').slice(0, 3),
     color: '#5B8C7B',

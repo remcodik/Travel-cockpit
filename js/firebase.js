@@ -502,7 +502,16 @@ async function dbLoadAccommodations(forTripId) {
   if (!ref) return null;
   try {
     const snap = await ref.orderBy('checkIn').get();
-    return snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    // Foto terug ophalen uit localStorage — zelfde patroon als tickets
+    // (dbSaveTicket): base64-fotodata gaat niet mee in het Firestore-
+    // document zelf (1MB-limiet per document), alleen een hasPhoto-vlag.
+    return snap.docs.map(doc => {
+      const d = doc.data();
+      const photoDataUrl = d.hasPhoto
+        ? (localStorage.getItem(`tc_acc_photo_${doc.id}`) || null)
+        : null;
+      return { ...d, id: doc.id, photoDataUrl };
+    });
   } catch (err) {
     console.error('Accommodaties laden mislukt:', err);
     return null;
@@ -513,8 +522,15 @@ async function dbSaveAccommodation(forTripId, acc) {
   const ref = db && db.collection('trips').doc(forTripId).collection('accommodations');
   if (!ref || !acc.id) return;
   try {
-    const { id, ...rest } = acc;
-    await ref.doc(id).set(rest, { merge: true });
+    const { id, photoDataUrl, ...rest } = acc;
+    await ref.doc(id).set({ ...rest, hasPhoto: !!photoDataUrl }, { merge: true });
+    // Foto apart opslaan in localStorage (device-local) — zelfde reden
+    // als bij tickets: Firestore-documenten mogen niet groter dan 1MB.
+    if (photoDataUrl) {
+      try { localStorage.setItem(`tc_acc_photo_${id}`, photoDataUrl); } catch (e) {}
+    } else {
+      try { localStorage.removeItem(`tc_acc_photo_${id}`); } catch (e) {}
+    }
   } catch (err) {
     console.error('Accommodatie opslaan mislukt:', err);
   }
@@ -525,6 +541,7 @@ async function dbDeleteAccommodation(forTripId, accId) {
   if (!ref) return;
   try {
     await ref.doc(accId).delete();
+    try { localStorage.removeItem(`tc_acc_photo_${accId}`); } catch (e) {}
   } catch (err) {
     console.error('Accommodatie verwijderen mislukt:', err);
   }

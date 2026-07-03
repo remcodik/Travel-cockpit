@@ -582,17 +582,34 @@
     <input id="edit-acc-name-input" placeholder="Naam accommodatie"/>
     <input id="edit-acc-address-input" placeholder="Adres"/>
     <div style="display:flex;gap:10px">
-      <input id="edit-acc-checkin-input" type="date" style="flex:1"/>
-      <input id="edit-acc-checkout-input" type="date" style="flex:1"/>
-    </div>
-    <div style="display:flex;gap:10px">
-      <input id="edit-acc-lat-input" type="number" step="0.0001" placeholder="Breedtegraad" style="flex:1"/>
-      <input id="edit-acc-lng-input" type="number" step="0.0001" placeholder="Lengtegraad" style="flex:1"/>
+      <div style="flex:1">
+        <p class="eyebrow" style="margin-bottom:5px">Check-in</p>
+        <input id="edit-acc-checkin-input" type="date"/>
+      </div>
+      <div style="flex:1">
+        <p class="eyebrow" style="margin-bottom:5px">Check-out</p>
+        <input id="edit-acc-checkout-input" type="date"/>
+      </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <input id="edit-acc-url-input" type="url" placeholder="Link (hotel/Airbnb, optioneel)" style="flex:1"/>
       <button type="button" onclick="handleExtractFromMapsLink()" title="Locatie/adres uit link halen (Google Maps, of best-effort uit boekingslink)" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">📍</button>
     </div>
+    <details style="margin-bottom:14px">
+      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.4px;padding:2px 0 8px">Coördinaten handmatig aanpassen</summary>
+      <div style="display:flex;gap:10px">
+        <input id="edit-acc-lat-input" type="number" step="0.0001" placeholder="Breedtegraad" style="flex:1"/>
+        <input id="edit-acc-lng-input" type="number" step="0.0001" placeholder="Lengtegraad" style="flex:1"/>
+      </div>
+    </details>
+    <label class="file-upload" id="edit-acc-photo-upload" for="edit-acc-photo-input">
+      <div class="file-upload-icon">📷</div>
+      <div class="file-upload-text">
+        <p class="file-upload-label">Foto toevoegen</p>
+        <p class="file-upload-hint">Optioneel, max 8MB</p>
+      </div>
+      <input type="file" id="edit-acc-photo-input" accept="image/*" onchange="handleAccPhotoSelect(this)"/>
+    </label>
     <textarea id="edit-acc-notes-input" placeholder="Notities (optioneel)" rows="3" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:14.5px;margin-bottom:18px;font-family:inherit;resize:vertical"></textarea>
     <button id="edit-acc-save-btn" class="btn btn-primary">Opslaan</button>
     <button onclick="closeSheet('sheet-edit-accommodation')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>

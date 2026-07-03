@@ -116,11 +116,27 @@ function renderAccommodationScreen(accId) {
           </div>`).join('')}</div>`;
   }
 
+  // Eigen foto van dit verblijf, indien toegevoegd — vervangt het
+  // topografische decoratiepatroon in de hero met een echte foto.
+  const heroPanel = document.querySelector('#screen-accommodation .topo-panel');
+  if (heroPanel) {
+    if (acc.photoDataUrl) {
+      heroPanel.style.backgroundImage = `url(${acc.photoDataUrl})`;
+      heroPanel.style.backgroundSize = 'cover';
+      heroPanel.style.backgroundPosition = 'center';
+    } else {
+      heroPanel.style.backgroundImage = '';
+    }
+  }
+
   // Topografisch patroon afgeleid van de echte locatie/hoogte van dit
   // verblijf, zodat elke accommodatie een eigen, herkenbaar patroon
   // krijgt i.p.v. voor elk verblijf hetzelfde decoratieve vaste patroon.
+  // Wordt overlapt door de foto hierboven als die er is (SVG blijft
+  // gewoon bestaan, is dan alleen niet zichtbaar).
   const heroSvg = document.querySelector('#screen-accommodation .topo-svg');
   if (heroSvg) {
+    heroSvg.style.display = acc.photoDataUrl ? 'none' : '';
     heroSvg.dataset.topo = topoSeedForLocation(acc.lat, acc.lng, acc.elevation);
     heroSvg.dataset.topoElevation = acc.elevation;
   }
@@ -149,6 +165,8 @@ function openEditAccommodationSheet(accId) {
   document.getElementById('edit-acc-lng-input').value = acc.lng || '';
   document.getElementById('edit-acc-url-input').value = acc.url || '';
   document.getElementById('edit-acc-notes-input').value = acc.notes || '';
+  pendingAccPhoto = acc.photoDataUrl || null;
+  updateAccPhotoUploadUI();
   document.getElementById('edit-acc-save-btn').onclick = () => saveAccommodationEdit(accId);
   openSheet('sheet-edit-accommodation');
 }
@@ -163,8 +181,50 @@ function openAddAccommodationSheet() {
   document.getElementById('edit-acc-lng-input').value = '';
   document.getElementById('edit-acc-url-input').value = '';
   document.getElementById('edit-acc-notes-input').value = '';
+  pendingAccPhoto = null;
+  updateAccPhotoUploadUI();
   document.getElementById('edit-acc-save-btn').onclick = () => saveAccommodationCreate();
   openSheet('sheet-edit-accommodation');
+}
+
+// ── Foto toevoegen aan een verblijf ─────────────────────────
+// Zelfde patroon als het ticket-bestand (js/screen-tickets.js):
+// base64 blijft device-local in localStorage (Firestore-documenten
+// mogen niet groter dan 1MB), alleen een hasPhoto-vlag gaat mee in het
+// document zelf. Een foto toegevoegd op dit toestel is dus (nog) niet
+// automatisch zichtbaar op een ander toestel.
+let pendingAccPhoto = null;
+
+function handleAccPhotoSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 8 * 1024 * 1024) { showToast('Foto te groot (max 8MB)'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    pendingAccPhoto = e.target.result;
+    updateAccPhotoUploadUI();
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateAccPhotoUploadUI() {
+  const uploadEl = document.getElementById('edit-acc-photo-upload');
+  if (!uploadEl) return;
+  if (!pendingAccPhoto) { resetAccPhotoUpload(); return; }
+  uploadEl.classList.add('has-file');
+  uploadEl.querySelector('.file-upload-icon').innerHTML = `<img src="${pendingAccPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:9px"/>`;
+  uploadEl.querySelector('.file-upload-label').textContent = 'Foto toegevoegd';
+  uploadEl.querySelector('.file-upload-hint').textContent = 'Tik om te wijzigen';
+}
+
+function resetAccPhotoUpload() {
+  const uploadEl = document.getElementById('edit-acc-photo-upload');
+  if (!uploadEl) return;
+  uploadEl.classList.remove('has-file');
+  uploadEl.querySelector('.file-upload-icon').textContent = '📷';
+  uploadEl.querySelector('.file-upload-label').textContent = 'Foto toevoegen';
+  uploadEl.querySelector('.file-upload-hint').textContent = 'Optioneel, max 8MB';
+  document.getElementById('edit-acc-photo-input').value = '';
 }
 
 // ── Locatie uit een Google Maps-link halen ──────────────────
@@ -252,8 +312,9 @@ function readAccommodationFormFields() {
     checkIn: new Date(checkInStr),
     checkOut: new Date(checkOutStr),
     lat, lng,
-    coord: lat && lng ? `${lat.toFixed(2)}°N ${lng.toFixed(2)}°E` : '—',
+    coord: lat && lng ? formatLatLng(lat, lng) : '—',
     url: document.getElementById('edit-acc-url-input').value.trim(),
+    photoDataUrl: pendingAccPhoto,
     notes: document.getElementById('edit-acc-notes-input').value.trim(),
   };
 }
