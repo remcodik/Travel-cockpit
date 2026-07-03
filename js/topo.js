@@ -27,7 +27,10 @@ function generateTopoLines(seed, elevationM) {
     const rx = (40 + i * spacing) * 1.45;
     const ry = 40 + i * spacing;
     const isAccent = i === Math.floor(ringCount / 3);
-    const stroke = isAccent ? '#C5512B' : '#E8E4D9';
+    // var(--summit)/var(--paper) i.p.v. hardcoded hex — zo volgen de
+    // contourlijnen automatisch het regio-thema (Restplan #2) zonder dat
+    // deze SVG opnieuw gegenereerd hoeft te worden bij een thema-wissel.
+    const stroke = isAccent ? 'var(--summit)' : 'var(--paper)';
     const strokeWidth = isAccent ? 1.6 : 0.8;
     const opacity = isAccent ? 0.55 : 0.85 - i * (0.7 / ringCount);
     svg += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke="${stroke}" stroke-width="${strokeWidth}" opacity="${opacity}"/>`;

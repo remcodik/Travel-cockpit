@@ -195,6 +195,29 @@ function getActiveTrip() {
 // referentie naar dezelfde array/Date-objecten vast). Zo hoeft geen
 // enkel scherm te weten dat er van reis is gewisseld; ze lezen bij de
 // eerstvolgende render gewoon de bijgewerkte waarden.
+// Regio-thema per land (Restplan #2) — alleen kleuren wisselen
+// (body[data-theme=...] in css/styles.css), het contourlijnen-patroon
+// zelf blijft overal gelijk. Onbekend/niet-gemapt land = geen data-theme
+// attribuut = het oorspronkelijke Scandinavische/alpiene thema.
+const COUNTRY_THEMES = {
+  'Italië': 'mediterranean',
+  'Spanje': 'mediterranean',
+  'Portugal': 'mediterranean',
+  'Griekenland': 'mediterranean',
+  'Kroatië': 'mediterranean',
+  'Duitsland': 'continental',
+  'Frankrijk': 'continental',
+};
+
+function applyCountryTheme(country) {
+  const theme = COUNTRY_THEMES[country];
+  if (theme) {
+    document.body.dataset.theme = theme;
+  } else {
+    delete document.body.dataset.theme;
+  }
+}
+
 function applyTripData(trip, accommodations) {
   // Kopie eerst nemen — accommodations kan (in een fallback-pad) dezelfde
   // array-referentie zijn als ACCOMMODATIONS zelf, die hieronder leeg-
@@ -203,6 +226,7 @@ function applyTripData(trip, accommodations) {
 
   TRIP_START.setTime(trip.startDate.getTime());
   TRIP_END.setTime(trip.endDate.getTime());
+  applyCountryTheme(trip.country);
 
   ACCOMMODATIONS.length = 0;
   // Sorteert op check-in datum i.p.v. het (onbetrouwbare, vaak
