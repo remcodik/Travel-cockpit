@@ -237,6 +237,20 @@ function renderPdHero(act, acc) {
   if (!act || !acc) return;
   const hero = document.getElementById('pd-hero');
   if (hero) hero.style.background = acc.color;
+
+  // Zelfde topografisch decoratiepatroon als de accommodatie-hero, nu ook
+  // in het (vergrote) activiteit-detailscherm, afgeleid van de echte
+  // locatie/hoogte van deze activiteit.
+  const topoSvg = document.getElementById('pd-topo-svg');
+  if (topoSvg) {
+    if (act.lat && act.lng) {
+      topoSvg.style.display = '';
+      topoSvg.innerHTML = generateTopoLines(topoSeedForLocation(act.lat, act.lng, act.elevation), act.elevation);
+    } else {
+      topoSvg.style.display = 'none';
+    }
+  }
+
   const thumb = document.getElementById('pd-thumb');
   thumb.textContent = act.emoji;
 

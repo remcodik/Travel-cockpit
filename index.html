@@ -651,15 +651,16 @@
 
 <!-- Plek-detail bij tik op kaart-pin of activiteit-rij ─ visueel verrijkt (Fase C), alle bestaande acties behouden -->
 <div class="sheet-backdrop" id="sheet-place-detail">
-  <div class="sheet" onclick="event.stopPropagation()" style="padding-top:0;overflow:hidden">
-    <div id="pd-hero" style="margin:0 -20px 16px;padding:18px 20px 16px;position:relative;background:var(--spruce)">
-      <div class="sheet-handle" style="background:rgba(255,255,255,0.35);margin-bottom:14px"></div>
-      <button onclick="closeSheet('sheet-place-detail')" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.16);border:none;border-radius:50%;width:28px;height:28px;font-size:16px;color:white;cursor:pointer;line-height:1">✕</button>
-      <div style="display:flex;align-items:center;gap:14px">
-        <div id="pd-thumb" style="width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;background:rgba(255,255,255,0.16)">📍</div>
+  <div class="sheet" onclick="event.stopPropagation()" style="padding-top:0;overflow:hidden;max-height:92vh">
+    <div id="pd-hero" style="margin:0 -20px 18px;padding:22px 20px 22px;position:relative;background:var(--spruce);overflow:hidden">
+      <svg class="topo-svg" id="pd-topo-svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;opacity:.4"></svg>
+      <div class="sheet-handle" style="background:rgba(255,255,255,0.35);margin-bottom:16px;position:relative"></div>
+      <button onclick="closeSheet('sheet-place-detail')" style="position:absolute;top:18px;right:18px;background:rgba(255,255,255,0.16);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;color:white;cursor:pointer;line-height:1;z-index:1">✕</button>
+      <div style="display:flex;align-items:center;gap:16px;position:relative">
+        <div id="pd-thumb" style="width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:38px;flex-shrink:0;background:rgba(255,255,255,0.16)">📍</div>
         <div style="flex:1;min-width:0">
-          <p id="pd-name" style="font-family:var(--font-display);font-size:20px;font-weight:800;letter-spacing:-0.3px;color:white">—</p>
-          <div id="pd-meta" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">—</div>
+          <p id="pd-name" style="font-family:var(--font-display);font-size:23px;font-weight:800;letter-spacing:-0.3px;color:white">—</p>
+          <div id="pd-meta" style="margin-top:7px;display:flex;flex-wrap:wrap;gap:6px">—</div>
         </div>
       </div>
     </div>
@@ -668,6 +669,7 @@
       <button id="pd-add-btn" class="btn btn-primary" style="flex:1">+ Plan</button>
       <button id="pd-route-btn" class="btn btn-outline" style="flex:1">◈ Route</button>
     </div>
+    <div id="pd-nearby-links" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:9px"></div>
     <div id="pd-extra-actions"></div>
     <button onclick="closeSheet('sheet-place-detail')" class="btn btn-outline" style="margin-top:8px">Sluiten</button>
   </div>

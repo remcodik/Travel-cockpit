@@ -162,11 +162,30 @@ function renderUnscheduledRow(act, index, total) {
       </div>
       <button onclick="event.stopPropagation();openEditActivitySheet(${act.id})" class="edit-pencil-btn" title="Bewerken">✎</button>
       ${renderNoteButton('activity', act.id, act.name, acc.color)}
-      <button onclick="openMoveActivitySheet(${act.id})"
+      <button onclick="event.stopPropagation();handleQuickSchedule(${act.id})" class="edit-only"
         style="font-size:11px;font-weight:700;padding:5px 10px;background:${acc.color}15;color:${acc.color};border:1.5px solid ${acc.color}40;border-radius:20px;cursor:pointer;white-space:nowrap;flex-shrink:0">
         Inplannen
       </button>
     </div>`;
+}
+
+// Zoekt restaurants/cafés rond een punt via Google Maps' nearby-zoekactie
+// (zelfde aanpak als openGoogleMapsPlace() in js/charging.js).
+function openNearbySearch(category, lat, lng) {
+  const label = category === 'restaurant' ? 'restaurant' : 'café';
+  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(label + ' near ' + lat + ',' + lng)}`, '_blank');
+}
+
+// "Inplannen" op een niet-ingeplande activiteit vraagt niet meer via een
+// sheet welke dag/verblijf — die zijn al bekend (de rij staat al onder
+// de huidige dag/verblijf in Planning), dus meteen opslaan.
+async function handleQuickSchedule(id) {
+  const act = AppState.activities.find(a => a.id === id);
+  if (!act) return;
+  await updateActivity(id, { date: new Date(AppState.selectedPlanningDay) });
+  showToast(`✓ ${act.name} ingepland`);
+  renderPlanningScreen();
+  renderHomeScreen();
 }
 
 // ── Activiteit detail — gebruikt de bestaande place-detail sheet ──
@@ -206,6 +225,30 @@ function openActivityDetailSheet(id) {
     routeBtn.onclick = () => openMapsForCoords(act.lat, act.lng, act.name);
   } else if (routeBtn) {
     routeBtn.style.display = 'none';
+  }
+
+  // Snelkoppelingen: Komoot (alleen bij een wandeling), restaurant/café
+  // in de buurt (altijd, zolang er coördinaten bekend zijn).
+  const nearbyEl = document.getElementById('pd-nearby-links');
+  if (nearbyEl) {
+    if (act.lat && act.lng) {
+      const isWalk = act.emoji === CATEGORY_EMOJIS.activity;
+      nearbyEl.innerHTML = `
+        ${isWalk ? `<a href="https://www.komoot.com/smart-tour?sport=hike&q=${encodeURIComponent(act.name + ' ' + acc.name)}" target="_blank"
+          style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;display:inline-block">
+          🥾 Komoot
+        </a>` : ''}
+        <button onclick="openNearbySearch('restaurant', ${act.lat}, ${act.lng})"
+          style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
+          🍽️ Eten nabij
+        </button>
+        <button onclick="openNearbySearch('cafe', ${act.lat}, ${act.lng})"
+          style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
+          ☕ Café nabij
+        </button>`;
+    } else {
+      nearbyEl.innerHTML = '';
+    }
   }
 
   // Extra acties voor planning-context
