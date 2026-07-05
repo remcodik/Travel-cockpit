@@ -22,7 +22,7 @@ function buildDayTabs() {
   const days = getAllTripDays();
   container.innerHTML = days.map(day => {
     const dayNum = getDayNumber(day);
-    const acc = getAccommodationForDate(day);
+    const acc = getAccommodationOrHomeForDate(day);
     const color = acc ? acc.color : 'var(--ink-faint)';
     const isSelected = day.toDateString() === AppState.selectedPlanningDay.toDateString();
     const actCount = getActivitiesForDate(day).length;
@@ -67,7 +67,7 @@ function selectPlanningDay(isoString) {
 function renderPlanningDay() {
   const day = AppState.selectedPlanningDay;
   const dayNum = getDayNumber(day);
-  const acc = getAccommodationForDate(day);
+  const acc = getAccommodationOrHomeForDate(day);
 
   // Verplaatsdag: zelfde detectie als buildDayTabs() — deze dag is zowel de
   // check-out van het vorige verblijf als de check-in van het volgende.
@@ -98,7 +98,7 @@ function renderPlanningDay() {
           ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span><span class="mono" style="color:${acc.color};font-weight:700">vanuit ${escapeHtml(acc.name)}</span></div>`
           : `<p class="mono" style="margin-top:3px">reisdag · onderweg</p>`)}
     </div>
-    ${acc ? renderElevationTag(acc.elevation, acc.color) : ''}
+    ${acc && !acc.isHome ? renderElevationTag(acc.elevation, acc.color) : ''}
     <button onclick="openNoteScreen('day','${day.toISOString().slice(0,10)}','Dag ${dayNum} — ${day.getDate()} ${MONTHS[day.getMonth()]}')"
       style="width:32px;height:32px;border-radius:9px;border:1.5px solid var(--line);background:white;cursor:pointer;font-size:14px;color:var(--ink-faint);flex-shrink:0;display:flex;align-items:center;justify-content:center" title="Dagnotitie">✎</button>
   `;
@@ -393,6 +393,17 @@ function openEditActivitySheet(id) {
   document.getElementById('edit-activity-level-select').value = act.level && act.level !== '—' ? act.level : 'Makkelijk';
   document.getElementById('edit-activity-komoot-input').value = act.komootTourUrl || '';
   document.getElementById('edit-activity-link-input').value = act.link || '';
+
+  // FIX: de categorie/het icoon was ooit alleen bij het toevoegen te kiezen
+  // — eenmaal opgeslagen kon je 'm niet meer wijzigen. Chips vooraf
+  // geselecteerd op de huidige categorie (met dezelfde categoryForEmoji()-
+  // terugval als elders voor activiteiten zonder opgeslagen category-veld).
+  selectedEditActivityCategory = act.category || categoryForEmoji(act.emoji);
+  document.querySelectorAll('#edit-activity-category-chips .chip').forEach(c =>
+    c.classList.toggle('on', c.dataset.category === selectedEditActivityCategory)
+  );
+  updateActivityFormForCategory(selectedEditActivityCategory, 'edit-activity');
+
   document.getElementById('edit-activity-save-btn').onclick = () => saveActivityEdit(id);
   openSheet('sheet-edit-activity');
 }
@@ -407,8 +418,10 @@ async function saveActivityEdit(id) {
   const level = document.getElementById('edit-activity-level-select').value;
   const komootTourUrl = document.getElementById('edit-activity-komoot-input').value.trim();
   const link = document.getElementById('edit-activity-link-input').value.trim();
+  const category = selectedEditActivityCategory;
+  const emoji = CATEGORY_EMOJIS[category] || CATEGORY_EMOJIS.default;
   await updateActivity(id, {
-    name, desc, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl, link,
+    name, desc, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl, link, category, emoji,
   });
   closeSheet('sheet-edit-activity');
   showToast('✓ Activiteit bijgewerkt');
@@ -682,22 +695,27 @@ function resetActivityFormExtras() {
 // Soort bepaalt het icoon — zelfde iconenset als Discover, zodat een
 // handmatig toegevoegde activiteit er niet anders uitziet dan een
 // vanuit AI-suggesties ingeplande (CATEGORY_EMOJIS in js/data.js).
+// Toevoeg- en bewerkformulier hebben allebei hun eigen chips-container en
+// state (prefix 'activity' resp. 'edit-activity'), zodat het bewerken van
+// de ene activiteit niet de "soort"-keuze van het toevoeg-formulier verstoort.
 let selectedActivityCategory = 'activity';
-function setActivityCategory(chipEl, category) {
-  selectedActivityCategory = category;
-  document.querySelectorAll('#activity-category-chips .chip').forEach(c => c.classList.remove('on'));
+let selectedEditActivityCategory = 'activity';
+function setActivityCategory(chipEl, category, prefix = 'activity') {
+  if (prefix === 'edit-activity') selectedEditActivityCategory = category;
+  else selectedActivityCategory = category;
+  document.querySelectorAll(`#${prefix}-category-chips .chip`).forEach(c => c.classList.remove('on'));
   chipEl.classList.add('on');
-  updateActivityFormForCategory(category);
+  updateActivityFormForCategory(category, prefix);
 }
 
 // Hoogtewinst/niveau/Komoot-routelink zijn wandeling-specifiek — een café
 // of restaurant heeft geen "moeilijkheidsgraad" (zie CATEGORY_META,
 // js/data.js). Afstand/duur blijven wel voor elke categorie zichtbaar.
-function updateActivityFormForCategory(category) {
+function updateActivityFormForCategory(category, prefix = 'activity') {
   const isHike = (CATEGORY_META[category] || CATEGORY_META.activity).isHike;
-  const hikeFields = document.getElementById('activity-hike-fields');
-  const komootRow = document.getElementById('activity-komoot-row');
-  const summary = document.getElementById('activity-extra-summary');
+  const hikeFields = document.getElementById(`${prefix}-hike-fields`);
+  const komootRow = document.getElementById(`${prefix}-komoot-row`);
+  const summary = document.getElementById(`${prefix}-extra-summary`);
   if (hikeFields) hikeFields.style.display = isHike ? 'flex' : 'none';
   if (komootRow) komootRow.style.display = isHike ? 'flex' : 'none';
   if (summary) summary.textContent = isHike ? 'Wandelinfo toevoegen (optioneel)' : 'Extra info toevoegen (optioneel)';
