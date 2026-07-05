@@ -87,6 +87,19 @@ function getClosestTripDay() {
   return today;
 }
 
+// FIX: een <input type="date"> geeft een kale "YYYY-MM-DD"-string. `new
+// Date(str)` parseert zo'n string per ECMA-262 als UTC-middernacht, niet als
+// lokale middernacht. In een tijdzone vóór op UTC (bv. Nederland, CEST =
+// UTC+2) valt dat UTC-instant ná de lokale middernacht van diezelfde
+// kalenderdag — waardoor getAccommodationForDate() de check-in-dag zelf niet
+// meer als "erbij horend" herkende (`d >= acc.checkIn` faalde), en die dag
+// dus ongekleurd bleef in Planning, ook nadat een nieuw verblijf 'm juist had
+// moeten dekken. Deze helper parseert altijd als lokale middernacht.
+function parseLocalDateInput(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 function getAccommodationForDate(date) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   return ACCOMMODATIONS.find(acc => d >= acc.checkIn && d < acc.checkOut) || null;
@@ -267,6 +280,24 @@ const COUNTRY_THEMES = {
   'Frankrijk': 'continental',
 };
 
+// Vaste, onderling goed te onderscheiden verblijfskleuren (zelfde palet als
+// de bestaande seed-verblijven in js/data.js, plus enkele aanvullingen) —
+// FIX: elk nieuw toegevoegd verblijf kreeg voorheen altijd dezelfde vaste
+// kleur (#5B8C7B), ongeacht hoeveel verblijven er al waren. Bij een tweede
+// nieuw verblijf zag je dus geen kleurverschil in Planning, en de vaste
+// kleur lag bovendien qua tint dicht bij Sogndal's groen (#2d6a4f) — precies
+// het soort te-dicht-bij-elkaar-probleem dat eerder al voor Skjåk/Sogndal is
+// opgelost. Geeft de eerste kleur terug die nog niet in gebruik is.
+const ACCOMMODATION_COLOR_PALETTE = [
+  '#2d6a4f', '#1e88e5', '#ef6c00', '#6a1b9a',
+  '#c62828', '#00838f', '#f9a825', '#5d4037',
+];
+function nextAccommodationColor() {
+  const used = new Set(ACCOMMODATIONS.map(a => a.color));
+  return ACCOMMODATION_COLOR_PALETTE.find(c => !used.has(c))
+    || ACCOMMODATION_COLOR_PALETTE[ACCOMMODATIONS.length % ACCOMMODATION_COLOR_PALETTE.length];
+}
+
 function applyCountryTheme(country) {
   const theme = COUNTRY_THEMES[country];
   if (theme) {
@@ -391,7 +422,7 @@ async function createAccommodationForTrip(fields) {
     photoDataUrl: fields.photoDataUrl || null,
     notes: fields.notes,
     short: (fields.name || 'Vbl').slice(0, 3),
-    color: '#5B8C7B',
+    color: nextAccommodationColor(),
     elevation: 0,
     phone: null,
   };

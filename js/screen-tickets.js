@@ -395,11 +395,15 @@ async function saveTrip() {
     return {
       name: accName || `Verblijf ${i + 1}`,
       address: document.getElementById(`new-acc-address-${i}`).value.trim(),
-      checkIn: checkIn ? new Date(checkIn).toISOString() : new Date().toISOString(),
-      checkOut: checkOut ? new Date(checkOut).toISOString() : new Date().toISOString(),
+      checkIn: checkIn ? parseLocalDateInput(checkIn).toISOString() : new Date().toISOString(),
+      checkOut: checkOut ? parseLocalDateInput(checkOut).toISOString() : new Date().toISOString(),
       lat, lng,
       short: (accName || 'Vbl').slice(0, 3),
-      color: '#5B8C7B',
+      // FIX: elk verblijf in een nieuwe reis kreeg voorheen dezelfde vaste
+      // kleur — nu een kleur per index uit hetzelfde palet als bestaande
+      // reizen (ACCOMMODATIONS is hier nog niet gevuld, dit is een nieuwe
+      // reis, dus cyclen op index i.p.v. nextAccommodationColor()).
+      color: ACCOMMODATION_COLOR_PALETTE[i % ACCOMMODATION_COLOR_PALETTE.length],
       elevation: 0,
       coord: lat && lng ? `${lat}°N ${lng}°E` : '—',
       notes: '',
