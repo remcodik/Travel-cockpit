@@ -16,6 +16,37 @@ const CATEGORY_EMOJIS = {
   default: '📍',
 };
 
+// Eén centrale plek die per categorie bepaalt welke info/acties relevant
+// zijn, i.p.v. dat aannames als "elke activiteit heeft een moeilijkheids-
+// graad" los door de code verspreid staan. isHike bepaalt of
+// hoogtewinst/niveau/Komoot-hoogteprofiel getoond worden; nearbyCategories
+// bepaalt welke "X nabij"-knoppen zinnig zijn — een restaurant hoeft niet
+// zichzelf in de buurt te zoeken.
+const CATEGORY_META = {
+  activity:   { isHike: true,  nearbyCategories: ['restaurant', 'cafe'] },
+  restaurant: { isHike: false, nearbyCategories: ['cafe'] },
+  cafe:       { isHike: false, nearbyCategories: ['restaurant'] },
+  viewpoint:  { isHike: false, nearbyCategories: ['restaurant', 'cafe'] },
+};
+
+// Namen/emoji's voor de "X nabij"-knoppen op het activiteit-detailscherm,
+// gestuurd door CATEGORY_META.nearbyCategories i.p.v. hardcoded per knop.
+const NEARBY_BUTTON_META = {
+  restaurant: { emoji: '🍽️', label: 'Eten nabij' },
+  cafe: { emoji: '☕', label: 'Café nabij' },
+};
+
+// Terugval voor activiteiten die (nog) geen category-veld hebben opgeslagen
+// (aangemaakt vóór dit veld bestond) — leidt de categorie af uit het icoon.
+function categoryForEmoji(emoji) {
+  return Object.keys(CATEGORY_EMOJIS).find(key => CATEGORY_EMOJIS[key] === emoji) || 'activity';
+}
+
+function categoryMetaForActivity(act) {
+  const category = act.category || categoryForEmoji(act.emoji);
+  return CATEGORY_META[category] || CATEGORY_META.activity;
+}
+
 // ── Accommodaties ─────────────────────────────────────────
 const ACCOMMODATIONS = [
   {

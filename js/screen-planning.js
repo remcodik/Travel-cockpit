@@ -287,11 +287,12 @@ function openActivityDetailSheet(id) {
     routeBtn.onclick = () => openMapsForCoords(act.lat, act.lng, locationQuery);
   }
 
-  // Snelkoppelingen: Komoot (alleen bij een wandeling), restaurant/café
-  // in de buurt — altijd zolang er een naam/zoekopdracht is.
+  // Snelkoppelingen: Komoot (alleen bij een wandeling), en "X nabij"-knoppen
+  // voor categorieën die zinnig zijn — een restaurant hoeft zichzelf niet
+  // in de buurt te zoeken, zie CATEGORY_META.nearbyCategories (js/data.js).
   const nearbyEl = document.getElementById('pd-nearby-links');
   if (nearbyEl) {
-    const isWalk = act.emoji === CATEGORY_EMOJIS.activity;
+    const meta = categoryMetaForActivity(act);
     const safeQuery = escapeHtml(locationQuery).replace(/'/g, "\\'");
     // Alleen een echte http(s)-link tonen — nooit een javascript:-achtige
     // waarde als href gebruiken.
@@ -301,18 +302,15 @@ function openActivityDetailSheet(id) {
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;display:inline-block">
           🔗 Link
         </a>` : ''}
-        ${isWalk ? `<a href="${komootSearchUrl(locationQuery)}" target="_blank"
+        ${meta.isHike ? `<a href="${komootSearchUrl(locationQuery)}" target="_blank"
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;display:inline-block">
           🥾 Komoot
         </a>` : ''}
-        <button onclick="openNearbySearch('restaurant', ${act.lat || 0}, ${act.lng || 0}, '${safeQuery}')"
+        ${meta.nearbyCategories.map(cat => `
+        <button onclick="openNearbySearch('${cat}', ${act.lat || 0}, ${act.lng || 0}, '${safeQuery}')"
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
-          🍽️ Eten nabij
-        </button>
-        <button onclick="openNearbySearch('cafe', ${act.lat || 0}, ${act.lng || 0}, '${safeQuery}')"
-          style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
-          ☕ Café nabij
-        </button>`;
+          ${NEARBY_BUTTON_META[cat].emoji} ${NEARBY_BUTTON_META[cat].label}
+        </button>`).join('')}`;
   }
 
   // Echt hoogteprofiel (geen zelfgebouwde grafiek — dat zou verzonnen data
@@ -338,6 +336,10 @@ function openActivityDetailSheet(id) {
   if (extraEl) {
     extraEl.innerHTML = `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+        <button id="pd-note-btn" onclick="openNoteScreen('activity',${id},'${escapeHtml(act.name).replace(/'/g, "\\'")}')"
+          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
+          ✎ Notitie
+        </button>
         <button onclick="closeSheet('sheet-place-detail');openMoveActivitySheet(${id})" class="edit-only"
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           ↕ Verplaatsen
@@ -351,6 +353,15 @@ function openActivityDetailSheet(id) {
           🗑 Verwijder
         </button>
       </div>`;
+
+    // Toont of er al een notitie bestaat, zelfde patroon als de
+    // notitie-knop op het accommodatiescherm (acc-note-btn).
+    const pdNoteBtn = document.getElementById('pd-note-btn');
+    dbLoadNote('activity', id).then(text => {
+      if (!pdNoteBtn) return;
+      pdNoteBtn.style.color = text ? 'var(--spruce)' : 'var(--ink-mid)';
+      pdNoteBtn.style.borderColor = text ? 'var(--spruce)' : 'var(--line)';
+    });
   }
 
   openSheet('sheet-place-detail');
@@ -545,6 +556,7 @@ function openAddActivitySheetForCurrentDay() {
   updateActivityDayBadge();
   selectedActivityCategory = 'activity';
   document.querySelectorAll('#activity-category-chips .chip').forEach((c, i) => c.classList.toggle('on', i === 0));
+  updateActivityFormForCategory(selectedActivityCategory);
   openSheet('sheet-activity');
 }
 
@@ -642,6 +654,20 @@ function setActivityCategory(chipEl, category) {
   selectedActivityCategory = category;
   document.querySelectorAll('#activity-category-chips .chip').forEach(c => c.classList.remove('on'));
   chipEl.classList.add('on');
+  updateActivityFormForCategory(category);
+}
+
+// Hoogtewinst/niveau/Komoot-routelink zijn wandeling-specifiek — een café
+// of restaurant heeft geen "moeilijkheidsgraad" (zie CATEGORY_META,
+// js/data.js). Afstand/duur blijven wel voor elke categorie zichtbaar.
+function updateActivityFormForCategory(category) {
+  const isHike = (CATEGORY_META[category] || CATEGORY_META.activity).isHike;
+  const hikeFields = document.getElementById('activity-hike-fields');
+  const komootRow = document.getElementById('activity-komoot-row');
+  const summary = document.getElementById('activity-extra-summary');
+  if (hikeFields) hikeFields.style.display = isHike ? 'flex' : 'none';
+  if (komootRow) komootRow.style.display = isHike ? 'flex' : 'none';
+  if (summary) summary.textContent = isHike ? 'Wandelinfo toevoegen (optioneel)' : 'Extra info toevoegen (optioneel)';
 }
 
 async function saveActivity() {
@@ -658,7 +684,7 @@ async function saveActivity() {
   const level = document.getElementById('activity-level-select').value;
   const komootTourUrl = document.getElementById('activity-komoot-input').value.trim();
   const link = document.getElementById('activity-link-input').value.trim();
-  await addActivity({ name, accId, date, emoji, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl, link });
+  await addActivity({ name, accId, date, emoji, category: selectedActivityCategory, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl, link });
   closeSheet('sheet-activity');
   showToast(`✓ ${name} toegevoegd`);
   if (date) AppState.selectedPlanningDay = date;

@@ -593,12 +593,12 @@
     </div>
     <input id="activity-link-input" type="url" placeholder="Link (website, menu, reservering — optioneel)"/>
     <details style="margin-bottom:14px">
-      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.4px;padding:2px 0 8px">Wandelinfo toevoegen (optioneel)</summary>
+      <summary id="activity-extra-summary" style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.4px;padding:2px 0 8px">Wandelinfo toevoegen (optioneel)</summary>
       <div style="display:flex;gap:10px">
         <input id="activity-distance-input" placeholder="Afstand (bijv. 8 km)" style="flex:1"/>
         <input id="activity-duration-input" placeholder="Duur (bijv. 3 u)" style="flex:1"/>
       </div>
-      <div style="display:flex;gap:10px">
+      <div id="activity-hike-fields" style="display:flex;gap:10px">
         <input id="activity-elevation-input" type="number" placeholder="Hoogtewinst (m)" style="flex:1"/>
         <select id="activity-level-select" style="flex:1">
           <option value="Makkelijk">Makkelijk</option>
@@ -606,7 +606,7 @@
           <option value="Zwaar">Zwaar</option>
         </select>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div id="activity-komoot-row" style="display:flex;gap:8px;align-items:center">
         <input id="activity-komoot-input" type="url" placeholder="Komoot-routelink (voor echt hoogteprofiel)" style="flex:1"/>
         <button type="button" onclick="handleExtractFromKomootLink('activity')" title="Afstand/duur/hoogte proberen over te nemen uit deze link" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">🔍</button>
       </div>

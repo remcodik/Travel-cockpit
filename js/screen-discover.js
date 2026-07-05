@@ -407,7 +407,7 @@ async function handleAddSuggestion(name, accId, category) {
 
   // Voeg toe zonder datum zodat het als "beschikbaar" verschijnt
   await addActivity({
-    name, accId, date: null, emoji,
+    name, accId, date: null, emoji, category,
     desc: suggestion?.description || '',
     distance: suggestion?.distance_km ? `${suggestion.distance_km} km` : '—',
     duration: suggestion?.duration_minutes
