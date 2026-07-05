@@ -28,28 +28,28 @@ function buildDayTabs() {
     const actCount = getActivitiesForDate(day).length;
 
     // Verplaatsdag: dit is zowel de check-out-datum van het vorige verblijf
-    // als de check-in-datum van het volgende — toon dan beide kleuren i.p.v.
-    // alleen die van het nieuwe verblijf, zodat een reisdag met wisseling
-    // meteen herkenbaar is in de dagtabs.
+    // als de check-in-datum van het volgende. Subtiel weergegeven: geen
+    // gekleurd vlak, alleen de linkerrand in de kleur van het verblijf waar
+    // je vandaan komt — de rest van de rand volgt gewoon de normale regel
+    // hieronder (kleur van het verblijf waar de dag nu bij hoort).
     const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
     const isChangeover = !!(prevAcc && acc && prevAcc.id !== acc.id);
-    const bg = isChangeover
-      ? `linear-gradient(135deg, ${prevAcc.color} 0%, ${prevAcc.color} 46%, ${color} 54%, ${color} 100%)`
-      : (isSelected ? color : 'var(--white)');
-    const onColor = isChangeover || isSelected;
 
+    // Elke dag krijgt een subtiele randkleur van het bijbehorende verblijf,
+    // ook als hij niet geselecteerd is — alleen de selectie zelf blijft een
+    // gevuld vlak.
     return `
       <button class="day-tab ${isSelected ? 'selected' : ''}"
-        style="background:${bg};border-color:${isSelected || isChangeover ? color : 'var(--line)'}"
+        style="background:${isSelected ? color : 'var(--white)'};border-color:${color};${isChangeover ? `border-left-color:${prevAcc.color};` : ''}"
         onclick="selectPlanningDay('${day.toISOString()}')"
         title="${isChangeover ? `Verplaatsdag: ${escapeHtml(prevAcc.name)} → ${escapeHtml(acc.name)}` : ''}">
-        <span class="mono" style="font-size:10px;font-weight:700;color:${onColor ? 'rgba(255,255,255,.85)' : color}">D${dayNum}</span>
-        <span style="font-family:var(--font-display);font-size:17px;font-weight:800;color:${onColor ? 'white' : 'var(--ink)'};line-height:1.1">${day.getDate()}</span>
-        <span class="mono" style="font-size:8px;color:${onColor ? 'rgba(255,255,255,.55)' : 'var(--ink-faint)'}">${MONTHS[day.getMonth()]}</span>
+        <span class="mono" style="font-size:10px;font-weight:700;color:${isSelected ? 'rgba(255,255,255,.85)' : color}">D${dayNum}</span>
+        <span style="font-family:var(--font-display);font-size:17px;font-weight:800;color:${isSelected ? 'white' : 'var(--ink)'};line-height:1.1">${day.getDate()}</span>
+        <span class="mono" style="font-size:8px;color:${isSelected ? 'rgba(255,255,255,.55)' : 'var(--ink-faint)'}">${MONTHS[day.getMonth()]}</span>
         ${isChangeover
           ? `<span style="font-size:10px;margin-top:2px;line-height:1">🚗</span>`
           : (actCount > 0
-            ? `<span style="width:16px;height:16px;background:${onColor ? 'rgba(255,255,255,.3)' : color + '22'};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:${onColor ? 'white' : color};margin-top:2px">${actCount}</span>`
+            ? `<span style="width:16px;height:16px;background:${isSelected ? 'rgba(255,255,255,.3)' : color + '22'};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:${isSelected ? 'white' : color};margin-top:2px">${actCount}</span>`
             : `<span style="width:16px;height:4px"></span>`)}
       </button>`;
   }).join('');
@@ -71,16 +71,20 @@ function renderPlanningDay() {
 
   // Verplaatsdag: zelfde detectie als buildDayTabs() — deze dag is zowel de
   // check-out van het vorige verblijf als de check-in van het volgende.
+  // Subtiel weergegeven: geen gekleurd vlak, alleen een linkerrand in de
+  // kleur van het verblijf waar je vandaan komt (zelfde aanpak als de
+  // dagtabs hierboven, i.p.v. de eerdere, te opvallende kleurverloop-vulling).
   const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
   const isChangeover = !!(prevAcc && acc && prevAcc.id !== acc.id);
-  const badgeBg = isChangeover
-    ? `linear-gradient(135deg, ${prevAcc.color} 0%, ${prevAcc.color} 46%, ${acc.color} 54%, ${acc.color} 100%)`
-    : (acc ? acc.color : 'var(--ink-faint)');
+  const badgeBg = isChangeover ? 'var(--white)' : (acc ? acc.color : 'var(--ink-faint)');
+  const badgeBorder = isChangeover ? `border:1.5px solid ${acc.color};border-left:3px solid ${prevAcc.color};` : '';
+  const badgeTextColor = isChangeover ? 'var(--ink)' : 'white';
+  const badgeLabelColor = isChangeover ? 'var(--ink-faint)' : 'rgba(255,255,255,.65)';
 
   document.getElementById('day-header').innerHTML = `
-    <div style="background:${badgeBg};border-radius:10px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
-      <span class="mono" style="font-size:8px;color:rgba(255,255,255,.65);font-weight:700;letter-spacing:1px">DAG</span>
-      <span style="font-family:var(--font-display);font-size:20px;font-weight:800;color:white;line-height:1">${dayNum}</span>
+    <div style="background:${badgeBg};${badgeBorder}border-radius:10px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+      <span class="mono" style="font-size:8px;color:${badgeLabelColor};font-weight:700;letter-spacing:1px">DAG</span>
+      <span style="font-family:var(--font-display);font-size:20px;font-weight:800;color:${badgeTextColor};line-height:1">${dayNum}</span>
     </div>
     <div style="flex:1">
       <p class="row-title" style="font-size:15.5px">${WEEKDAYS[day.getDay()]} ${day.getDate()} ${MONTHS[day.getMonth()]}</p>
