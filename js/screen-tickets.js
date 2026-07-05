@@ -99,12 +99,22 @@ async function handleUnarchiveTicket(ticketId) {
 // ── Ticket toevoegen/bewerken (zelfde sheet, editingTicketId bepaalt modus) ──
 let editingTicketId = null;
 
-function openAddTicketSheet() {
+// Optioneel koppelen aan een verblijf — niet elk ticket hoort bij een
+// verblijf (bijv. een vlucht), dus altijd een "geen"-optie ervoor.
+function populateTicketAccSelect(selectedAccId) {
+  const select = document.getElementById('ticket-acc-select');
+  if (!select) return;
+  select.innerHTML = `<option value="">Geen specifiek verblijf</option>` +
+    ACCOMMODATIONS.map(a => `<option value="${a.id}" ${idsMatch(a.id, selectedAccId) ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('');
+}
+
+function openAddTicketSheet(accId) {
   editingTicketId = null;
   document.getElementById('ticket-sheet-title').textContent = 'TICKET TOEVOEGEN';
   document.getElementById('ticket-name-input').value = '';
   document.getElementById('ticket-venue-input').value = '';
   document.getElementById('ticket-code-input').value = '';
+  populateTicketAccSelect(accId || '');
   pendingTicketFile = null;
   resetTicketFileUpload();
   openSheet('sheet-ticket');
@@ -120,6 +130,7 @@ function openEditTicketSheet(ticketId) {
   document.getElementById('ticket-code-input').value = ticket.code || '';
   document.getElementById('ticket-date-input').value = ticket.date || '';
   document.getElementById('ticket-time-input').value = ticket.time || '';
+  populateTicketAccSelect(ticket.accId || '');
   pendingTicketFile = ticket.fileDataUrl ? { dataUrl: ticket.fileDataUrl, name: ticket.fileName, type: ticket.fileType } : null;
   updateTicketFileUploadUI();
   openSheet('sheet-ticket');
@@ -170,6 +181,7 @@ async function saveTicket() {
     code: document.getElementById('ticket-code-input').value.trim(),
     date: document.getElementById('ticket-date-input').value,
     time: document.getElementById('ticket-time-input').value,
+    accId: document.getElementById('ticket-acc-select').value || null,
     status: existing ? existing.status : 'active',
     fileDataUrl: pendingTicketFile ? pendingTicketFile.dataUrl : null,
     fileName: pendingTicketFile ? pendingTicketFile.name : null,

@@ -18,6 +18,20 @@ function renderAccommodationScreen(accId) {
   const nights = Math.round((acc.checkOut - acc.checkIn) / 86400000);
   document.getElementById('acc-dates').textContent = `${formatShortDate(acc.checkIn)} – ${formatShortDate(acc.checkOut)} · ${nights} nachten`;
 
+  // Meerdaagse weerstrip voor de hele verblijfsperiode (max 10 dagen
+  // getoond — de Open-Meteo-forecast reikt sowieso niet veel verder).
+  if (acc.lat && acc.lng) {
+    fillWeatherStrip('acc-weather-strip', acc.lat, acc.lng, Math.max(1, Math.min(nights || 1, 10)), acc.checkIn);
+  }
+
+  // Bel-snelknop — alleen actief als er een telefoonnummer is opgeslagen.
+  const callBtn = document.getElementById('acc-call-btn');
+  if (callBtn) {
+    callBtn.onclick = acc.phone
+      ? () => { window.location.href = `tel:${acc.phone}`; }
+      : () => showToast('Geen telefoonnummer opgeslagen voor dit verblijf');
+  }
+
   // Switcher chips
   document.getElementById('acc-chips').innerHTML = ACCOMMODATIONS.map(a => {
     const isViewing = a.id === acc.id;
@@ -30,14 +44,17 @@ function renderAccommodationScreen(accId) {
       </button>`;
   }).join('');
 
-  // Info-rijen
+  // Info-rijen — check-in/check-out-tijden zijn nu echte per-verblijf
+  // waarden (met de oude vaste 15:00/11:00 als terugvalwaarde voor
+  // verblijven die nog niet zijn bijgewerkt).
   const rows = [
-    { label: 'Check-in', value: `${formatShortDate(acc.checkIn)} · vanaf 15:00` },
-    { label: 'Check-out', value: `${formatShortDate(acc.checkOut)} · voor 11:00` },
+    { label: 'Check-in', value: `${formatShortDate(acc.checkIn)} · vanaf ${acc.checkInTime || '15:00'}` },
+    { label: 'Check-out', value: `${formatShortDate(acc.checkOut)} · voor ${acc.checkOutTime || '11:00'}` },
     { label: 'Nachten', value: String(nights) },
     { label: 'Adres', value: acc.address, hasMapsBtn: true },
     { label: 'Coördinaten', value: acc.coord },
   ];
+  if (acc.bookingRef) rows.push({ label: 'Reserveringsnummer', value: acc.bookingRef });
   document.getElementById('acc-info').innerHTML = rows.map((row, i) => `
     <div class="card-row" style="cursor:default;${i < rows.length - 1 || acc.url ? '' : 'border-bottom:none'}">
       <div style="flex:1;min-width:0">
@@ -116,6 +133,25 @@ function renderAccommodationScreen(accId) {
           </div>`).join('')}</div>`;
   }
 
+  // Tickets die aan dit verblijf gekoppeld zijn (optioneel veld, zie
+  // js/screen-tickets.js) — de sectie blijft verborgen als er geen zijn,
+  // in plaats van een lege kaart te tonen. De algemene tickets-lijst
+  // blijft daarnaast gewoon alles tonen, ongeacht koppeling.
+  const accTickets = AppState.tickets.filter(t => idsMatch(t.accId, acc.id));
+  const ticketsSection = document.getElementById('acc-tickets-section');
+  if (ticketsSection) {
+    ticketsSection.style.display = accTickets.length === 0 ? 'none' : 'block';
+    document.getElementById('acc-tickets').innerHTML = accTickets.map((t, i) => `
+      <div class="card-row" style="cursor:pointer;${i === accTickets.length - 1 ? 'border-bottom:none' : ''}" onclick="openEditTicketSheet('${t.id}')">
+        <span style="font-size:18px;flex-shrink:0">🎟️</span>
+        <div style="flex:1;min-width:0;margin-left:2px">
+          <p class="row-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(t.name)}</p>
+          <p class="mono" style="margin-top:2px">${t.date ? `${t.date}${t.time ? ' · ' + t.time : ''}` : 'Geen datum'}</p>
+        </div>
+        <span class="chevron">›</span>
+      </div>`).join('');
+  }
+
   // Eigen foto van dit verblijf, indien toegevoegd — vervangt het
   // topografische decoratiepatroon in de hero met een echte foto.
   const heroPanel = document.querySelector('#screen-accommodation .topo-panel');
@@ -144,6 +180,36 @@ function renderAccommodationScreen(accId) {
   initAllTopoPanels();
 }
 
+// Rechtstreeks een activiteit toevoegen vanaf het accommodatiescherm,
+// zonder eerst naar Planning te hoeven navigeren — hergebruikt het
+// bestaande sheet-activity-formulier, alleen met dit verblijf en de
+// eerste dag van dit verblijf al voorgeselecteerd.
+function openAddActivityForAccommodation(accId) {
+  const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, accId)) || getActiveAccommodation();
+  if (!acc) return;
+  const days = getAllTripDays();
+  const firstStayDay = days.find(d => d >= acc.checkIn && d < acc.checkOut);
+
+  document.getElementById('activity-day-select').innerHTML =
+    `<option value="">Niet ingepland</option>` +
+    days.map((d, i) => {
+      const iso = d.toISOString();
+      const isThis = firstStayDay && d.toDateString() === firstStayDay.toDateString();
+      return `<option value="${iso}" ${isThis ? 'selected' : ''}>Dag ${i + 1} · ${WEEKDAYS[d.getDay()]} ${formatShortDate(d)}</option>`;
+    }).join('');
+
+  document.getElementById('activity-acc-select').innerHTML = ACCOMMODATIONS.map(a =>
+    `<option value="${a.id}" ${a.id === acc.id ? 'selected' : ''}>${a.name} (${formatShortDate(a.checkIn)}–${formatShortDate(a.checkOut)})</option>`
+  ).join('');
+
+  document.getElementById('activity-name-input').value = '';
+  resetActivityFormExtras();
+  updateActivityDayBadge();
+  selectedActivityCategory = 'activity';
+  document.querySelectorAll('#activity-category-chips .chip').forEach((c, i) => c.classList.toggle('on', i === 0));
+  openSheet('sheet-activity');
+}
+
 function openMapsForAccommodation(accId) {
   const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, accId));
   if (!acc) return;
@@ -161,9 +227,13 @@ function openEditAccommodationSheet(accId) {
   document.getElementById('edit-acc-address-input').value = acc.address || '';
   document.getElementById('edit-acc-checkin-input').value = acc.checkIn.toISOString().slice(0, 10);
   document.getElementById('edit-acc-checkout-input').value = acc.checkOut.toISOString().slice(0, 10);
+  document.getElementById('edit-acc-checkin-time-input').value = acc.checkInTime || '15:00';
+  document.getElementById('edit-acc-checkout-time-input').value = acc.checkOutTime || '11:00';
+  document.getElementById('edit-acc-phone-input').value = acc.phone || '';
   document.getElementById('edit-acc-lat-input').value = acc.lat || '';
   document.getElementById('edit-acc-lng-input').value = acc.lng || '';
   document.getElementById('edit-acc-url-input').value = acc.url || '';
+  document.getElementById('edit-acc-booking-ref-input').value = acc.bookingRef || '';
   document.getElementById('edit-acc-notes-input').value = acc.notes || '';
   pendingAccPhoto = acc.photoDataUrl || null;
   updateAccPhotoUploadUI();
@@ -177,9 +247,13 @@ function openAddAccommodationSheet() {
   document.getElementById('edit-acc-address-input').value = '';
   document.getElementById('edit-acc-checkin-input').value = '';
   document.getElementById('edit-acc-checkout-input').value = '';
+  document.getElementById('edit-acc-checkin-time-input').value = '15:00';
+  document.getElementById('edit-acc-checkout-time-input').value = '11:00';
+  document.getElementById('edit-acc-phone-input').value = '';
   document.getElementById('edit-acc-lat-input').value = '';
   document.getElementById('edit-acc-lng-input').value = '';
   document.getElementById('edit-acc-url-input').value = '';
+  document.getElementById('edit-acc-booking-ref-input').value = '';
   document.getElementById('edit-acc-notes-input').value = '';
   pendingAccPhoto = null;
   updateAccPhotoUploadUI();
@@ -311,9 +385,13 @@ function readAccommodationFormFields() {
     address: document.getElementById('edit-acc-address-input').value.trim(),
     checkIn: new Date(checkInStr),
     checkOut: new Date(checkOutStr),
+    checkInTime: document.getElementById('edit-acc-checkin-time-input').value || '15:00',
+    checkOutTime: document.getElementById('edit-acc-checkout-time-input').value || '11:00',
+    phone: document.getElementById('edit-acc-phone-input').value.trim() || null,
     lat, lng,
     coord: lat && lng ? formatLatLng(lat, lng) : '—',
     url: document.getElementById('edit-acc-url-input').value.trim(),
+    bookingRef: document.getElementById('edit-acc-booking-ref-input').value.trim(),
     photoDataUrl: pendingAccPhoto,
     notes: document.getElementById('edit-acc-notes-input').value.trim(),
   };

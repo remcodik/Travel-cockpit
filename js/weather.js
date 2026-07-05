@@ -172,24 +172,31 @@ async function fillRoadtripWeather(lat, lng, date) {
 
 // Vult een meerdaagse weerstrip (N8) — hergebruikt dezelfde 16-daagse
 // forecast die al wordt opgehaald, dus geen extra API-aanroepen nodig.
-async function fillWeatherStrip(containerId, lat, lng, days = 5) {
+// startDate: standaard vandaag (Roadtrip-scherm), maar het accommodatiescherm
+// geeft de check-in-datum van het bekeken verblijf mee zodat de strip bij
+// een toekomstig verblijf niet met "vandaag" begint.
+async function fillWeatherStrip(containerId, lat, lng, days = 5, startDate = null) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
   const today = getToday();
+  const start = startDate || today;
   const items = [];
   for (let i = 0; i < days; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
     const weather = await getWeatherForDate(lat, lng, d);
     items.push({ date: d, weather });
   }
 
-  container.innerHTML = items.map(({ date, weather }, i) => `
+  container.innerHTML = items.map(({ date, weather }) => {
+    const isToday = date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate();
+    return `
     <div style="flex:1;min-width:52px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;background:rgba(232,228,217,0.08);border-radius:10px">
-      <span class="mono" style="color:rgba(232,228,217,0.5);font-size:9px;font-weight:700;text-transform:uppercase">${i === 0 ? 'Vandaag' : WEEKDAYS[date.getDay()]}</span>
+      <span class="mono" style="color:rgba(232,228,217,0.5);font-size:9px;font-weight:700;text-transform:uppercase">${isToday ? 'Vandaag' : WEEKDAYS[date.getDay()]}</span>
       <span style="font-size:19px">${weather ? weather.emoji : '—'}</span>
       <span class="mono" style="color:white;font-size:11px;font-weight:700">${weather ? `${weather.temperatureMax ?? weather.temperature}°` : '—'}</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // DIAGNOSE: toont nu de ECHTE foutmelding (lastWeatherError) ipv

@@ -256,15 +256,27 @@ function renderPdHero(act, acc) {
 
   document.getElementById('pd-name').textContent = act.name;
 
-  const metaParts = [];
-  if (act.elevation) metaParts.push(`▲ ${act.elevation}m`);
-  if (act.distance && act.distance !== '—') metaParts.push(act.distance);
-  if (act.duration && act.duration !== '—') metaParts.push(act.duration);
-  if (act.level && act.level !== '—') metaParts.push(act.level);
+  // pd-meta blijft leeg — openActivityDetailSheet() vult die zelf met een
+  // datum/status-badge. Cijfers (afstand/duur/hoogte/niveau) staan sinds
+  // de "ik mis info bij wandeling"-melding niet meer als kleine pilletjes
+  // in de hero, maar als grotere, leesbare kaartjes in #pd-stats hieronder.
   const metaEl = document.getElementById('pd-meta');
-  metaEl.innerHTML = metaParts.length
-    ? metaParts.map(p => `<span class="mono" style="background:rgba(255,255,255,0.16);color:white;padding:3px 9px;border-radius:20px;font-size:11px">${escapeHtml(p)}</span>`).join('')
-    : `<span class="mono" style="color:rgba(255,255,255,0.7)">Geen details bekend</span>`;
+  if (metaEl) metaEl.innerHTML = '';
+
+  const stats = [];
+  if (act.distance && act.distance !== '—') stats.push({ label: 'Afstand', value: act.distance });
+  if (act.duration && act.duration !== '—') stats.push({ label: 'Duur', value: act.duration });
+  if (act.elevation) stats.push({ label: 'Hoogtewinst', value: `▲ ${act.elevation}m` });
+  if (act.level && act.level !== '—') stats.push({ label: 'Niveau', value: act.level });
+  const statsEl = document.getElementById('pd-stats');
+  if (statsEl) {
+    statsEl.style.display = stats.length ? 'grid' : 'none';
+    statsEl.innerHTML = stats.map(s => `
+      <div style="background:white;border:1.5px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center">
+        <p style="font-size:16px;font-weight:800;color:var(--spruce)">${escapeHtml(s.value)}</p>
+        <p class="eyebrow" style="margin-top:2px;font-size:9px">${s.label}</p>
+      </div>`).join('');
+  }
 }
 
 function setMapFilter(accId) {
