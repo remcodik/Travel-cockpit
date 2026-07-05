@@ -77,7 +77,7 @@ function renderPlanningDay() {
   const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
   const isChangeover = !!(prevAcc && acc && prevAcc.id !== acc.id);
   const badgeBg = isChangeover ? 'var(--white)' : (acc ? acc.color : 'var(--ink-faint)');
-  const badgeBorder = isChangeover ? `border:1.5px solid ${acc.color};border-left:3px solid ${prevAcc.color};` : '';
+  const badgeBorder = isChangeover ? `border:2.5px solid ${acc.color};border-left:4px solid ${prevAcc.color};` : '';
   const badgeTextColor = isChangeover ? 'var(--ink)' : 'white';
   const badgeLabelColor = isChangeover ? 'var(--ink-faint)' : 'rgba(255,255,255,.65)';
 
@@ -560,8 +560,8 @@ function updateActivityDayBadge() {
   if (isChangeover) {
     badge.textContent = '🚗';
     badge.style.background = 'var(--white)';
-    badge.style.border = `1.5px solid ${dayAcc.color}`;
-    badge.style.borderLeft = `3px solid ${prevAcc.color}`;
+    badge.style.border = `2.5px solid ${dayAcc.color}`;
+    badge.style.borderLeft = `4px solid ${prevAcc.color}`;
     badge.title = `Verplaatsdag: ${prevAcc.name} → ${dayAcc.name}`;
   } else {
     badge.textContent = `D${getDayNumber(day)}`;

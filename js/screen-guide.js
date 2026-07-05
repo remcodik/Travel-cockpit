@@ -86,7 +86,7 @@ async function handleGenerateRegionGuide(accId) {
 function renderRegionGuideContent(acc, guide) {
   const contentEl = document.getElementById('guide-content');
   const lang = AppState.language || 'en';
-  const searchQuery = `${acc.name} ${acc.address || ''}`.trim();
+  const searchQuery = extractCityFromAddress(acc.address) || acc.name;
 
   contentEl.innerHTML = `
     <div style="background:var(--paper-warm);border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:11.5px;color:var(--ink-faint);line-height:1.5">
@@ -100,7 +100,7 @@ function renderRegionGuideContent(acc, guide) {
           <div class="card-row" style="cursor:default;${i === guide.highlights.length - 1 ? 'border-bottom:none' : ''}">
             <div style="flex:1;min-width:0">
               <p class="row-title" style="font-size:14px">${escapeHtml(h.name || '')}</p>
-              <p class="mono" style="margin-top:2px;white-space:normal">${escapeHtml(h.note || '')}</p>
+              <p style="margin-top:3px;white-space:normal;font-size:12.5px;line-height:1.5;color:var(--ink-mid)">${escapeHtml(h.note || '')}</p>
             </div>
           </div>`).join('')}
       </div>` : ''}

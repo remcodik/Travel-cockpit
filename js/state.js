@@ -135,6 +135,15 @@ function wikivoyageSearchUrl(query, lang) {
   return `https://${lang || 'en'}.wikivoyage.org/w/index.php?search=${encodeURIComponent(query)}`;
 }
 
+// Haalt alleen de plaatsnaam uit een adres ("Straat 1, 6857 Sogndal" → "Sogndal")
+// — een zoekopdracht met het volledige adres levert bij Wikipedia/Wikivoyage
+// vrijwel nooit iets op, alleen de plaatsnaam wel.
+function extractCityFromAddress(address) {
+  if (!address) return '';
+  const lastPart = address.split(',').pop().trim();
+  return lastPart.replace(/^\d+\s*/, '').trim();
+}
+
 function getAllTripDays() {
   const days = [];
   const d = new Date(TRIP_START);
