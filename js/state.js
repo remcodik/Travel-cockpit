@@ -135,6 +135,15 @@ function wikivoyageSearchUrl(query, lang) {
   return `https://${lang || 'en'}.wikivoyage.org/w/index.php?search=${encodeURIComponent(query)}`;
 }
 
+// Haalt alleen de plaatsnaam uit een adres ("Straat 1, 6857 Sogndal" → "Sogndal")
+// — een zoekopdracht met het volledige adres levert bij Wikipedia/Wikivoyage
+// vrijwel nooit iets op, alleen de plaatsnaam wel.
+function extractCityFromAddress(address) {
+  if (!address) return '';
+  const lastPart = address.split(',').pop().trim();
+  return lastPart.replace(/^\d+\s*/, '').trim();
+}
+
 function getAllTripDays() {
   const days = [];
   const d = new Date(TRIP_START);
@@ -288,6 +297,22 @@ function applyTripData(trip, accommodations) {
       checkIn: new Date(acc.checkIn),
       checkOut: new Date(acc.checkOut),
     }));
+
+  // Eenmalige kleurmigratie: Skjåk Solside's blauw lag qua helderheid te
+  // dicht bij Sogndal's groen om op een dunne rand goed te onderscheiden
+  // (zie docs/10-issues). js/data.js's seed heeft al de nieuwe kleur, maar
+  // een al bestaand Firestore-document met de oude hex blijft anders voor
+  // altijd hangen — er is geen edit-veld voor accommodatiekleur. Zelfhelend:
+  // corrigeert het geheugen én schrijft de fix één keer terug, waarna dit
+  // een no-op wordt.
+  const LEGACY_COLOR_FIX = { '#1565c0': '#1e88e5' };
+  ACCOMMODATIONS.forEach(acc => {
+    const fixed = LEGACY_COLOR_FIX[acc.color];
+    if (fixed) {
+      acc.color = fixed;
+      dbSaveAccommodation(trip.id, { id: acc.id, color: fixed });
+    }
+  });
 }
 
 async function switchToTrip(tripId) {

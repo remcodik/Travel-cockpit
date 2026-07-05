@@ -72,6 +72,22 @@ function renderAccommodationScreen(accId) {
       <span class="chevron">›</span>
     </a>` : '');
 
+  // Restaurant/café in de buurt van dit verblijf — zelfde knoppen en
+  // zoeklogica (openNearbySearch()) als op het activiteit-detailscherm.
+  const nearbyEl = document.getElementById('acc-nearby-links');
+  if (nearbyEl) {
+    const safeName = escapeHtml(acc.name).replace(/'/g, "\\'");
+    nearbyEl.innerHTML = `
+      <button onclick="openNearbySearch('restaurant', ${acc.lat || 0}, ${acc.lng || 0}, '${safeName}')"
+        style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
+        🍽️ Eten nabij
+      </button>
+      <button onclick="openNearbySearch('cafe', ${acc.lat || 0}, ${acc.lng || 0}, '${safeName}')"
+        style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
+        ☕ Café nabij
+      </button>`;
+  }
+
   document.getElementById('acc-notes').textContent = acc.notes;
 
   // Notitie-knop voor dit verblijf (apart van de beschrijving in acc.notes)

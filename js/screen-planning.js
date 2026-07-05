@@ -77,7 +77,7 @@ function renderPlanningDay() {
   const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
   const isChangeover = !!(prevAcc && acc && prevAcc.id !== acc.id);
   const badgeBg = isChangeover ? 'var(--white)' : (acc ? acc.color : 'var(--ink-faint)');
-  const badgeBorder = isChangeover ? `border:1.5px solid ${acc.color};border-left:3px solid ${prevAcc.color};` : '';
+  const badgeBorder = isChangeover ? `border:5px solid ${acc.color};border-left:7px solid ${prevAcc.color};` : '';
   const badgeTextColor = isChangeover ? 'var(--ink)' : 'white';
   const badgeLabelColor = isChangeover ? 'var(--ink-faint)' : 'rgba(255,255,255,.65)';
 
@@ -117,14 +117,18 @@ function renderPlanningDay() {
   const container = document.getElementById('planning-items');
 
   if (dayActivities.length === 0 && unscheduled.length === 0) {
+    // FIX: had hier een eigen "+ Activiteit"-knop, bovenop de altijd
+    // aanwezige "+ Activiteit toevoegen"-knop onderaan het scherm (buiten
+    // deze container) — twee knoppen voor dezelfde actie tegelijk zichtbaar.
+    // Die onderste knop blijft de enige, consistente plek, ook als de dag
+    // leeg is.
     container.innerHTML = `
       <div class="empty-state">
         <span class="summit-tri" style="border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:24px solid var(--line)"></span>
         <p class="row-title" style="font-size:18px;margin-top:16px">
           ${planningFilter === 'planned' ? 'Niets ingepland op deze dag' : 'Niets gepland'}
         </p>
-        <p class="mono" style="margin-top:4px">Voeg toe via AI-ideeën of het + icoon</p>
-        <button onclick="openAddActivitySheetForCurrentDay()" class="btn btn-primary" style="margin-top:20px;width:auto;padding:10px 20px">+ Activiteit</button>
+        <p class="mono" style="margin-top:4px">Voeg toe via AI-ideeën of hieronder</p>
       </div>`;
     return;
   }
@@ -560,8 +564,8 @@ function updateActivityDayBadge() {
   if (isChangeover) {
     badge.textContent = '🚗';
     badge.style.background = 'var(--white)';
-    badge.style.border = `1.5px solid ${dayAcc.color}`;
-    badge.style.borderLeft = `3px solid ${prevAcc.color}`;
+    badge.style.border = `5px solid ${dayAcc.color}`;
+    badge.style.borderLeft = `7px solid ${prevAcc.color}`;
     badge.title = `Verplaatsdag: ${prevAcc.name} → ${dayAcc.name}`;
   } else {
     badge.textContent = `D${getDayNumber(day)}`;
