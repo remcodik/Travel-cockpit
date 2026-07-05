@@ -117,6 +117,19 @@ Every AI action that changes data requires user confirmation.
 
 ---
 
+# Cost Transparency
+
+Every AI call in this app runs through the Anthropic API using the project's own `ANTHROPIC_API_KEY` — a separate, usage-based bill (pay-as-you-go, per token), not covered by any claude.ai subscription (Pro/Max/Team).
+
+Whenever a new feature is proposed or built that adds an AI call (a new endpoint, a new button that triggers `/api/*`, a new automatic trigger), this must be flagged **up front, unprompted** — not only when the user asks. Silence on cost is itself a cost-transparency failure (learned the hard way: the Reisgids feature, 2026-07-05, was built and shipped without mentioning that it adds a new billable AI call).
+
+Design defaults that keep this cheap and honest:
+- On-demand triggers (an explicit button) rather than automatic calls on every screen visit.
+- Cache results (Firestore, no unnecessary expiry for content that doesn't go stale) so a repeat visit doesn't re-bill.
+- A visible link to the Anthropic Console billing page (Settings → App info → "AI-kosten bekijken") so actual spend is always one tap away.
+
+---
+
 # Context Awareness
 
 AI understands:
