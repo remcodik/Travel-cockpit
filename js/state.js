@@ -344,6 +344,39 @@ function applyTripData(trip, accommodations) {
       dbSaveAccommodation(trip.id, { id: acc.id, color: fixed });
     }
   });
+
+  // Eenmalige zelfhelende migratie (zie docs/10-issues/12-reisdag-kleur-
+  // bugfix.md): vóór parseLocalDateInput() konden checkIn/checkOut via het
+  // bewerkformulier op UTC-middernacht i.p.v. lokale middernacht terecht-
+  // komen. getAccommodationForDate()'s >=/<-vergelijking is daar tolerant
+  // voor, maar de exacte `.getTime() ===`-check in buildDayTabs() (die een
+  // verplaatsdag herkent: checkOut van het ene verblijf = checkIn van het
+  // volgende) faalt bij zo'n tijdsverschil — het 🚗-icoon en de tweekleurige
+  // rand blijven dan stilzwijgend weg, ook al is de kleur van de dag zelf
+  // wél correct. Verblijven die vóór deze migratie al zijn opgeslagen
+  // blijven anders voor altijd op het foute tijdstip hangen — er is geen
+  // andere manier om ze te corrigeren dan bij het laden.
+  let dateFixApplied = false;
+  ACCOMMODATIONS.forEach(acc => {
+    const normalizedCheckIn = new Date(acc.checkIn.getFullYear(), acc.checkIn.getMonth(), acc.checkIn.getDate());
+    const normalizedCheckOut = new Date(acc.checkOut.getFullYear(), acc.checkOut.getMonth(), acc.checkOut.getDate());
+    if (acc.checkIn.getTime() !== normalizedCheckIn.getTime() || acc.checkOut.getTime() !== normalizedCheckOut.getTime()) {
+      acc.checkIn = normalizedCheckIn;
+      acc.checkOut = normalizedCheckOut;
+      dbSaveAccommodation(trip.id, {
+        id: acc.id,
+        checkIn: normalizedCheckIn.toISOString(),
+        checkOut: normalizedCheckOut.toISOString(),
+      });
+      dateFixApplied = true;
+    }
+  });
+  // Reisdata (trips/{tripId}, startDate/endDate) is een tweede plek waar
+  // datum wordt opgeslagen — afgeleid als min/max van alle verblijven (zie
+  // recalculateTripDates()). Die kan dezelfde tijdstip-afwijking bevatten als
+  // 'm berekend werd tóen een verblijf nog kapotte tijden had. Alleen
+  // herberekenen als er hierboven daadwerkelijk iets gecorrigeerd is.
+  if (dateFixApplied) recalculateTripDates();
 }
 
 async function switchToTrip(tripId) {
