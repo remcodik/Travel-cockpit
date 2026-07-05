@@ -204,6 +204,7 @@ function openAddActivityForAccommodation(accId) {
 
   document.getElementById('activity-name-input').value = '';
   resetActivityFormExtras();
+  updateActivityDayBadge();
   selectedActivityCategory = 'activity';
   document.querySelectorAll('#activity-category-chips .chip').forEach((c, i) => c.classList.toggle('on', i === 0));
   openSheet('sheet-activity');

@@ -26,16 +26,31 @@ function buildDayTabs() {
     const color = acc ? acc.color : 'var(--ink-faint)';
     const isSelected = day.toDateString() === AppState.selectedPlanningDay.toDateString();
     const actCount = getActivitiesForDate(day).length;
+
+    // Verplaatsdag: dit is zowel de check-out-datum van het vorige verblijf
+    // als de check-in-datum van het volgende — toon dan beide kleuren i.p.v.
+    // alleen die van het nieuwe verblijf, zodat een reisdag met wisseling
+    // meteen herkenbaar is in de dagtabs.
+    const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
+    const isChangeover = !!(prevAcc && acc && prevAcc.id !== acc.id);
+    const bg = isChangeover
+      ? `linear-gradient(135deg, ${prevAcc.color} 0%, ${prevAcc.color} 46%, ${color} 54%, ${color} 100%)`
+      : (isSelected ? color : 'var(--white)');
+    const onColor = isChangeover || isSelected;
+
     return `
       <button class="day-tab ${isSelected ? 'selected' : ''}"
-        style="background:${isSelected ? color : 'var(--white)'};border-color:${isSelected ? color : 'var(--line)'}"
-        onclick="selectPlanningDay('${day.toISOString()}')">
-        <span class="mono" style="font-size:10px;font-weight:700;color:${isSelected ? 'rgba(255,255,255,.85)' : color}">D${dayNum}</span>
-        <span style="font-family:var(--font-display);font-size:17px;font-weight:800;color:${isSelected ? 'white' : 'var(--ink)'};line-height:1.1">${day.getDate()}</span>
-        <span class="mono" style="font-size:8px;color:${isSelected ? 'rgba(255,255,255,.55)' : 'var(--ink-faint)'}">${MONTHS[day.getMonth()]}</span>
-        ${actCount > 0
-          ? `<span style="width:16px;height:16px;background:${isSelected ? 'rgba(255,255,255,.3)' : color + '22'};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:${isSelected ? 'white' : color};margin-top:2px">${actCount}</span>`
-          : `<span style="width:16px;height:4px"></span>`}
+        style="background:${bg};border-color:${isSelected || isChangeover ? color : 'var(--line)'}"
+        onclick="selectPlanningDay('${day.toISOString()}')"
+        title="${isChangeover ? `Verplaatsdag: ${escapeHtml(prevAcc.name)} → ${escapeHtml(acc.name)}` : ''}">
+        <span class="mono" style="font-size:10px;font-weight:700;color:${onColor ? 'rgba(255,255,255,.85)' : color}">D${dayNum}</span>
+        <span style="font-family:var(--font-display);font-size:17px;font-weight:800;color:${onColor ? 'white' : 'var(--ink)'};line-height:1.1">${day.getDate()}</span>
+        <span class="mono" style="font-size:8px;color:${onColor ? 'rgba(255,255,255,.55)' : 'var(--ink-faint)'}">${MONTHS[day.getMonth()]}</span>
+        ${isChangeover
+          ? `<span style="font-size:10px;margin-top:2px;line-height:1">🚗</span>`
+          : (actCount > 0
+            ? `<span style="width:16px;height:16px;background:${onColor ? 'rgba(255,255,255,.3)' : color + '22'};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:${onColor ? 'white' : color};margin-top:2px">${actCount}</span>`
+            : `<span style="width:16px;height:4px"></span>`)}
       </button>`;
   }).join('');
 
@@ -54,16 +69,30 @@ function renderPlanningDay() {
   const dayNum = getDayNumber(day);
   const acc = getAccommodationForDate(day);
 
+  // Verplaatsdag: zelfde detectie als buildDayTabs() — deze dag is zowel de
+  // check-out van het vorige verblijf als de check-in van het volgende.
+  const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
+  const isChangeover = !!(prevAcc && acc && prevAcc.id !== acc.id);
+  const badgeBg = isChangeover
+    ? `linear-gradient(135deg, ${prevAcc.color} 0%, ${prevAcc.color} 46%, ${acc.color} 54%, ${acc.color} 100%)`
+    : (acc ? acc.color : 'var(--ink-faint)');
+
   document.getElementById('day-header').innerHTML = `
-    <div style="background:${acc ? acc.color : 'var(--ink-faint)'};border-radius:10px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+    <div style="background:${badgeBg};border-radius:10px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
       <span class="mono" style="font-size:8px;color:rgba(255,255,255,.65);font-weight:700;letter-spacing:1px">DAG</span>
       <span style="font-family:var(--font-display);font-size:20px;font-weight:800;color:white;line-height:1">${dayNum}</span>
     </div>
     <div style="flex:1">
       <p class="row-title" style="font-size:15.5px">${WEEKDAYS[day.getDay()]} ${day.getDate()} ${MONTHS[day.getMonth()]}</p>
-      ${acc
-        ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span><span class="mono" style="color:${acc.color};font-weight:700">vanuit ${escapeHtml(acc.name)}</span></div>`
-        : `<p class="mono" style="margin-top:3px">reisdag · onderweg</p>`}
+      ${isChangeover
+        ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+             <span style="width:8px;height:8px;border-radius:50%;background:${prevAcc.color};flex-shrink:0"></span><span class="mono" style="color:${prevAcc.color};font-weight:700">${escapeHtml(prevAcc.name)}</span>
+             <span class="mono" style="color:var(--ink-faint)">🚗</span>
+             <span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span><span class="mono" style="color:${acc.color};font-weight:700">${escapeHtml(acc.name)}</span>
+           </div>`
+        : (acc
+          ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span><span class="mono" style="color:${acc.color};font-weight:700">vanuit ${escapeHtml(acc.name)}</span></div>`
+          : `<p class="mono" style="margin-top:3px">reisdag · onderweg</p>`)}
     </div>
     ${acc ? renderElevationTag(acc.elevation, acc.color) : ''}
     <button onclick="openNoteScreen('day','${day.toISOString().slice(0,10)}','Dag ${dayNum} — ${day.getDate()} ${MONTHS[day.getMonth()]}')"
@@ -492,9 +521,29 @@ function openAddActivitySheetForCurrentDay() {
 
   document.getElementById('activity-name-input').value = '';
   resetActivityFormExtras();
+  updateActivityDayBadge();
   selectedActivityCategory = 'activity';
   document.querySelectorAll('#activity-category-chips .chip').forEach((c, i) => c.classList.toggle('on', i === 0));
   openSheet('sheet-activity');
+}
+
+// Reisdag-icoon naast de dag-keuze in "Activiteit toevoegen" — toont het
+// dagnummer in de kleur van het verblijf dat op die dag actief is, zodat je
+// meteen ziet welke reisdag/verblijf je kiest i.p.v. alleen platte tekst
+// in de dropdown.
+function updateActivityDayBadge() {
+  const badge = document.getElementById('activity-day-badge');
+  const sel = document.getElementById('activity-day-select');
+  if (!badge || !sel) return;
+  if (!sel.value) {
+    badge.textContent = '—';
+    badge.style.background = 'var(--ink-faint)';
+    return;
+  }
+  const day = new Date(sel.value);
+  const dayAcc = getAccommodationForDate(day);
+  badge.textContent = `D${getDayNumber(day)}`;
+  badge.style.background = dayAcc ? dayAcc.color : 'var(--ink-faint)';
 }
 
 function openAddActivitySheet() {

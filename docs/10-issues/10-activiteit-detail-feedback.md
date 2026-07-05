@@ -2,7 +2,7 @@
 
 **Document ID:** TC-ISSUES-010
 **Status:** ✅ Gebouwd
-**Bron:** vier losse punten in één bericht na het testen van het (net vergrote) activiteit-detailscherm.
+**Bron:** vier losse punten in één bericht na het testen van het (net vergrote) activiteit-detailscherm, plus een vervolgverzoek over de reisdag-weergave.
 
 ---
 
@@ -39,6 +39,14 @@ Klopt, zie de correctie in `01-testronde-30juni.md` (D6/D6b) en `08-restplan-ope
 
 ---
 
+## 5. "Voeg bij activiteit (toevoegen) ook icoon voor reisdag toe, en combi-kleuren in Planning voor verplaatsdagen"
+
+**Reisdag-icoon bij activiteit toevoegen**: naast de dag-keuze (`activity-day-select`) in het "Activiteit toevoegen"-formulier staat nu een klein badge (`activity-day-badge`) dat live het dagnummer toont ("D5") in de kleur van het verblijf dat op die dag actief is — werkt ook bij het wisselen van dag in de dropdown (`updateActivityDayBadge()` in `js/screen-planning.js`). Voorheen was de dagkeuze platte tekst zonder visuele bevestiging welk verblijf erbij hoort.
+
+**Combi-kleuren op verplaatsdagen**: een dag die zowel de check-out-datum van het ene verblijf als de check-in-datum van het volgende is, toont nu een diagonale twee-kleuren-achtergrond (beide verblijfskleuren) plus een 🚗-icoon, zowel in de dagtabs-strip (`buildDayTabs()`) als in de grote dag-header (`renderPlanningDay()`, die dan ook beide verblijfsnamen toont i.p.v. alleen het nieuwe). Voorheen kreeg zo'n dag stilzwijgend alleen de kleur van het nieuwe verblijf, zonder dat zichtbaar was dat het een verplaatsdag betreft.
+
+---
+
 ## Gewijzigde bestanden
 
-`index.html` (Discover-header-knop, pd-stats-grid, wandelinfo-velden in beide activiteit-formulieren, pd-elevation-embed), `js/state.js` (`komootSearchUrl()`, `extractKomootTourId()`, `addActivity()` uitgebreid met `komootTourUrl`), `js/screen-map.js` (`renderPdHero()` — stats-grid i.p.v. pilletjes), `js/screen-planning.js` (formulier-logica add/edit, Komoot-embed-rendering in `openActivityDetailSheet()`), `js/screen-discover.js` (Komoot-link + top-knop-status), `js/screen-accommodation.js` (`resetActivityFormExtras()` hergebruikt).
+`index.html` (Discover-header-knop, pd-stats-grid, wandelinfo-velden in beide activiteit-formulieren, pd-elevation-embed, activity-day-badge), `js/state.js` (`komootSearchUrl()`, `extractKomootTourId()`, `addActivity()` uitgebreid met `komootTourUrl`), `js/screen-map.js` (`renderPdHero()` — stats-grid i.p.v. pilletjes), `js/screen-planning.js` (formulier-logica add/edit, Komoot-embed-rendering in `openActivityDetailSheet()`, `updateActivityDayBadge()`, verplaatsdag-detectie in `buildDayTabs()`/`renderPlanningDay()`), `js/screen-discover.js` (Komoot-link + top-knop-status), `js/screen-accommodation.js` (`resetActivityFormExtras()`/`updateActivityDayBadge()` hergebruikt).

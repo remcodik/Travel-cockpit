@@ -556,7 +556,10 @@
     <div class="sheet-handle"></div>
     <p class="sheet-title">ACTIVITEIT TOEVOEGEN</p>
     <input id="activity-name-input" placeholder="Naam activiteit"/>
-    <select id="activity-day-select"></select>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:11px">
+      <span id="activity-day-badge" class="mono" style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:var(--ink-faint);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px">—</span>
+      <select id="activity-day-select" onchange="updateActivityDayBadge()" style="flex:1;margin-bottom:0"></select>
+    </div>
     <select id="activity-acc-select" style="margin-bottom:14px">
       <option value="1">Sogndal (16–19 jun)</option>
       <option value="2">Skjåk Solside (19–23 jun)</option>
