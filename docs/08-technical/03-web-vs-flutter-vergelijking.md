@@ -1,7 +1,7 @@
 # Web-app vs Flutter-app — functievergelijking
 
 **Document ID:** TC-TECH-003
-**Version:** 1.15
+**Version:** 1.16
 **Status:** Living document — bijwerken zodra een rij daadwerkelijk is overgezet
 **Last Updated:** 2026-07-05
 
@@ -71,3 +71,4 @@ Expliciet: de volgende web-app-functionaliteit wordt **niet** vervangen door een
 | 1.13 | 2026-07-05 | Leesbaarheid dagtabs/kleuren, vervolg: rand nog dikker (2.5px→5px, verplaatsdag-linkerrand 4px→7px) en Skjåk Solside's blauw aangepast (`#1565c0`→`#1e88e5`) omdat het qua helderheid te dicht bij Sogndal's groen lag (Δ 0,018, ruim kleiner dan tussen de andere verblijfsparen). Eerst een interactief HTML-voorbeeld gemaakt (losstaand artifact met live randdikte-slider en palet-toggle, helderheid live berekend) om dit te kunnen beoordelen vóór het bouwen. Eenmalige zelfhelende kleurmigratie toegevoegd in `applyTripData()` — een al bestaand Firestore-verblijf met de oude hex wordt bij laden gecorrigeerd én teruggeschreven, omdat er geen bewerk-veld voor accommodatiekleur bestaat. |
 | 1.14 | 2026-07-05 | Twee kleine fixes: Planning toonde op een lege dag twee "+ Activiteit"-knoppen tegelijk (één in de lege-staat-melding, één altijd-aanwezige eronder) — de dubbele knop in de lege-staat verwijderd, de onderste blijft de ene consistente plek. Accommodatiescherm kreeg "Eten nabij"/"Café nabij"-knoppen (`openNearbySearch()`), dezelfde functionaliteit die al op het activiteit-detailscherm stond. |
 | 1.15 | 2026-07-05 | Generiek link-veld voor activiteiten: verblijven hadden al een boekingslink, activiteiten alleen de wandeling-specifieke Komoot-routelink — niet bruikbaar voor een restaurant/café-website. Nieuw `link`-veld op elke activiteit (ongeacht categorie), zichtbaar in het hoofdformulier (niet weggestopt bij "Wandelinfo"), getoond als "🔗 Link"-knop op het activiteit-detailscherm. Alleen een echte `http(s)://`-waarde wordt als klikbare link gerenderd. |
+| 1.16 | 2026-07-05 | Notitie-knop ontbrak op het activiteit-detailscherm: `js/notes.js` was al gebouwd voor `'day' \| 'accommodation' \| 'activity'` en Planning's activiteiten-rijen hadden al een ✎-knopje per rij (`renderNoteButton()`), maar de detail-sheet zelf (`sheet-place-detail`) had geen manier om die notitie te openen — alleen verblijf had dat al. "✎ Notitie"-knop toegevoegd aan `pd-extra-actions`, met dezelfde groen/neutraal-kleurindicatie als bij een verblijf. |

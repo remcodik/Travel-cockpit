@@ -62,6 +62,16 @@ Nieuw, generiek `link`-veld op elke activiteit (ongeacht categorie), zichtbaar i
 
 ---
 
+## 7. "Ik dacht dat ik vrije tekst kon toevoegen bij verblijf en activiteit"
+
+Klopte, maar niet volledig. `js/notes.js` (het losstaande, persistente notitie-systeem — apart van de beschrijving/notes-tekstvelden) was expliciet gebouwd voor drie types: `'day' | 'accommodation' | 'activity'` (zie de comment-header en de `renderNotesScreen()`-labels-mapping, die `activity: 'Activiteit'` al bevatte), en er bestond zelfs al een losse `renderNoteButton()`-helper specifiek voor activiteit-rijen — die stond al aan in Planning's activiteiten-lijst (zowel ingeplande als niet-ingeplande rijen tonen al een ✎-knopje per rij).
+
+**De echte lacune**: op het activiteit-**detailscherm** zelf (de sheet die opent als je op een activiteit tikt) was er geen manier om die notitie te openen — alleen op accommodaties bestond daar een notitie-knop (`acc-note-btn`). De functionaliteit was dus al gebouwd en deels aangesloten, maar niet overal waar je 'm zou verwachten.
+
+**Fix**: "✎ Notitie"-knop toegevoegd aan `pd-extra-actions` op het activiteit-detailscherm, eerste knop in de rij (vóór Verplaatsen/AI-verrijking/Verwijder), met dezelfde kleur-indicatie als bij een verblijf (groen als er al een notitie is, anders neutraal). Verblijf had dit al volledig (notitie-knop + apart notitie-scherm); Dag ook (notitie-knop in de dag-header). Nu is Activiteit net zo compleet, zowel vanuit de lijst als vanuit het detailscherm.
+
+---
+
 ## Gewijzigde bestanden
 
 `index.html` (Discover-header-knop, pd-stats-grid, wandelinfo-velden in beide activiteit-formulieren, pd-elevation-embed, activity-day-badge), `js/state.js` (`komootSearchUrl()`, `extractKomootTourId()`, `addActivity()` uitgebreid met `komootTourUrl`), `js/screen-map.js` (`renderPdHero()` — stats-grid i.p.v. pilletjes), `js/screen-planning.js` (formulier-logica add/edit, Komoot-embed-rendering in `openActivityDetailSheet()`, `updateActivityDayBadge()`, verplaatsdag-detectie in `buildDayTabs()`/`renderPlanningDay()`), `js/screen-discover.js` (Komoot-link + top-knop-status), `js/screen-accommodation.js` (`resetActivityFormExtras()`/`updateActivityDayBadge()` hergebruikt).

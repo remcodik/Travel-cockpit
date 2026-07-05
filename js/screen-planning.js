@@ -338,6 +338,10 @@ function openActivityDetailSheet(id) {
   if (extraEl) {
     extraEl.innerHTML = `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+        <button id="pd-note-btn" onclick="openNoteScreen('activity',${id},'${escapeHtml(act.name).replace(/'/g, "\\'")}')"
+          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
+          ✎ Notitie
+        </button>
         <button onclick="closeSheet('sheet-place-detail');openMoveActivitySheet(${id})" class="edit-only"
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           ↕ Verplaatsen
@@ -351,6 +355,15 @@ function openActivityDetailSheet(id) {
           🗑 Verwijder
         </button>
       </div>`;
+
+    // Toont of er al een notitie bestaat, zelfde patroon als de
+    // notitie-knop op het accommodatiescherm (acc-note-btn).
+    const pdNoteBtn = document.getElementById('pd-note-btn');
+    dbLoadNote('activity', id).then(text => {
+      if (!pdNoteBtn) return;
+      pdNoteBtn.style.color = text ? 'var(--spruce)' : 'var(--ink-mid)';
+      pdNoteBtn.style.borderColor = text ? 'var(--spruce)' : 'var(--line)';
+    });
   }
 
   openSheet('sheet-place-detail');
