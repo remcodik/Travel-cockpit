@@ -263,13 +263,23 @@ function openActivityDetailSheet(id) {
     }
   }
 
-  // Plan-knop: toon status
+  // Plan-knop: dit was één knop met twee door elkaar gehaalde acties —
+  // "niet ingepland" gaf de tekst "+ Inplannen" maar de klik deed
+  // hetzelfde als bij een wél ingeplande activiteit (status togglen naar
+  // 'done'), zonder ooit een datum toe te kennen. Nu twee losse, kloppende
+  // acties: ingepland → afronden/heropenen togglen; niet ingepland →
+  // daadwerkelijk inplannen (handleQuickSchedule, kent een datum toe).
   const addBtn = document.getElementById('pd-add-btn');
   if (addBtn) {
     const isDone = act.status === 'done';
-    addBtn.textContent = isDone ? '✓ Afgerond' : act.date ? '↺ Heropenen' : '+ Inplannen';
     addBtn.disabled = false;
-    addBtn.onclick = () => { handleToggleActivity(id); closeSheet('sheet-place-detail'); };
+    if (!act.date) {
+      addBtn.textContent = '+ Inplannen';
+      addBtn.onclick = () => { handleQuickSchedule(id); closeSheet('sheet-place-detail'); };
+    } else {
+      addBtn.textContent = isDone ? '↺ Heropenen' : '✓ Afronden';
+      addBtn.onclick = () => { handleToggleActivity(id); closeSheet('sheet-place-detail'); };
+    }
   }
 
   // Locatiereferentie voor Route/Komoot/nearby-links: coördinaten als die
@@ -339,6 +349,10 @@ function openActivityDetailSheet(id) {
         <button id="pd-note-btn" onclick="openNoteScreen('activity',${id},'${escapeHtml(act.name).replace(/'/g, "\\'")}')"
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           ✎ Notitie
+        </button>
+        <button onclick="closeSheet('sheet-place-detail');openEditActivitySheet(${id})" class="edit-only"
+          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
+          ✎ Bewerken
         </button>
         <button onclick="closeSheet('sheet-place-detail');openMoveActivitySheet(${id})" class="edit-only"
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
