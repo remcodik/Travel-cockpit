@@ -50,6 +50,7 @@ function navigateTo(screenId) {
     planning: renderPlanningScreen,
     discover: renderDiscoverScreen,
     accommodation: () => renderAccommodationScreen(AppState.viewingAccommodationId),
+    guide: renderRegionGuideScreen,
     roadtrip: renderRoadtripScreen,
     map: initMap,
     tickets: renderTicketsScreen,

@@ -28,28 +28,28 @@ function buildDayTabs() {
     const actCount = getActivitiesForDate(day).length;
 
     // Verplaatsdag: dit is zowel de check-out-datum van het vorige verblijf
-    // als de check-in-datum van het volgende — toon dan beide kleuren i.p.v.
-    // alleen die van het nieuwe verblijf, zodat een reisdag met wisseling
-    // meteen herkenbaar is in de dagtabs.
+    // als de check-in-datum van het volgende. Subtiel weergegeven: geen
+    // gekleurd vlak, alleen de linkerrand in de kleur van het verblijf waar
+    // je vandaan komt — de rest van de rand volgt gewoon de normale regel
+    // hieronder (kleur van het verblijf waar de dag nu bij hoort).
     const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
     const isChangeover = !!(prevAcc && acc && prevAcc.id !== acc.id);
-    const bg = isChangeover
-      ? `linear-gradient(135deg, ${prevAcc.color} 0%, ${prevAcc.color} 46%, ${color} 54%, ${color} 100%)`
-      : (isSelected ? color : 'var(--white)');
-    const onColor = isChangeover || isSelected;
 
+    // Elke dag krijgt een subtiele randkleur van het bijbehorende verblijf,
+    // ook als hij niet geselecteerd is — alleen de selectie zelf blijft een
+    // gevuld vlak.
     return `
       <button class="day-tab ${isSelected ? 'selected' : ''}"
-        style="background:${bg};border-color:${isSelected || isChangeover ? color : 'var(--line)'}"
+        style="background:${isSelected ? color : 'var(--white)'};border-color:${color};${isChangeover ? `border-left-color:${prevAcc.color};` : ''}"
         onclick="selectPlanningDay('${day.toISOString()}')"
         title="${isChangeover ? `Verplaatsdag: ${escapeHtml(prevAcc.name)} → ${escapeHtml(acc.name)}` : ''}">
-        <span class="mono" style="font-size:10px;font-weight:700;color:${onColor ? 'rgba(255,255,255,.85)' : color}">D${dayNum}</span>
-        <span style="font-family:var(--font-display);font-size:17px;font-weight:800;color:${onColor ? 'white' : 'var(--ink)'};line-height:1.1">${day.getDate()}</span>
-        <span class="mono" style="font-size:8px;color:${onColor ? 'rgba(255,255,255,.55)' : 'var(--ink-faint)'}">${MONTHS[day.getMonth()]}</span>
+        <span class="mono" style="font-size:10px;font-weight:700;color:${isSelected ? 'rgba(255,255,255,.85)' : color}">D${dayNum}</span>
+        <span style="font-family:var(--font-display);font-size:17px;font-weight:800;color:${isSelected ? 'white' : 'var(--ink)'};line-height:1.1">${day.getDate()}</span>
+        <span class="mono" style="font-size:8px;color:${isSelected ? 'rgba(255,255,255,.55)' : 'var(--ink-faint)'}">${MONTHS[day.getMonth()]}</span>
         ${isChangeover
           ? `<span style="font-size:10px;margin-top:2px;line-height:1">🚗</span>`
           : (actCount > 0
-            ? `<span style="width:16px;height:16px;background:${onColor ? 'rgba(255,255,255,.3)' : color + '22'};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:${onColor ? 'white' : color};margin-top:2px">${actCount}</span>`
+            ? `<span style="width:16px;height:16px;background:${isSelected ? 'rgba(255,255,255,.3)' : color + '22'};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:${isSelected ? 'white' : color};margin-top:2px">${actCount}</span>`
             : `<span style="width:16px;height:4px"></span>`)}
       </button>`;
   }).join('');
@@ -71,16 +71,20 @@ function renderPlanningDay() {
 
   // Verplaatsdag: zelfde detectie als buildDayTabs() — deze dag is zowel de
   // check-out van het vorige verblijf als de check-in van het volgende.
+  // Subtiel weergegeven: geen gekleurd vlak, alleen een linkerrand in de
+  // kleur van het verblijf waar je vandaan komt (zelfde aanpak als de
+  // dagtabs hierboven, i.p.v. de eerdere, te opvallende kleurverloop-vulling).
   const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
   const isChangeover = !!(prevAcc && acc && prevAcc.id !== acc.id);
-  const badgeBg = isChangeover
-    ? `linear-gradient(135deg, ${prevAcc.color} 0%, ${prevAcc.color} 46%, ${acc.color} 54%, ${acc.color} 100%)`
-    : (acc ? acc.color : 'var(--ink-faint)');
+  const badgeBg = isChangeover ? 'var(--white)' : (acc ? acc.color : 'var(--ink-faint)');
+  const badgeBorder = isChangeover ? `border:1.5px solid ${acc.color};border-left:3px solid ${prevAcc.color};` : '';
+  const badgeTextColor = isChangeover ? 'var(--ink)' : 'white';
+  const badgeLabelColor = isChangeover ? 'var(--ink-faint)' : 'rgba(255,255,255,.65)';
 
   document.getElementById('day-header').innerHTML = `
-    <div style="background:${badgeBg};border-radius:10px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
-      <span class="mono" style="font-size:8px;color:rgba(255,255,255,.65);font-weight:700;letter-spacing:1px">DAG</span>
-      <span style="font-family:var(--font-display);font-size:20px;font-weight:800;color:white;line-height:1">${dayNum}</span>
+    <div style="background:${badgeBg};${badgeBorder}border-radius:10px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+      <span class="mono" style="font-size:8px;color:${badgeLabelColor};font-weight:700;letter-spacing:1px">DAG</span>
+      <span style="font-family:var(--font-display);font-size:20px;font-weight:800;color:${badgeTextColor};line-height:1">${dayNum}</span>
     </div>
     <div style="flex:1">
       <p class="row-title" style="font-size:15.5px">${WEEKDAYS[day.getDay()]} ${day.getDate()} ${MONTHS[day.getMonth()]}</p>
@@ -445,32 +449,32 @@ async function openAiEnrichSheet(id) {
   openSheet('sheet-enrich-activity');
 
   try {
-    const liveWeather = await getWeatherForDate(acc.lat, acc.lng, getToday());
-    const response = await fetch('/api/suggestions', {
+    // FIX: dit riep voorheen /api/suggestions aan met een custom "prompt"-
+    // veld dat die functie nooit las — je kreeg dus gewoon het eerste van 5
+    // verse, willekeurige Discover-suggesties terug, niet per se iets over
+    // déze activiteit. Apart endpoint dat de opgegeven activiteit echt
+    // verrijkt, nu ook met iets meer tekst en een optioneel achtergrondfeitje.
+    const trip = AppState.trips.find(t => t.id === getCurrentTripId());
+    const response = await fetch('/api/enrich-activity', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        activityName: act.name,
         accommodationName: acc.name,
         accommodationLocation: acc.address,
-        country: 'Noorwegen',
-        today: formatShortDate(getToday()),
-        temperature: liveWeather ? liveWeather.temperature : 12,
-        weatherCondition: liveWeather ? liveWeather.condition : 'bewolkt',
-        rainProbability: liveWeather ? liveWeather.rainProbability : 20,
-        userPreferences: Array.from(AppState.travelStyles),
-        alreadyPlanned: [],
-        language: 'nl',
-        prompt: `Verrijk de activiteit "${act.name}" nabij ${acc.name} in Noorwegen. Geef als JSON array met 1 object: {"name":"${act.name}","description":"2-3 zinnen beschrijving","duration_minutes":getal,"distance_km":getal of null,"difficulty":"easy/medium/hard","why_recommended":"waarom de moeite waard","tips":["tip1","tip2"],"best_time":"beste tijd","komoot_search":"zoekterm"}`
+        country: (trip && trip.country) || 'Noorwegen',
+        language: AppState.language || 'nl',
       }),
     });
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Onbekende fout');
-    const enriched = (data.suggestions || [])[0];
+    const enriched = data.enriched;
 
     if (enriched) {
       document.getElementById('enrich-result').innerHTML = `
         <p style="font-size:13.5px;line-height:1.65;color:var(--ink-mid);margin-bottom:12px">${escapeHtml(enriched.description || '')}</p>
+        ${enriched.fun_fact ? `<p style="font-size:12.5px;line-height:1.5;color:var(--spruce);background:var(--paper-warm);border-radius:10px;padding:10px 12px;margin-bottom:12px">💡 ${escapeHtml(enriched.fun_fact)}</p>` : ''}
         ${enriched.tips && enriched.tips.length ? `
           <div style="background:var(--slope-light);border-radius:11px;padding:12px 14px;margin-bottom:12px">
             <p class="eyebrow" style="margin-bottom:8px">Tips</p>
@@ -490,7 +494,11 @@ async function openAiEnrichSheet(id) {
 }
 
 async function applyAiEnrichment(id, enriched) {
-  const changes = { desc: enriched.description || '' };
+  // fun_fact wordt bij de beschrijving gevoegd (geen apart schemaveld nodig)
+  // zodat het ook zichtbaar blijft op het activiteit-detailscherm nadat de
+  // verrijking is opgeslagen, niet alleen in dit sheet.
+  const desc = [enriched.description, enriched.fun_fact ? `💡 ${enriched.fun_fact}` : null].filter(Boolean).join('\n\n');
+  const changes = { desc };
   if (enriched.duration_minutes) changes.duration = Math.round(enriched.duration_minutes / 60) + ' u';
   if (enriched.distance_km) changes.distance = enriched.distance_km + ' km';
   if (enriched.difficulty) changes.level = { easy: 'Makkelijk', medium: 'Gemiddeld', hard: 'Zwaar' }[enriched.difficulty] || enriched.difficulty;
@@ -530,7 +538,9 @@ function openAddActivitySheetForCurrentDay() {
 // Reisdag-icoon naast de dag-keuze in "Activiteit toevoegen" — toont het
 // dagnummer in de kleur van het verblijf dat op die dag actief is, zodat je
 // meteen ziet welke reisdag/verblijf je kiest i.p.v. alleen platte tekst
-// in de dropdown.
+// in de dropdown. Bij een verplaatsdag (zelfde detectie als buildDayTabs())
+// hetzelfde 🚗-icoon + subtiele twee-kleuren-rand als in Planning, i.p.v.
+// stilzwijgend alleen de kleur van het nieuwe verblijf.
 function updateActivityDayBadge() {
   const badge = document.getElementById('activity-day-badge');
   const sel = document.getElementById('activity-day-select');
@@ -538,16 +548,65 @@ function updateActivityDayBadge() {
   if (!sel.value) {
     badge.textContent = '—';
     badge.style.background = 'var(--ink-faint)';
+    badge.style.border = 'none';
+    badge.title = '';
     return;
   }
   const day = new Date(sel.value);
   const dayAcc = getAccommodationForDate(day);
-  badge.textContent = `D${getDayNumber(day)}`;
-  badge.style.background = dayAcc ? dayAcc.color : 'var(--ink-faint)';
+  const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
+  const isChangeover = !!(prevAcc && dayAcc && prevAcc.id !== dayAcc.id);
+
+  if (isChangeover) {
+    badge.textContent = '🚗';
+    badge.style.background = 'var(--white)';
+    badge.style.border = `1.5px solid ${dayAcc.color}`;
+    badge.style.borderLeft = `3px solid ${prevAcc.color}`;
+    badge.title = `Verplaatsdag: ${prevAcc.name} → ${dayAcc.name}`;
+  } else {
+    badge.textContent = `D${getDayNumber(day)}`;
+    badge.style.background = dayAcc ? dayAcc.color : 'var(--ink-faint)';
+    badge.style.border = 'none';
+    badge.title = '';
+  }
 }
 
 function openAddActivitySheet() {
   openAddActivitySheetForCurrentDay();
+}
+
+// ── Komoot-link → afstand/duur/hoogte proberen over te nemen ──
+// Best-effort, zie api/extract-komoot-tour.js: Komoot heeft geen publieke
+// data-API, dit leest server-side de paginabron en zoekt naar cijfers die
+// Komoot zelf al meestuurt. Vult uitdrukkelijk alleen de nog LEGE velden in
+// (nooit een handmatig ingevoerde waarde overschrijven), en doet niets als
+// er niets gevonden wordt — geen gok.
+async function handleExtractFromKomootLink(prefix) {
+  const url = document.getElementById(`${prefix}-komoot-input`).value.trim();
+  if (!url) { showToast('Plak eerst een Komoot-routelink'); return; }
+
+  showToast('Bezig met ophalen…', 4000);
+  try {
+    const resp = await fetch(`/api/extract-komoot-tour?url=${encodeURIComponent(url)}`);
+    const data = await resp.json();
+    if (!data || !data.found) {
+      showToast('Geen gegevens gevonden in deze link — vul handmatig aan');
+      return;
+    }
+    const distanceEl = document.getElementById(`${prefix}-distance-input`);
+    const durationEl = document.getElementById(`${prefix}-duration-input`);
+    const elevationEl = document.getElementById(`${prefix}-elevation-input`);
+    let filledAny = false;
+    if (data.distance_km && !distanceEl.value.trim()) { distanceEl.value = `${data.distance_km} km`; filledAny = true; }
+    if (data.duration_minutes && !durationEl.value.trim()) {
+      durationEl.value = data.duration_minutes >= 60 ? `${Math.round(data.duration_minutes / 60)} u` : `${data.duration_minutes} min`;
+      filledAny = true;
+    }
+    if (data.elevation_gain_m && !elevationEl.value.trim()) { elevationEl.value = data.elevation_gain_m; filledAny = true; }
+    showToast(filledAny ? '✓ Gegevens overgenomen uit Komoot-link' : 'Gegevens uit link waren al ingevuld');
+  } catch {
+    showToast('Geen gegevens gevonden in deze link — vul handmatig aan');
+  }
 }
 
 // Wandelinfo-velden (optioneel, zie sheet-activity) — leeg bij elk nieuw

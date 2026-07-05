@@ -124,6 +124,17 @@ function komootSearchUrl(query) {
   return `https://www.google.com/search?q=${encodeURIComponent(query + ' wandeling site:komoot.com')}`;
 }
 
+// Veilige, altijd-werkende zoeklinks voor de reisgids-sectie (js/screen-guide.js)
+// — MediaWiki's eigen zoek-URL i.p.v. een gegokte kant-en-klare artikel-URL
+// (die kan 404'en bij een spellingsverschil). Werkt voor elke taalcode die
+// Wikipedia/Wikivoyage ondersteunt.
+function wikipediaSearchUrl(query, lang) {
+  return `https://${lang || 'en'}.wikipedia.org/w/index.php?search=${encodeURIComponent(query)}`;
+}
+function wikivoyageSearchUrl(query, lang) {
+  return `https://${lang || 'en'}.wikivoyage.org/w/index.php?search=${encodeURIComponent(query)}`;
+}
+
 function getAllTripDays() {
   const days = [];
   const d = new Date(TRIP_START);
