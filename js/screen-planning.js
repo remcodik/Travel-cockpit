@@ -534,7 +534,9 @@ function openAddActivitySheetForCurrentDay() {
 // Reisdag-icoon naast de dag-keuze in "Activiteit toevoegen" — toont het
 // dagnummer in de kleur van het verblijf dat op die dag actief is, zodat je
 // meteen ziet welke reisdag/verblijf je kiest i.p.v. alleen platte tekst
-// in de dropdown.
+// in de dropdown. Bij een verplaatsdag (zelfde detectie als buildDayTabs())
+// hetzelfde 🚗-icoon + subtiele twee-kleuren-rand als in Planning, i.p.v.
+// stilzwijgend alleen de kleur van het nieuwe verblijf.
 function updateActivityDayBadge() {
   const badge = document.getElementById('activity-day-badge');
   const sel = document.getElementById('activity-day-select');
@@ -542,12 +544,27 @@ function updateActivityDayBadge() {
   if (!sel.value) {
     badge.textContent = '—';
     badge.style.background = 'var(--ink-faint)';
+    badge.style.border = 'none';
+    badge.title = '';
     return;
   }
   const day = new Date(sel.value);
   const dayAcc = getAccommodationForDate(day);
-  badge.textContent = `D${getDayNumber(day)}`;
-  badge.style.background = dayAcc ? dayAcc.color : 'var(--ink-faint)';
+  const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
+  const isChangeover = !!(prevAcc && dayAcc && prevAcc.id !== dayAcc.id);
+
+  if (isChangeover) {
+    badge.textContent = '🚗';
+    badge.style.background = 'var(--white)';
+    badge.style.border = `1.5px solid ${dayAcc.color}`;
+    badge.style.borderLeft = `3px solid ${prevAcc.color}`;
+    badge.title = `Verplaatsdag: ${prevAcc.name} → ${dayAcc.name}`;
+  } else {
+    badge.textContent = `D${getDayNumber(day)}`;
+    badge.style.background = dayAcc ? dayAcc.color : 'var(--ink-faint)';
+    badge.style.border = 'none';
+    badge.title = '';
+  }
 }
 
 function openAddActivitySheet() {
