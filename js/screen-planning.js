@@ -117,14 +117,18 @@ function renderPlanningDay() {
   const container = document.getElementById('planning-items');
 
   if (dayActivities.length === 0 && unscheduled.length === 0) {
+    // FIX: had hier een eigen "+ Activiteit"-knop, bovenop de altijd
+    // aanwezige "+ Activiteit toevoegen"-knop onderaan het scherm (buiten
+    // deze container) — twee knoppen voor dezelfde actie tegelijk zichtbaar.
+    // Die onderste knop blijft de enige, consistente plek, ook als de dag
+    // leeg is.
     container.innerHTML = `
       <div class="empty-state">
         <span class="summit-tri" style="border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:24px solid var(--line)"></span>
         <p class="row-title" style="font-size:18px;margin-top:16px">
           ${planningFilter === 'planned' ? 'Niets ingepland op deze dag' : 'Niets gepland'}
         </p>
-        <p class="mono" style="margin-top:4px">Voeg toe via AI-ideeën of het + icoon</p>
-        <button onclick="openAddActivitySheetForCurrentDay()" class="btn btn-primary" style="margin-top:20px;width:auto;padding:10px 20px">+ Activiteit</button>
+        <p class="mono" style="margin-top:4px">Voeg toe via AI-ideeën of hieronder</p>
       </div>`;
     return;
   }
