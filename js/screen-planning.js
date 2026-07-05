@@ -417,12 +417,22 @@ async function saveActivityEdit(id) {
 }
 
 // ── Activiteit verplaatsen ────────────────────────────────
+// currentMoveActivityId: onthoudt welke activiteit het move-sheet net heeft
+// geopend, zodat de losse "uit planning halen"-snelknop (die de dropdown
+// niet zelf hoeft te tonen) weet welke activiteit het betreft.
+let currentMoveActivityId = null;
+
 function openMoveActivitySheet(id) {
   const act = AppState.activities.find(a => a.id === id);
   if (!act) return;
+  currentMoveActivityId = id;
 
   document.getElementById('move-day-select').innerHTML =
-    `<option value="">Niet ingepland</option>` +
+    // FIX: "een activiteit uit Planning halen zonder 'm te verwijderen" was
+    // alleen mogelijk door deze eerste optie in de dropdown te vinden — niet
+    // vanzelfsprekend vanuit een sheet met de titel "Verplaatsen". Tekst
+    // verduidelijkt, en een losse knop hieronder doet hetzelfde in één tik.
+    `<option value="">↩ Niet ingepland (uit planning halen)</option>` +
     getAllTripDays().map((d, i) => {
       const iso = d.toISOString();
       const sel = act.date && act.date.toDateString() === d.toDateString() ? 'selected' : '';
@@ -445,9 +455,18 @@ async function saveMoveActivity(id) {
   const accId = document.getElementById('move-acc-select').value;
   await updateActivity(id, { date: dateStr ? new Date(dateStr) : null, accId });
   closeSheet('sheet-move-activity');
-  showToast('✓ Activiteit verplaatst');
+  showToast(dateStr ? '✓ Activiteit verplaatst' : '✓ Uit planning gehaald (niet verwijderd)');
   renderPlanningScreen();
   renderHomeScreen();
+}
+
+// Eén-tik-snelkoppeling voor exact dezelfde actie als "Dag" op "↩ Niet
+// ingepland" zetten — de activiteit blijft gewoon bestaan (bij het verblijf,
+// als niet-ingeplande activiteit), alleen de datum wordt losgelaten.
+async function handleUnscheduleActivity() {
+  if (currentMoveActivityId == null) return;
+  document.getElementById('move-day-select').value = '';
+  await saveMoveActivity(currentMoveActivityId);
 }
 
 // ── Activiteit verwijderen (met bevestiging) ──────────────
