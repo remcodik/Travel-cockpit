@@ -72,6 +72,22 @@ Klopte, maar niet volledig. `js/notes.js` (het losstaande, persistente notitie-s
 
 ---
 
+## 8. "Een activiteit kan ook restaurant of café zijn — dan zijn 'eten/café nabij' niet nodig, en niveau ook niet. Denk na hoe dit generiek op te lossen"
+
+Terechte constatering: het activiteit-detailscherm toonde altijd "Eten nabij" ÉN "Café nabij", ook als de activiteit zelf al een restaurant of café was (zichzelf in de buurt zoeken is zinloos) — en toonde "Niveau" (moeilijkheidsgraad) ook bij een café/restaurant/uitzicht, terwijl dat een wandeling-specifiek begrip is.
+
+**Root cause**: de gekozen categorie (wandeling/eten/café/uitzicht) werd nergens opgeslagen op de activiteit zelf — alleen het resulterende icoon (`emoji`). Overal waar categorie-specifiek gedrag nodig was, moest dus achteraf tussen de regels door geraden worden, en dat gebeurde inconsistent (nergens voor "Niveau", wel voor Komoot via een emoji-vergelijking).
+
+**Generieke oplossing**: één centrale configuratie, `CATEGORY_META` (`js/data.js`), die per categorie vastlegt:
+- `isHike`: bepaalt of hoogtewinst/niveau/Komoot-hoogteprofiel relevant zijn.
+- `nearbyCategories`: welke "X nabij"-knoppen zinnig zijn — nooit de eigen categorie.
+
+Een nieuw `category`-veld wordt nu daadwerkelijk op elke activiteit opgeslagen (toevoegen via het formulier, AI-suggesties via Discover) — met `categoryForEmoji()` als terugval voor activiteiten die dit veld nog niet hebben (aangemaakt vóór deze fix). Alle categorie-specifieke UI (activiteit-detailscherm én het toevoeg-formulier zelf) leest nu uit deze ene plek i.p.v. losse aannames per stuk code:
+- Activiteit-detail: "Niveau"/"Hoogtewinst" alleen bij `isHike`; "X nabij"-knoppen alleen voor categorieën in `nearbyCategories` (een restaurant toont dus alleen "Café nabij", een café alleen "Eten nabij").
+- Toevoeg-formulier: hoogtewinst/niveau/Komoot-routelink-velden verbergen zich automatisch zodra je Eten/Café/Uitzicht kiest (i.p.v. Wandeling), het kopje verandert dan van "Wandelinfo toevoegen" naar "Extra info toevoegen" (afstand/duur blijven wel altijd relevant, voor elke categorie).
+
+---
+
 ## Gewijzigde bestanden
 
 `index.html` (Discover-header-knop, pd-stats-grid, wandelinfo-velden in beide activiteit-formulieren, pd-elevation-embed, activity-day-badge), `js/state.js` (`komootSearchUrl()`, `extractKomootTourId()`, `addActivity()` uitgebreid met `komootTourUrl`), `js/screen-map.js` (`renderPdHero()` — stats-grid i.p.v. pilletjes), `js/screen-planning.js` (formulier-logica add/edit, Komoot-embed-rendering in `openActivityDetailSheet()`, `updateActivityDayBadge()`, verplaatsdag-detectie in `buildDayTabs()`/`renderPlanningDay()`), `js/screen-discover.js` (Komoot-link + top-knop-status), `js/screen-accommodation.js` (`resetActivityFormExtras()`/`updateActivityDayBadge()` hergebruikt).

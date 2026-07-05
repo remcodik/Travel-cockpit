@@ -1,7 +1,7 @@
 # Web-app vs Flutter-app — functievergelijking
 
 **Document ID:** TC-TECH-003
-**Version:** 1.16
+**Version:** 1.17
 **Status:** Living document — bijwerken zodra een rij daadwerkelijk is overgezet
 **Last Updated:** 2026-07-05
 
@@ -72,3 +72,4 @@ Expliciet: de volgende web-app-functionaliteit wordt **niet** vervangen door een
 | 1.14 | 2026-07-05 | Twee kleine fixes: Planning toonde op een lege dag twee "+ Activiteit"-knoppen tegelijk (één in de lege-staat-melding, één altijd-aanwezige eronder) — de dubbele knop in de lege-staat verwijderd, de onderste blijft de ene consistente plek. Accommodatiescherm kreeg "Eten nabij"/"Café nabij"-knoppen (`openNearbySearch()`), dezelfde functionaliteit die al op het activiteit-detailscherm stond. |
 | 1.15 | 2026-07-05 | Generiek link-veld voor activiteiten: verblijven hadden al een boekingslink, activiteiten alleen de wandeling-specifieke Komoot-routelink — niet bruikbaar voor een restaurant/café-website. Nieuw `link`-veld op elke activiteit (ongeacht categorie), zichtbaar in het hoofdformulier (niet weggestopt bij "Wandelinfo"), getoond als "🔗 Link"-knop op het activiteit-detailscherm. Alleen een echte `http(s)://`-waarde wordt als klikbare link gerenderd. |
 | 1.16 | 2026-07-05 | Notitie-knop ontbrak op het activiteit-detailscherm: `js/notes.js` was al gebouwd voor `'day' \| 'accommodation' \| 'activity'` en Planning's activiteiten-rijen hadden al een ✎-knopje per rij (`renderNoteButton()`), maar de detail-sheet zelf (`sheet-place-detail`) had geen manier om die notitie te openen — alleen verblijf had dat al. "✎ Notitie"-knop toegevoegd aan `pd-extra-actions`, met dezelfde groen/neutraal-kleurindicatie als bij een verblijf. |
+| 1.17 | 2026-07-05 | Categorie-specifiek gedrag generiek gemaakt: een activiteit toonde altijd "Eten nabij" én "Café nabij" (ook als de activiteit zelf al een restaurant/café was) en toonde "Niveau" ook bij niet-wandelingen. Root cause: de categorie werd nergens opgeslagen, alleen het resulterende icoon. Nieuwe centrale `CATEGORY_META`-configuratie (`js/data.js`, `isHike` + `nearbyCategories` per categorie) en een echt `category`-veld op elke activiteit (met `categoryForEmoji()`-terugval voor bestaande activiteiten zonder dit veld). Activiteit-detail én het toevoeg-formulier lezen nu uit deze ene plek i.p.v. losse per-code aannames. |

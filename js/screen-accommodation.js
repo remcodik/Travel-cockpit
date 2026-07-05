@@ -223,6 +223,7 @@ function openAddActivityForAccommodation(accId) {
   updateActivityDayBadge();
   selectedActivityCategory = 'activity';
   document.querySelectorAll('#activity-category-chips .chip').forEach((c, i) => c.classList.toggle('on', i === 0));
+  updateActivityFormForCategory(selectedActivityCategory);
   openSheet('sheet-activity');
 }
 

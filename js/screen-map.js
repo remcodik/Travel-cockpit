@@ -263,11 +263,14 @@ function renderPdHero(act, acc) {
   const metaEl = document.getElementById('pd-meta');
   if (metaEl) metaEl.innerHTML = '';
 
+  // Hoogtewinst/niveau zijn wandeling-specifieke begrippen — een café of
+  // restaurant heeft geen "moeilijkheidsgraad", zie CATEGORY_META (js/data.js).
+  const meta = categoryMetaForActivity(act);
   const stats = [];
   if (act.distance && act.distance !== '—') stats.push({ label: 'Afstand', value: act.distance });
   if (act.duration && act.duration !== '—') stats.push({ label: 'Duur', value: act.duration });
-  if (act.elevation) stats.push({ label: 'Hoogtewinst', value: `▲ ${act.elevation}m` });
-  if (act.level && act.level !== '—') stats.push({ label: 'Niveau', value: act.level });
+  if (meta.isHike && act.elevation) stats.push({ label: 'Hoogtewinst', value: `▲ ${act.elevation}m` });
+  if (meta.isHike && act.level && act.level !== '—') stats.push({ label: 'Niveau', value: act.level });
   const statsEl = document.getElementById('pd-stats');
   if (statsEl) {
     statsEl.style.display = stats.length ? 'grid' : 'none';
