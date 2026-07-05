@@ -88,6 +88,22 @@ Een nieuw `category`-veld wordt nu daadwerkelijk op elke activiteit opgeslagen (
 
 ---
 
+## 9. "Status van activiteiten klopt niet, afgerond en open / knoppen lijken niet te kloppen / kan ik alles wijzigen ook link?"
+
+Twee losse, bevestigde bugs gevonden op het activiteit-detailscherm.
+
+**Bug 1 — de hoofdknop (`pd-add-btn`) deed niet wat er stond**: voor een nog niet ingeplande activiteit (geen datum) toonde de knop "+ Inplannen", maar de klik riep alsnog `handleToggleActivity()` aan — dezelfde functie als bij een wél ingeplande activiteit, die alleen de status tussen `planned`/`done` omzet. Resultaat: de activiteit kreeg stilzwijgend status `done` zonder ooit een datum te krijgen — hij bleef dus "niet ingepland" terwijl de app 'm als afgerond beschouwde. Daarnaast klopte het label niet: een ingeplande maar nog niet afgeronde activiteit toonde "↺ Heropenen" (hoort bij "ongedaan maken van afgerond"), in plaats van "✓ Afronden".
+
+**Fix**: de knop is nu twee losse, kloppende acties. Geen datum → "+ Inplannen", roept `handleQuickSchedule()` aan (kent de huidige planningsdag toe als datum, laat de status ongemoeid). Wél een datum → "✓ Afronden" of "↺ Heropenen" al naar gelang de huidige status, roept `handleToggleActivity()` aan.
+
+**Bug 2 — geen manier om een ingeplande activiteit te bewerken**: `openEditActivitySheet()` (naam, omschrijving, afstand, duur, hoogtewinst, niveau, Komoot-routelink, link) bestond al, maar was alleen bereikbaar via het potlood-icoontje op een *niet-ingeplande* activiteit-rij in Planning. Zodra een activiteit een datum kreeg (ingepland was), verdween dat potlood-icoontje, en het detailscherm zelf had nergens een bewerk-knop. Praktisch antwoord op "kan ik alles wijzigen ook link?" was dus: nee, niet meer zodra de activiteit is ingepland.
+
+**Fix**: "✎ Bewerken"-knop toegevoegd aan `pd-extra-actions` op het detailscherm, naast Notitie — werkt ongeacht ingeplande/afgeronde status, opent het volledige bewerkformulier inclusief het generieke link-veld (punt 6).
+
+Geverifieerd met een headless-Chromium-test: na klikken op "+ Inplannen" krijgt de activiteit een datum terwijl de status `planned` blijft (niet stilzwijgend `done`); de knoptekst wisselt correct tussen "+ Inplannen" → "✓ Afronden" → "↺ Heropenen" bij opeenvolgende statuswissels; de nieuwe Bewerken-knop opent het bewerkformulier met de juiste waarden vooringevuld, en een gewijzigde link wordt na opslaan correct teruggelezen.
+
+---
+
 ## Gewijzigde bestanden
 
-`index.html` (Discover-header-knop, pd-stats-grid, wandelinfo-velden in beide activiteit-formulieren, pd-elevation-embed, activity-day-badge), `js/state.js` (`komootSearchUrl()`, `extractKomootTourId()`, `addActivity()` uitgebreid met `komootTourUrl`), `js/screen-map.js` (`renderPdHero()` — stats-grid i.p.v. pilletjes), `js/screen-planning.js` (formulier-logica add/edit, Komoot-embed-rendering in `openActivityDetailSheet()`, `updateActivityDayBadge()`, verplaatsdag-detectie in `buildDayTabs()`/`renderPlanningDay()`), `js/screen-discover.js` (Komoot-link + top-knop-status), `js/screen-accommodation.js` (`resetActivityFormExtras()`/`updateActivityDayBadge()` hergebruikt).
+`index.html` (Discover-header-knop, pd-stats-grid, wandelinfo-velden in beide activiteit-formulieren, pd-elevation-embed, activity-day-badge), `js/state.js` (`komootSearchUrl()`, `extractKomootTourId()`, `addActivity()` uitgebreid met `komootTourUrl`), `js/screen-map.js` (`renderPdHero()` — stats-grid i.p.v. pilletjes), `js/screen-planning.js` (formulier-logica add/edit, Komoot-embed-rendering in `openActivityDetailSheet()`, `updateActivityDayBadge()`, verplaatsdag-detectie in `buildDayTabs()`/`renderPlanningDay()`, `pd-add-btn`-logica gesplitst in inplannen/afronden, "✎ Bewerken"-knop op het detailscherm), `js/screen-discover.js` (Komoot-link + top-knop-status), `js/screen-accommodation.js` (`resetActivityFormExtras()`/`updateActivityDayBadge()` hergebruikt).
