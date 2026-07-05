@@ -47,6 +47,11 @@ Klopt, zie de correctie in `01-testronde-30juni.md` (D6/D6b) en `08-restplan-ope
 
 **Subtieler gemaakt (2026-07-05)**: de eerste versie gebruikte een diagonale twee-kleuren-vulling voor de verplaatsdag — te opvallend. Vervangen door een randkleur-aanpak: elke dagtab (en de dag-header-badge) heeft nu altijd een subtiele randkleur van het bijbehorende verblijf, ook als de dag niet geselecteerd is (voorheen alleen bij selectie, anders grijs). Een verplaatsdag krijgt daarbovenop alleen een afwijkende linkerrand in de kleur van het verblijf waar je vandaan komt — de rest van de rand volgt gewoon de normale regel (kleur van het verblijf waar de dag nu bij hoort). Geen gevuld vlak meer voor een niet-geselecteerde dag.
 
+**Rand nog dikker + Sogndal/Skjåk beter te onderscheiden (2026-07-05, vervolg)**: de rand was nog steeds lastig te zien, en Sogndal (groen) en Skjåk Solside (blauw) leken te veel op elkaar. Eerst een interactief voorbeeld gemaakt (losstaand HTML-artifact) om dit te kunnen beoordelen vóór het bouwen — daaruit bleek objectief (relatieve helderheid/luminance berekend) dat Sogndal (`#2d6a4f`, helderheid 0,114) en Skjåk (`#1565c0`, helderheid 0,133) een verschil van maar 0,018 hadden, tegenover 0,229 tussen de andere verblijfsparen — vandaar dat ze op een dunne rand zo op elkaar leken, ondanks verschillende kleurfamilies (groen vs. blauw). Doorgevoerd na akkoord:
+- Randdikte overal (dagtabs, dag-header-badge, activiteit-toevoegen-badge) van 2.5px naar 5px (verplaatsdag-linkerrand van 4px naar 7px).
+- Skjåk Solside's kleur van `#1565c0` naar `#1e88e5` (zelfde blauwe familie, helderheid 0,235 — verschil met Sogndal nu 0,121, ruim 6× beter te onderscheiden). Aangepast in `js/data.js` (seed) en `css/styles.css` (`--acc-2`-fallback).
+- Eenmalige zelfhelende kleurmigratie toegevoegd in `applyTripData()` (`js/state.js`): een al bestaand Firestore-document met de oude hex wordt bij het laden gecorrigeerd én teruggeschreven — er is geen bewerk-veld voor accommodatiekleur, dus zonder deze migratie zou een al aangemaakt verblijf de oude kleur voor altijd houden.
+
 ---
 
 ## Gewijzigde bestanden

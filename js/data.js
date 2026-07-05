@@ -27,7 +27,7 @@ const ACCOMMODATIONS = [
     phone: null,
   },
   {
-    id: '2', name: 'Skjåk Solside', short: 'Skj', color: '#1565c0',
+    id: '2', name: 'Skjåk Solside', short: 'Skj', color: '#1e88e5',
     checkIn: new Date(2026, 5, 19), checkOut: new Date(2026, 5, 23),
     address: 'Skjåk Solside 799, 2690 Skjåk',
     elevation: 1100, coord: '61.91°N 8.41°E', lat: 61.9050, lng: 8.4100,

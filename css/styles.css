@@ -26,7 +26,7 @@
 
   /* Accommodatiekleuren (uit data.js gehaald, hier als fallback) */
   --acc-1: #2d6a4f;
-  --acc-2: #1565c0;
+  --acc-2: #1e88e5;
   --acc-3: #ef6c00;
   --acc-4: #6a1b9a;
 
@@ -206,7 +206,7 @@ body.read-only-mode .edit-pencil-btn { display: none !important; }
 .day-tab {
   flex-shrink: 0; width: 58px; padding: 8px 4px 6px; border-radius: 13px;
   display: flex; flex-direction: column; align-items: center;
-  background: var(--white); border: 2.5px solid var(--line);
+  background: var(--white); border: 5px solid var(--line);
   cursor: pointer; transition: all 0.15s;
 }
 .day-tab.selected { box-shadow: var(--shadow-md); }
