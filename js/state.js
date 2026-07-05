@@ -298,6 +298,21 @@ function nextAccommodationColor() {
     || ACCOMMODATION_COLOR_PALETTE[ACCOMMODATIONS.length % ACCOMMODATION_COLOR_PALETTE.length];
 }
 
+// Echte hoogte boven zeeniveau via Open-Meteo's gratis, sleutelloze
+// elevation-API (zelfde provider als het weer, al client-side aangeroepen
+// zonder proxy in js/weather.js) — i.p.v. een geschatte/geraden waarde.
+// Best-effort: geeft null terug bij een netwerkfout, nooit een gok.
+async function fetchElevationForCoords(lat, lng) {
+  try {
+    const resp = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return (data.elevation && typeof data.elevation[0] === 'number') ? data.elevation[0] : null;
+  } catch {
+    return null;
+  }
+}
+
 function applyCountryTheme(country) {
   const theme = COUNTRY_THEMES[country];
   if (theme) {
@@ -377,6 +392,29 @@ function applyTripData(trip, accommodations) {
   // 'm berekend werd tóen een verblijf nog kapotte tijden had. Alleen
   // herberekenen als er hierboven daadwerkelijk iets gecorrigeerd is.
   if (dateFixApplied) recalculateTripDates();
+
+  // Eenmalige hoogte-verificatie via Open-Meteo (zie docs/10-issues/12-
+  // reisdag-kleur-bugfix.md): het elevation-veld had tot nu toe geen
+  // bewerkbaar formulierveld — bestaande verblijven droegen dus alleen een
+  // handmatig geschatte waarde uit de allereerste opzet (of 0 voor een later
+  // toegevoegd verblijf zoals Hotel Kolding). Haalt eenmalig per verblijf de
+  // echte hoogte op en schrijft 'm terug; elevationVerified voorkomt dat een
+  // latere handmatige correctie via het bewerkformulier hierna weer
+  // overschreven wordt. Fire-and-forget (async), blokkeert het renderen niet.
+  ACCOMMODATIONS.forEach(async acc => {
+    if (acc.elevationVerified || !acc.lat || !acc.lng) return;
+    const real = await fetchElevationForCoords(acc.lat, acc.lng);
+    if (real == null) return;
+    acc.elevation = Math.round(real);
+    acc.elevationVerified = true;
+    dbSaveAccommodation(trip.id, { id: acc.id, elevation: acc.elevation, elevationVerified: true });
+    // Ronde is klaar ná de eerste render (netwerk-round-trip) — actieve
+    // schermen die de hoogte tonen alsnog verversen, anders zie je 'm pas na
+    // de volgende navigatie.
+    renderHomeScreen();
+    if (document.getElementById('screen-planning').classList.contains('active')) renderPlanningScreen();
+    if (document.getElementById('screen-accommodation').classList.contains('active')) renderAccommodationScreen(AppState.viewingAccommodationId);
+  });
 }
 
 async function switchToTrip(tripId) {
@@ -456,8 +494,9 @@ async function createAccommodationForTrip(fields) {
     notes: fields.notes,
     short: (fields.name || 'Vbl').slice(0, 3),
     color: nextAccommodationColor(),
-    elevation: 0,
-    phone: null,
+    elevation: fields.elevation || 0,
+    elevationVerified: !!fields.elevationVerified,
+    phone: fields.phone || null,
   };
   ACCOMMODATIONS.push(acc);
   await dbSaveAccommodation(getCurrentTripId(), {
