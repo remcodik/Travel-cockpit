@@ -54,6 +54,14 @@ Klopt, zie de correctie in `01-testronde-30juni.md` (D6/D6b) en `08-restplan-ope
 
 ---
 
+## 6. "Ook bij café/restaurant een link kunnen toevoegen — altijd een link kunnen toevoegen aan verblijf/activiteiten"
+
+Verblijven hadden al een link-veld (het bestaande boekingslink-veld, getoond als "Boeking"-rij). Activiteiten hadden alleen de Komoot-routelink, die specifiek gelabeld en bedoeld is voor het hoogteprofiel van een wandeling — niet bruikbaar/logisch voor een restaurant- of café-website.
+
+Nieuw, generiek `link`-veld op elke activiteit (ongeacht categorie), zichtbaar in het hoofdformulier van zowel toevoegen als bewerken (niet weggestopt in het wandeling-specifieke "Wandelinfo"-blok). Op het activiteit-detailscherm verschijnt een "🔗 Link"-knop naast Komoot/Eten nabij/Café nabij, als eerste van die knoppenrij. Validatie: alleen een echte `http(s)://`-link wordt als klikbare link gerenderd — een `javascript:`-waarde (of iets anders) wordt genegeerd, om te voorkomen dat zoiets ooit als href in de pagina terechtkomt.
+
+---
+
 ## Gewijzigde bestanden
 
 `index.html` (Discover-header-knop, pd-stats-grid, wandelinfo-velden in beide activiteit-formulieren, pd-elevation-embed, activity-day-badge), `js/state.js` (`komootSearchUrl()`, `extractKomootTourId()`, `addActivity()` uitgebreid met `komootTourUrl`), `js/screen-map.js` (`renderPdHero()` — stats-grid i.p.v. pilletjes), `js/screen-planning.js` (formulier-logica add/edit, Komoot-embed-rendering in `openActivityDetailSheet()`, `updateActivityDayBadge()`, verplaatsdag-detectie in `buildDayTabs()`/`renderPlanningDay()`), `js/screen-discover.js` (Komoot-link + top-knop-status), `js/screen-accommodation.js` (`resetActivityFormExtras()`/`updateActivityDayBadge()` hergebruikt).

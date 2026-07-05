@@ -293,7 +293,14 @@ function openActivityDetailSheet(id) {
   if (nearbyEl) {
     const isWalk = act.emoji === CATEGORY_EMOJIS.activity;
     const safeQuery = escapeHtml(locationQuery).replace(/'/g, "\\'");
+    // Alleen een echte http(s)-link tonen — nooit een javascript:-achtige
+    // waarde als href gebruiken.
+    const hasSafeLink = act.link && /^https?:\/\//i.test(act.link);
     nearbyEl.innerHTML = `
+        ${hasSafeLink ? `<a href="${escapeHtml(act.link)}" target="_blank"
+          style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;display:inline-block">
+          🔗 Link
+        </a>` : ''}
         ${isWalk ? `<a href="${komootSearchUrl(locationQuery)}" target="_blank"
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;display:inline-block">
           🥾 Komoot
@@ -360,6 +367,7 @@ function openEditActivitySheet(id) {
   document.getElementById('edit-activity-elevation-input').value = act.elevation || '';
   document.getElementById('edit-activity-level-select').value = act.level && act.level !== '—' ? act.level : 'Makkelijk';
   document.getElementById('edit-activity-komoot-input').value = act.komootTourUrl || '';
+  document.getElementById('edit-activity-link-input').value = act.link || '';
   document.getElementById('edit-activity-save-btn').onclick = () => saveActivityEdit(id);
   openSheet('sheet-edit-activity');
 }
@@ -373,8 +381,9 @@ async function saveActivityEdit(id) {
   const elevation = parseInt(document.getElementById('edit-activity-elevation-input').value, 10) || 0;
   const level = document.getElementById('edit-activity-level-select').value;
   const komootTourUrl = document.getElementById('edit-activity-komoot-input').value.trim();
+  const link = document.getElementById('edit-activity-link-input').value.trim();
   await updateActivity(id, {
-    name, desc, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl,
+    name, desc, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl, link,
   });
   closeSheet('sheet-edit-activity');
   showToast('✓ Activiteit bijgewerkt');
@@ -622,6 +631,7 @@ function resetActivityFormExtras() {
   document.getElementById('activity-elevation-input').value = '';
   document.getElementById('activity-level-select').value = 'Makkelijk';
   document.getElementById('activity-komoot-input').value = '';
+  document.getElementById('activity-link-input').value = '';
 }
 
 // Soort bepaalt het icoon — zelfde iconenset als Discover, zodat een
@@ -647,7 +657,8 @@ async function saveActivity() {
   const elevation = parseInt(document.getElementById('activity-elevation-input').value, 10) || 0;
   const level = document.getElementById('activity-level-select').value;
   const komootTourUrl = document.getElementById('activity-komoot-input').value.trim();
-  await addActivity({ name, accId, date, emoji, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl });
+  const link = document.getElementById('activity-link-input').value.trim();
+  await addActivity({ name, accId, date, emoji, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl, link });
   closeSheet('sheet-activity');
   showToast(`✓ ${name} toegevoegd`);
   if (date) AppState.selectedPlanningDay = date;
