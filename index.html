@@ -267,6 +267,7 @@
       <div class="card">
         <div class="card-row" onclick="navigateTo('planning')"><div class="icon-box" style="background:var(--slope-light)">▲</div><span style="flex:1" class="row-title">Geplande activiteiten</span><span class="chevron">›</span></div>
         <div class="card-row" onclick="navigateTo('discover')"><div class="icon-box" style="background:var(--summit-light);color:var(--summit)">◎</div><span style="flex:1" class="row-title">AI-ideeën nabij</span><span class="chevron">›</span></div>
+        <div class="card-row" onclick="navigateToRegionGuide(AppState.viewingAccommodationId)"><div class="icon-box" style="background:var(--paper-warm)">📖</div><span style="flex:1" class="row-title">Reisgids</span><span class="chevron">›</span></div>
         <div class="card-row" onclick="openChargingStationsSheet()"><div class="icon-box" style="background:var(--water-light);color:var(--water)">⚡</div><span style="flex:1" class="row-title">Laadstations</span><span class="chevron">›</span></div>
         <div class="card-row" onclick="navigateTo('tickets')"><div class="icon-box" style="background:var(--slope-light)">🎟️</div><span style="flex:1" class="row-title">Tickets</span><span class="chevron">›</span></div>
         <div class="card-row" onclick="navigateTo('map')"><div class="icon-box" style="background:var(--water-light);color:var(--water)">◈</div><span style="flex:1" class="row-title">Bekijk op kaart</span><span class="chevron">›</span></div>
@@ -287,6 +288,21 @@
       <div id="acc-stops" style="display:flex;flex-direction:column;gap:7px"></div>
     </div>
     <div style="height:32px"></div>
+  </div>
+</div>
+
+<!-- ═══════════ REISGIDS ═══════════ -->
+<div id="screen-guide" class="screen" style="padding-bottom:0">
+  <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+    <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
+    <div style="flex:1;min-width:0">
+      <span class="page-title">REISGIDS</span>
+      <p class="mono" id="guide-acc-name" style="margin-top:2px">—</p>
+    </div>
+  </div>
+  <div class="scroll px" style="padding-top:16px">
+    <div id="guide-content"></div>
+    <div style="height:24px"></div>
   </div>
 </div>
 
@@ -587,7 +603,10 @@
           <option value="Zwaar">Zwaar</option>
         </select>
       </div>
-      <input id="activity-komoot-input" type="url" placeholder="Komoot-routelink (voor echt hoogteprofiel)"/>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="activity-komoot-input" type="url" placeholder="Komoot-routelink (voor echt hoogteprofiel)" style="flex:1"/>
+        <button type="button" onclick="handleExtractFromKomootLink('activity')" title="Afstand/duur/hoogte proberen over te nemen uit deze link" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">🔍</button>
+      </div>
     </details>
     <button onclick="saveActivity()" class="btn btn-primary">Toevoegen</button>
     <button onclick="closeSheet('sheet-activity')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
@@ -615,7 +634,10 @@
           <option value="Zwaar">Zwaar</option>
         </select>
       </div>
-      <input id="edit-activity-komoot-input" type="url" placeholder="Komoot-routelink (voor echt hoogteprofiel)"/>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="edit-activity-komoot-input" type="url" placeholder="Komoot-routelink (voor echt hoogteprofiel)" style="flex:1"/>
+        <button type="button" onclick="handleExtractFromKomootLink('edit-activity')" title="Afstand/duur/hoogte proberen over te nemen uit deze link" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">🔍</button>
+      </div>
     </details>
     <button id="edit-activity-save-btn" class="btn btn-primary">Opslaan</button>
     <button onclick="closeSheet('sheet-edit-activity')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
@@ -725,7 +747,7 @@
       </div>
     </div>
     <div id="pd-stats" style="display:none;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:8px;margin-bottom:14px"></div>
-    <p id="pd-desc" class="row-sub" style="margin-bottom:6px;line-height:1.5"></p>
+    <p id="pd-desc" class="row-sub" style="margin-bottom:6px;line-height:1.5;white-space:pre-line"></p>
     <p id="pd-why" style="display:none;font-size:12px;color:var(--ink-faint);line-height:1.4;margin-bottom:18px;padding:10px 12px;background:var(--paper-warm);border-radius:10px"></p>
     <div style="display:flex;gap:10px;margin-bottom:9px">
       <button id="pd-add-btn" class="btn btn-primary" style="flex:1">+ Plan</button>
@@ -853,6 +875,7 @@
 <script src="js/screen-planning.js"></script>
 <script src="js/screen-discover.js"></script>
 <script src="js/screen-accommodation.js"></script>
+<script src="js/screen-guide.js"></script>
 <script src="js/screen-roadtrip.js"></script>
 <script src="js/screen-tickets.js"></script>
 <script src="js/notes.js"></script>

@@ -357,6 +357,38 @@ async function dbLoadAiSuggestions(accId) {
   }
 }
 
+// ── Reisgids-cache (omgevingsinfo per verblijf) ───────────
+// Eigen subcollectie i.p.v. hergebruik van ai_cache: andere vorm
+// (paragraphs/highlights/practicalTips i.p.v. suggestions) en geen
+// 24-uurs-vervaltijd nodig — geschiedenis/karakter van een streek wordt
+// niet "oud" zoals weer of AI-ideeën. Alleen handmatig te vernieuwen
+// via de "Vernieuwen"-knop op het reisgids-scherm.
+async function dbSaveRegionGuide(accId, guide) {
+  const ref = tripRef('region_guides');
+  if (!ref) return;
+  try {
+    await ref.doc(String(accId)).set({
+      guide,
+      savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    console.error('Reisgids opslaan mislukt:', err);
+  }
+}
+
+async function dbLoadRegionGuide(accId) {
+  const ref = tripRef('region_guides');
+  if (!ref) return null;
+  try {
+    const doc = await ref.doc(String(accId)).get();
+    if (!doc.exists) return null;
+    return doc.data().guide || null;
+  } catch (err) {
+    console.error('Reisgids laden mislukt:', err);
+    return null;
+  }
+}
+
 // ── Reizen (trips-collectie op het hoogste niveau) ────────
 // Elk trip-document bevat alleen metadata (naam, land, data, actief).
 // De bijbehorende activiteiten/tickets/accommodaties staan in de

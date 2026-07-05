@@ -1,7 +1,7 @@
 # AI-verrijking uitbreiden + reisgids-info bij verblijf — plan
 
 **Document ID:** TC-ISSUES-011
-**Status:** Plan geschreven, wacht op antwoord op de open vragen onderaan. Punt 1 (reisdag-icoon) is al gebouwd, niet meer onderdeel van dit plan.
+**Status:** ✅ Gebouwd (2026-07-05). Antwoorden op de open vragen: (1) Komoot-autofill wél proberen, (2) reisgids als apart scherm met een link vanaf het accommodatiescherm, (3) uitgebreide versie (alinea's + lijst + links, allemaal combineren).
 **Bron:** vervolgverzoek na de dagtabs-styling: reisdag-icoon bij activiteit toevoegen (✅ gebouwd), Komoot-link-autofill, meer AI-tekst bij activiteit/verblijf, en reisgids-achtige omgevingsinfo met links — expliciet met het verzoek om eerst na te denken/plannen/rode-team en vragen te stellen vóór het bouwen.
 
 ---
@@ -66,3 +66,11 @@ Voorstel: nieuwe sectie op het bestaande accommodatiescherm, met een knop "Gener
 Voorstel: 2-4 korte alinea's (karakter streek, geschiedenis/cultuur, praktische tips) + 2 vaste zoeklinks (Wikipedia, Wikivoyage) — geen losse lijst met bezienswaardigheden (dat doet Discover al). Is dat de juiste hoeveelheid, of wil je meer/minder?
 
 Zodra deze drie beantwoord zijn, bouw ik punt 2 (indien gewenst), 3 en 4 in één keer.
+
+---
+
+## Gebouwd (2026-07-05)
+
+- **Komoot-autofill**: `api/extract-komoot-tour.js` (nieuw) — server-side best-effort, twee onafhankelijke pogingen (ruwe cijfers uit Komoot's eigen paginadata, of de Open Graph-beschrijving). 🔍-knop naast het Komoot-veld in beide activiteit-formulieren (`handleExtractFromKomootLink()` in `js/screen-planning.js`) — vult uitsluitend de nog lege velden, overschrijft nooit een handmatig ingevoerde waarde. Werking op de live Komoot-site is niet gegarandeerd (zie risico hierboven), valt bij falen stil terug op handmatig invullen.
+- **Meer AI-tekst bij activiteit-detail** — en meteen een echte bug gefixt: de bestaande AI-verrijking riep `/api/suggestions` aan met een custom `prompt`-veld dat die functie nooit las, dus je kreeg gewoon het eerste van 5 verse, willekeurige Discover-suggesties terug in plaats van iets over de opgegeven activiteit zelf. Nieuw, apart endpoint `api/enrich-activity.js` verrijkt de daadwerkelijk genoemde activiteit, met een langere beschrijving (4-6 zinnen i.p.v. 2-3) en een optioneel "wist-je-dat"-feitje (`fun_fact`), zichtbaar op het activiteit-detailscherm nadat je de verrijking opslaat.
+- **Reisgids-scherm** (nieuw, `js/screen-guide.js` + `#screen-guide` in `index.html`) — apart scherm, bereikbaar via een "Reisgids"-rij in de "Vanaf hier"-kaart op het accommodatiescherm. On-demand knop "Genereer reisgids" (`api/region-guide.js`), resultaat gecached in Firestore (`region_guides`-subcollectie, geen vervaltijd — regio-info wordt niet snel oud) zodat je niet elke keer opnieuw betaalt/wacht, met een "Vernieuwen"-knop om het opnieuw te genereren. Inhoud: 3-4 alinea's (karakter streek/geschiedenis/cultuur), een lijst "Goed om te weten" (bezienswaardigheden/dingen om te kennen, geen adressen/tijden), praktische tips, en twee vaste, veilige zoeklinks (Wikipedia/Wikivoyage via MediaWiki's eigen zoek-URL — geen AI-gegenereerde/gegokte artikel-links, zelfde reden als de Komoot-linkfix). Duidelijk gelabeld als AI-samenvatting, geen gegarandeerde feiten.

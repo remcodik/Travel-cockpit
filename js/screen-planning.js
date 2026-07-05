@@ -449,32 +449,32 @@ async function openAiEnrichSheet(id) {
   openSheet('sheet-enrich-activity');
 
   try {
-    const liveWeather = await getWeatherForDate(acc.lat, acc.lng, getToday());
-    const response = await fetch('/api/suggestions', {
+    // FIX: dit riep voorheen /api/suggestions aan met een custom "prompt"-
+    // veld dat die functie nooit las — je kreeg dus gewoon het eerste van 5
+    // verse, willekeurige Discover-suggesties terug, niet per se iets over
+    // déze activiteit. Apart endpoint dat de opgegeven activiteit echt
+    // verrijkt, nu ook met iets meer tekst en een optioneel achtergrondfeitje.
+    const trip = AppState.trips.find(t => t.id === getCurrentTripId());
+    const response = await fetch('/api/enrich-activity', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        activityName: act.name,
         accommodationName: acc.name,
         accommodationLocation: acc.address,
-        country: 'Noorwegen',
-        today: formatShortDate(getToday()),
-        temperature: liveWeather ? liveWeather.temperature : 12,
-        weatherCondition: liveWeather ? liveWeather.condition : 'bewolkt',
-        rainProbability: liveWeather ? liveWeather.rainProbability : 20,
-        userPreferences: Array.from(AppState.travelStyles),
-        alreadyPlanned: [],
-        language: 'nl',
-        prompt: `Verrijk de activiteit "${act.name}" nabij ${acc.name} in Noorwegen. Geef als JSON array met 1 object: {"name":"${act.name}","description":"2-3 zinnen beschrijving","duration_minutes":getal,"distance_km":getal of null,"difficulty":"easy/medium/hard","why_recommended":"waarom de moeite waard","tips":["tip1","tip2"],"best_time":"beste tijd","komoot_search":"zoekterm"}`
+        country: (trip && trip.country) || 'Noorwegen',
+        language: AppState.language || 'nl',
       }),
     });
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Onbekende fout');
-    const enriched = (data.suggestions || [])[0];
+    const enriched = data.enriched;
 
     if (enriched) {
       document.getElementById('enrich-result').innerHTML = `
         <p style="font-size:13.5px;line-height:1.65;color:var(--ink-mid);margin-bottom:12px">${escapeHtml(enriched.description || '')}</p>
+        ${enriched.fun_fact ? `<p style="font-size:12.5px;line-height:1.5;color:var(--spruce);background:var(--paper-warm);border-radius:10px;padding:10px 12px;margin-bottom:12px">💡 ${escapeHtml(enriched.fun_fact)}</p>` : ''}
         ${enriched.tips && enriched.tips.length ? `
           <div style="background:var(--slope-light);border-radius:11px;padding:12px 14px;margin-bottom:12px">
             <p class="eyebrow" style="margin-bottom:8px">Tips</p>
@@ -494,7 +494,11 @@ async function openAiEnrichSheet(id) {
 }
 
 async function applyAiEnrichment(id, enriched) {
-  const changes = { desc: enriched.description || '' };
+  // fun_fact wordt bij de beschrijving gevoegd (geen apart schemaveld nodig)
+  // zodat het ook zichtbaar blijft op het activiteit-detailscherm nadat de
+  // verrijking is opgeslagen, niet alleen in dit sheet.
+  const desc = [enriched.description, enriched.fun_fact ? `💡 ${enriched.fun_fact}` : null].filter(Boolean).join('\n\n');
+  const changes = { desc };
   if (enriched.duration_minutes) changes.duration = Math.round(enriched.duration_minutes / 60) + ' u';
   if (enriched.distance_km) changes.distance = enriched.distance_km + ' km';
   if (enriched.difficulty) changes.level = { easy: 'Makkelijk', medium: 'Gemiddeld', hard: 'Zwaar' }[enriched.difficulty] || enriched.difficulty;
@@ -569,6 +573,40 @@ function updateActivityDayBadge() {
 
 function openAddActivitySheet() {
   openAddActivitySheetForCurrentDay();
+}
+
+// ── Komoot-link → afstand/duur/hoogte proberen over te nemen ──
+// Best-effort, zie api/extract-komoot-tour.js: Komoot heeft geen publieke
+// data-API, dit leest server-side de paginabron en zoekt naar cijfers die
+// Komoot zelf al meestuurt. Vult uitdrukkelijk alleen de nog LEGE velden in
+// (nooit een handmatig ingevoerde waarde overschrijven), en doet niets als
+// er niets gevonden wordt — geen gok.
+async function handleExtractFromKomootLink(prefix) {
+  const url = document.getElementById(`${prefix}-komoot-input`).value.trim();
+  if (!url) { showToast('Plak eerst een Komoot-routelink'); return; }
+
+  showToast('Bezig met ophalen…', 4000);
+  try {
+    const resp = await fetch(`/api/extract-komoot-tour?url=${encodeURIComponent(url)}`);
+    const data = await resp.json();
+    if (!data || !data.found) {
+      showToast('Geen gegevens gevonden in deze link — vul handmatig aan');
+      return;
+    }
+    const distanceEl = document.getElementById(`${prefix}-distance-input`);
+    const durationEl = document.getElementById(`${prefix}-duration-input`);
+    const elevationEl = document.getElementById(`${prefix}-elevation-input`);
+    let filledAny = false;
+    if (data.distance_km && !distanceEl.value.trim()) { distanceEl.value = `${data.distance_km} km`; filledAny = true; }
+    if (data.duration_minutes && !durationEl.value.trim()) {
+      durationEl.value = data.duration_minutes >= 60 ? `${Math.round(data.duration_minutes / 60)} u` : `${data.duration_minutes} min`;
+      filledAny = true;
+    }
+    if (data.elevation_gain_m && !elevationEl.value.trim()) { elevationEl.value = data.elevation_gain_m; filledAny = true; }
+    showToast(filledAny ? '✓ Gegevens overgenomen uit Komoot-link' : 'Gegevens uit link waren al ingevuld');
+  } catch {
+    showToast('Geen gegevens gevonden in deze link — vul handmatig aan');
+  }
 }
 
 // Wandelinfo-velden (optioneel, zie sheet-activity) — leeg bij elk nieuw
