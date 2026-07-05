@@ -249,6 +249,7 @@ function openEditAccommodationSheet(accId) {
   document.getElementById('edit-acc-phone-input').value = acc.phone || '';
   document.getElementById('edit-acc-lat-input').value = acc.lat || '';
   document.getElementById('edit-acc-lng-input').value = acc.lng || '';
+  document.getElementById('edit-acc-elevation-input').value = acc.elevation || '';
   document.getElementById('edit-acc-url-input').value = acc.url || '';
   document.getElementById('edit-acc-booking-ref-input').value = acc.bookingRef || '';
   document.getElementById('edit-acc-notes-input').value = acc.notes || '';
@@ -269,6 +270,7 @@ function openAddAccommodationSheet() {
   document.getElementById('edit-acc-phone-input').value = '';
   document.getElementById('edit-acc-lat-input').value = '';
   document.getElementById('edit-acc-lng-input').value = '';
+  document.getElementById('edit-acc-elevation-input').value = '';
   document.getElementById('edit-acc-url-input').value = '';
   document.getElementById('edit-acc-booking-ref-input').value = '';
   document.getElementById('edit-acc-notes-input').value = '';
@@ -345,11 +347,29 @@ function fillExtractedLocation(coords, name, address) {
   if (coords) {
     document.getElementById('edit-acc-lat-input').value = coords.lat;
     document.getElementById('edit-acc-lng-input').value = coords.lng;
+    // Coördinaten net binnen — meteen ook de hoogte proberen op te halen,
+    // maar alleen als er nog niets is ingevuld (nooit een al bestaande of
+    // net handmatig getypte waarde overschrijven).
+    const elevationEl = document.getElementById('edit-acc-elevation-input');
+    if (elevationEl && !elevationEl.value.trim()) handleFetchElevation('edit-acc');
   }
   const addressEl = document.getElementById('edit-acc-address-input');
   if (!addressEl.value.trim() && (address || name)) addressEl.value = address || name;
   const nameEl = document.getElementById('edit-acc-name-input');
   if (!nameEl.value.trim() && name) nameEl.value = name;
+}
+
+// Echte hoogte ophalen op basis van coördinaten (Open-Meteo's gratis,
+// sleutelloze elevation-API, zelfde provider als het weer) i.p.v. een
+// geschatte/geraden waarde — vult nooit een al ingevulde waarde over.
+async function handleFetchElevation(prefix) {
+  const lat = parseFloat(document.getElementById(`${prefix}-lat-input`).value);
+  const lng = parseFloat(document.getElementById(`${prefix}-lng-input`).value);
+  if (!lat || !lng) { showToast('Vul eerst coördinaten in (of gebruik de 📍-knop)'); return; }
+  const elevation = await fetchElevationForCoords(lat, lng);
+  if (elevation == null) { showToast('Kon hoogte niet ophalen — vul handmatig in'); return; }
+  document.getElementById(`${prefix}-elevation-input`).value = Math.round(elevation);
+  showToast(`✓ Hoogte: ${Math.round(elevation)}m`);
 }
 
 async function handleExtractFromMapsLink() {
@@ -396,6 +416,7 @@ function readAccommodationFormFields() {
   if (!checkInStr || !checkOutStr) { showToast('Vul check-in en check-out in'); return null; }
   const lat = parseFloat(document.getElementById('edit-acc-lat-input').value) || 0;
   const lng = parseFloat(document.getElementById('edit-acc-lng-input').value) || 0;
+  const elevationStr = document.getElementById('edit-acc-elevation-input').value.trim();
   return {
     name,
     short: name.slice(0, 3),
@@ -407,6 +428,11 @@ function readAccommodationFormFields() {
     phone: document.getElementById('edit-acc-phone-input').value.trim() || null,
     lat, lng,
     coord: lat && lng ? formatLatLng(lat, lng) : '—',
+    // elevationVerified: staat een handmatig ingevulde (of via de ⛰️-knop
+    // opgehaalde) hoogte hier al, dan mag de achtergrond-migratie in
+    // applyTripData() deze nooit meer stilzwijgend overschrijven.
+    elevation: elevationStr ? parseInt(elevationStr, 10) : 0,
+    elevationVerified: !!elevationStr,
     url: document.getElementById('edit-acc-url-input').value.trim(),
     bookingRef: document.getElementById('edit-acc-booking-ref-input').value.trim(),
     photoDataUrl: pendingAccPhoto,

@@ -32,6 +32,18 @@ Terwijl de bovenstaande bug werd onderzocht, bleek `createAccommodationForTrip()
 
 ---
 
+## Bug 3 (vervolg, live gemeld met screenshots) — al opgeslagen verblijven bleven fout staan
+
+Na het uitrollen van Bug 1's fix meldde de gebruiker (met screenshots van de live app): de kleur van 29 juni was er nu wél (nadat "Hotel Kolding" was toegevoegd), maar de verplaatsdag-weergave (🚗-icoon + tweekleurige rand, zie punt 5 in `10-activiteit-detail-feedback.md`) ontbrak — de dagkop toonde zelfs "reisdag · onderweg" i.p.v. "vanuit Hotel Kolding", wat betekent dat `getAccommodationForDate()` de dag ná de refresh nóg steeds niet aan Kolding toewees.
+
+**Root cause**: Hotel Kolding was aangemaakt vlak vóórdat de Bug-1-fix live ging op Vercel. De code-fix corrigeert alleen *nieuwe* opslagacties — het Firestore-document van Kolding was op dat moment al met de kapotte UTC-middernacht-tijdstippen weggeschreven, en bleef dat ook na de deploy (een `git push` verandert nooit met terugwerkende kracht al bestaande database-documenten). Bovendien faalt niet alleen `getAccommodationForDate()`'s `>=`/`<`-vergelijking bij zo'n tijdsverschil, maar vooral de **exacte** `.getTime() ===`-check die `buildDayTabs()` gebruikt om een verplaatsdag te herkennen (checkOut van het ene verblijf = checkIn van het volgende) — die is veel gevoeliger voor een paar uur verschil dan de `>=`/`<`-vergelijking.
+
+**Fix**: eenmalige zelfhelende migratie in `applyTripData()` (`js/state.js`), naar hetzelfde patroon als de bestaande Skjåk-kleurmigratie — bij elke keer dat de reisdata geladen wordt, wordt elk verblijf waarvan `checkIn`/`checkOut` niet exact op lokale middernacht staat gecorrigeerd én teruggeschreven naar Firestore. Dit lost niet alleen Hotel Kolding op, maar ook eventuele andere al bestaande verblijven die ooit via het (kapotte) formulier zijn opgeslagen of bewerkt — zonder dat de gebruiker iets opnieuw hoeft in te voeren.
+
+**Geverifieerd**: een headless-test die exact dit scenario nabootst (een verblijf met de oude, kapotte UTC-middernacht-tijdstippen, zoals Kolding vóór de deploy zou zijn opgeslagen) laat zien dat `applyTripData()` de tijden terugbrengt naar lokale middernacht, waarna zowel de kleur als het verplaatsdag-icoon (🚗) correct verschijnen.
+
+---
+
 ## Gewijzigde bestanden
 
-`js/state.js` (`parseLocalDateInput()`, `ACCOMMODATION_COLOR_PALETTE`, `nextAccommodationColor()`, gebruikt in `createAccommodationForTrip()`), `js/screen-accommodation.js` (`readAccommodationFormFields()`), `js/screen-tickets.js` (`saveTrip()`).
+`js/state.js` (`parseLocalDateInput()`, `ACCOMMODATION_COLOR_PALETTE`, `nextAccommodationColor()`, gebruikt in `createAccommodationForTrip()`, zelfhelende check-in/checkOut-migratie in `applyTripData()`), `js/screen-accommodation.js` (`readAccommodationFormFields()`), `js/screen-tickets.js` (`saveTrip()`).

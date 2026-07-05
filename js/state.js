@@ -298,6 +298,21 @@ function nextAccommodationColor() {
     || ACCOMMODATION_COLOR_PALETTE[ACCOMMODATIONS.length % ACCOMMODATION_COLOR_PALETTE.length];
 }
 
+// Echte hoogte boven zeeniveau via Open-Meteo's gratis, sleutelloze
+// elevation-API (zelfde provider als het weer, al client-side aangeroepen
+// zonder proxy in js/weather.js) — i.p.v. een geschatte/geraden waarde.
+// Best-effort: geeft null terug bij een netwerkfout, nooit een gok.
+async function fetchElevationForCoords(lat, lng) {
+  try {
+    const resp = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return (data.elevation && typeof data.elevation[0] === 'number') ? data.elevation[0] : null;
+  } catch {
+    return null;
+  }
+}
+
 function applyCountryTheme(country) {
   const theme = COUNTRY_THEMES[country];
   if (theme) {
@@ -343,6 +358,62 @@ function applyTripData(trip, accommodations) {
       acc.color = fixed;
       dbSaveAccommodation(trip.id, { id: acc.id, color: fixed });
     }
+  });
+
+  // Eenmalige zelfhelende migratie (zie docs/10-issues/12-reisdag-kleur-
+  // bugfix.md): vóór parseLocalDateInput() konden checkIn/checkOut via het
+  // bewerkformulier op UTC-middernacht i.p.v. lokale middernacht terecht-
+  // komen. getAccommodationForDate()'s >=/<-vergelijking is daar tolerant
+  // voor, maar de exacte `.getTime() ===`-check in buildDayTabs() (die een
+  // verplaatsdag herkent: checkOut van het ene verblijf = checkIn van het
+  // volgende) faalt bij zo'n tijdsverschil — het 🚗-icoon en de tweekleurige
+  // rand blijven dan stilzwijgend weg, ook al is de kleur van de dag zelf
+  // wél correct. Verblijven die vóór deze migratie al zijn opgeslagen
+  // blijven anders voor altijd op het foute tijdstip hangen — er is geen
+  // andere manier om ze te corrigeren dan bij het laden.
+  let dateFixApplied = false;
+  ACCOMMODATIONS.forEach(acc => {
+    const normalizedCheckIn = new Date(acc.checkIn.getFullYear(), acc.checkIn.getMonth(), acc.checkIn.getDate());
+    const normalizedCheckOut = new Date(acc.checkOut.getFullYear(), acc.checkOut.getMonth(), acc.checkOut.getDate());
+    if (acc.checkIn.getTime() !== normalizedCheckIn.getTime() || acc.checkOut.getTime() !== normalizedCheckOut.getTime()) {
+      acc.checkIn = normalizedCheckIn;
+      acc.checkOut = normalizedCheckOut;
+      dbSaveAccommodation(trip.id, {
+        id: acc.id,
+        checkIn: normalizedCheckIn.toISOString(),
+        checkOut: normalizedCheckOut.toISOString(),
+      });
+      dateFixApplied = true;
+    }
+  });
+  // Reisdata (trips/{tripId}, startDate/endDate) is een tweede plek waar
+  // datum wordt opgeslagen — afgeleid als min/max van alle verblijven (zie
+  // recalculateTripDates()). Die kan dezelfde tijdstip-afwijking bevatten als
+  // 'm berekend werd tóen een verblijf nog kapotte tijden had. Alleen
+  // herberekenen als er hierboven daadwerkelijk iets gecorrigeerd is.
+  if (dateFixApplied) recalculateTripDates();
+
+  // Eenmalige hoogte-verificatie via Open-Meteo (zie docs/10-issues/12-
+  // reisdag-kleur-bugfix.md): het elevation-veld had tot nu toe geen
+  // bewerkbaar formulierveld — bestaande verblijven droegen dus alleen een
+  // handmatig geschatte waarde uit de allereerste opzet (of 0 voor een later
+  // toegevoegd verblijf zoals Hotel Kolding). Haalt eenmalig per verblijf de
+  // echte hoogte op en schrijft 'm terug; elevationVerified voorkomt dat een
+  // latere handmatige correctie via het bewerkformulier hierna weer
+  // overschreven wordt. Fire-and-forget (async), blokkeert het renderen niet.
+  ACCOMMODATIONS.forEach(async acc => {
+    if (acc.elevationVerified || !acc.lat || !acc.lng) return;
+    const real = await fetchElevationForCoords(acc.lat, acc.lng);
+    if (real == null) return;
+    acc.elevation = Math.round(real);
+    acc.elevationVerified = true;
+    dbSaveAccommodation(trip.id, { id: acc.id, elevation: acc.elevation, elevationVerified: true });
+    // Ronde is klaar ná de eerste render (netwerk-round-trip) — actieve
+    // schermen die de hoogte tonen alsnog verversen, anders zie je 'm pas na
+    // de volgende navigatie.
+    renderHomeScreen();
+    if (document.getElementById('screen-planning').classList.contains('active')) renderPlanningScreen();
+    if (document.getElementById('screen-accommodation').classList.contains('active')) renderAccommodationScreen(AppState.viewingAccommodationId);
   });
 }
 
@@ -423,8 +494,9 @@ async function createAccommodationForTrip(fields) {
     notes: fields.notes,
     short: (fields.name || 'Vbl').slice(0, 3),
     color: nextAccommodationColor(),
-    elevation: 0,
-    phone: null,
+    elevation: fields.elevation || 0,
+    elevationVerified: !!fields.elevationVerified,
+    phone: fields.phone || null,
   };
   ACCOMMODATIONS.push(acc);
   await dbSaveAccommodation(getCurrentTripId(), {
