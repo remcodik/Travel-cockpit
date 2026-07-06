@@ -96,7 +96,12 @@ button { font-family: inherit; }
   display: none;
   flex-direction: column;
   min-height: 100dvh;
-  padding-bottom: 76px;
+  /* FIX: was een vaste 76px, maar .bottom-nav groeit op notch-toestellen met
+     env(safe-area-inset-bottom) (bv. 34px thuisbalk-indicator) — de vaste
+     waarde hield daar geen rekening mee, waardoor de laatste rij content
+     vlak boven de navigatiebalk net niet paste (bv. de onderrand van de
+     Route-chips op Kaart, gedeeltelijk achter de navbalk verstopt). */
+  padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
 }
 .screen.active { display: flex; }
 .scroll { overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }

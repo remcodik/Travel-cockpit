@@ -52,9 +52,13 @@ function renderHomeScreen() {
   }
 
   // Voortgang per accommodatie (mini-balkjes)
+  // FIX: telde ook niet-ingeplande activiteiten mee (nog los liggend bij
+  // dit verblijf, "Beschikbaar vanuit X" in Planning) — hoort alleen over
+  // daadwerkelijk ingeplande activiteiten te gaan, zelfde correctie als
+  // getProgress() hierboven.
   const barsEl = document.getElementById('home-acc-bars');
   barsEl.innerHTML = ACCOMMODATIONS.map(a => {
-    const accActs = AppState.activities.filter(x => idsMatch(x.accId, a.id));
+    const accActs = AppState.activities.filter(x => idsMatch(x.accId, a.id) && x.date);
     const accDone = accActs.filter(x => x.status === 'done').length;
     const pct = accActs.length > 0 ? (accDone / accActs.length) * 100 : 0;
     return `

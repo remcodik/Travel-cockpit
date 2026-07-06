@@ -270,9 +270,15 @@ async function deleteActivity(id) {
   return true;
 }
 
+// FIX: telde voorheen ALLE activiteiten mee, ook niet-ingeplande (act.date
+// is null — activiteiten die nog los bij een verblijf liggen, zie
+// "Beschikbaar vanuit X" in Planning). "Voortgang reis" hoort alleen over
+// wat daadwerkelijk ingepland is te gaan, anders klopt de teller niet met
+// wat je in Planning ziet staan.
 function getProgress() {
-  const done = AppState.activities.filter(a => a.status === 'done').length;
-  const total = AppState.activities.length;
+  const scheduled = AppState.activities.filter(a => a.date);
+  const done = scheduled.filter(a => a.status === 'done').length;
+  const total = scheduled.length;
   return { done, total, percent: total > 0 ? Math.round((done / total) * 100) : 0 };
 }
 
@@ -351,6 +357,23 @@ function applyTripData(trip, accommodations) {
   TRIP_START.setTime(trip.startDate.getTime());
   TRIP_END.setTime(trip.endDate.getTime());
   applyCountryTheme(trip.country);
+
+  // Eenmalig herstel voor de originele Noorwegen-reis: recalculateTripDates()
+  // liet TRIP_START voorheen krimpen tot de vroegste check-in van een
+  // verblijf (16 juni, Sogndal) zodra er ook maar één verblijf werd
+  // toegevoegd/bewerkt — terwijl de reis bewust al op 15 juni begint (de
+  // vertrek-/ferrydag vóór het eerste verblijf, zie de Route-strip op Kaart
+  // en docs/10-issues/14-thuis-reisdag-randen.md). Dat is inmiddels
+  // gefixt (recalculateTripDates() kan niet meer krimpen), maar deze
+  // specifieke, al eerder foutief opgeslagen reis moet nog één keer
+  // teruggezet worden.
+  if (trip.id === DEFAULT_TRIP_ID) {
+    const knownOriginalStart = new Date(2026, 5, 15);
+    if (TRIP_START.getTime() > knownOriginalStart.getTime()) {
+      TRIP_START.setTime(knownOriginalStart.getTime());
+      updateTripMeta(DEFAULT_TRIP_ID, { startDate: new Date(TRIP_START) });
+    }
+  }
 
   ACCOMMODATIONS.length = 0;
   // Sorteert op check-in datum i.p.v. het (onbetrouwbare, vaak
@@ -546,10 +569,20 @@ async function updateAccommodation(accId, changes) {
 
 // Reis start/einddatum groeit automatisch mee met verblijf-wijzigingen
 // (Fase E-besluit), herberekend uit min/max van alle verblijven.
+// FIX: "groeit mee" werd hier als "wordt exact gelijk aan" geïmplementeerd —
+// TRIP_START/TRIP_END werden altijd op de min/max van de verblijven gezet,
+// ook als de reis zelf bewust wijder was (bv. 15 juni als vertrek-/ferrydag,
+// een dag vóór Sogndal's check-in op 16 juni — zie de "Thuis"-dag en de
+// Route-strip op Kaart). Zodra er ook maar één verblijf werd toegevoegd of
+// bewerkt (wat recalculateTripDates() aanroept) verdween die extra dag dus
+// stilzwijgend. Nu: nooit krimpen, alleen verruimen als een verblijf buiten
+// het huidige venster valt.
 async function recalculateTripDates() {
   if (ACCOMMODATIONS.length === 0) return;
-  const newStart = new Date(Math.min(...ACCOMMODATIONS.map(a => a.checkIn.getTime())));
-  const newEnd = new Date(Math.max(...ACCOMMODATIONS.map(a => a.checkOut.getTime())));
+  const accStart = new Date(Math.min(...ACCOMMODATIONS.map(a => a.checkIn.getTime())));
+  const accEnd = new Date(Math.max(...ACCOMMODATIONS.map(a => a.checkOut.getTime())));
+  const newStart = accStart < TRIP_START ? accStart : new Date(TRIP_START);
+  const newEnd = accEnd > TRIP_END ? accEnd : new Date(TRIP_END);
   TRIP_START.setTime(newStart.getTime());
   TRIP_END.setTime(newEnd.getTime());
   await updateTripMeta(getCurrentTripId(), { startDate: new Date(TRIP_START), endDate: new Date(TRIP_END) });
