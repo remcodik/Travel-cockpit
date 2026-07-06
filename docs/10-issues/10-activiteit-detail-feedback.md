@@ -104,6 +104,26 @@ Geverifieerd met een headless-Chromium-test: na klikken op "+ Inplannen" krijgt 
 
 ---
 
+## 10. "Ik kan een activiteit niet uit Planning halen zonder 'm helemaal te verwijderen"
+
+De functionaliteit bestond al: het "↕ Verplaatsen"-sheet had als allereerste optie in de dag-dropdown "Niet ingepland" — kiezen en opslaan haalt de datum weg zonder de activiteit te verwijderen (`saveMoveActivity()` zet gewoon `date: null`). Het probleem was puur **vindbaarheid**: een sheet met de titel "Verplaatsen" en een veld gelabeld "Dag" nodigt niet uit om te bedenken dat je 'm daar ook helemaal uit de planning kunt halen — vandaar dat de enige zichtbare uitweg "🗑 Verwijder" leek.
+
+**Fix**: de dropdown-optie is herbenoemd naar "↩ Niet ingepland (uit planning halen)" (was kaal "Niet ingepland"), én er is een losse, direct zichtbare knop "↩ Uit planning halen (niet verwijderen)" toegevoegd onder de bestaande "Opslaan"-knop in hetzelfde sheet — één tik, geen dropdown nodig, doet exact dezelfde niet-destructieve actie (`handleUnscheduleActivity()`, hergebruikt `saveMoveActivity()`). De activiteit blijft gewoon bestaan bij het verblijf als niet-ingeplande activiteit, alleen de datum wordt losgelaten.
+
+Geverifieerd met een headless-test: de snelknop haalt de datum weg (`date: null`) terwijl de activiteit in `AppState.activities` blijft bestaan, en het sheet sluit met een passende toast ("Uit planning gehaald (niet verwijderd)" i.p.v. "Activiteit verplaatst").
+
+---
+
+## 11. "Ik wil ook nog een icoon voor roadtrip, stadje bezichtigen en diversen — en de soort ook kunnen wijzigen"
+
+Drie nieuwe categorieën toegevoegd aan `CATEGORY_EMOJIS`/`CATEGORY_META` (`js/data.js`): 🛣️ Roadtrip, 🏘️ Stadje bezichtigen, 📦 Diversen (naast de bestaande Wandeling/Eten/Café/Uitzicht) — als chips in het "Activiteit toevoegen"-formulier, zelfde patroon als de bestaande vier. Roadtrip en Stadje bezichtigen krijgen dezelfde "Eten/Café nabij"-knoppen als Uitzicht; Diversen bewust geen enkele "X nabij"-knop (`nearbyCategories: []`) — het is een vangnet-categorie zonder vaste betekenis, dus een "nabij"-suggestie zou niets zinnigs betekenen.
+
+**Root cause van "kunnen wijzigen"**: de categorie/het icoon was alléén bij het toevoegen te kiezen — het bewerkformulier (`sheet-edit-activity`) had helemaal geen categorie-chips, dus eenmaal opgeslagen kon je het soort van een activiteit nooit meer aanpassen (bijvoorbeeld een per ongeluk als "Wandeling" toegevoegde activiteit die eigenlijk een "Stadje bezichtigen" was).
+
+**Fix**: dezelfde 7 categorie-chips toegevoegd aan het bewerkformulier, vooraf geselecteerd op de huidige categorie van de activiteit (met dezelfde `categoryForEmoji()`-terugval als elders voor activiteiten zonder opgeslagen `category`-veld). `setActivityCategory()`/`updateActivityFormForCategory()` zijn generiek gemaakt met een `prefix`-parameter (`'activity'` voor toevoegen, `'edit-activity'` voor bewerken) — zo hebben beide formulieren hun eigen onafhankelijke chip-status, en wijzigt het bewerken van de ene activiteit niet per ongeluk de "soort"-keuze die nog openstond in het toevoeg-formulier. `saveActivityEdit()` slaat nu ook `category`+`emoji` mee op.
+
+---
+
 ## Gewijzigde bestanden
 
-`index.html` (Discover-header-knop, pd-stats-grid, wandelinfo-velden in beide activiteit-formulieren, pd-elevation-embed, activity-day-badge), `js/state.js` (`komootSearchUrl()`, `extractKomootTourId()`, `addActivity()` uitgebreid met `komootTourUrl`), `js/screen-map.js` (`renderPdHero()` — stats-grid i.p.v. pilletjes), `js/screen-planning.js` (formulier-logica add/edit, Komoot-embed-rendering in `openActivityDetailSheet()`, `updateActivityDayBadge()`, verplaatsdag-detectie in `buildDayTabs()`/`renderPlanningDay()`, `pd-add-btn`-logica gesplitst in inplannen/afronden, "✎ Bewerken"-knop op het detailscherm), `js/screen-discover.js` (Komoot-link + top-knop-status), `js/screen-accommodation.js` (`resetActivityFormExtras()`/`updateActivityDayBadge()` hergebruikt).
+`index.html` (Discover-header-knop, pd-stats-grid, wandelinfo-velden in beide activiteit-formulieren, pd-elevation-embed, activity-day-badge, "uit planning halen"-knop in `sheet-move-activity`, categorie-chips + hike-fields/komoot-row-ids in `sheet-edit-activity`), `js/data.js` (`CATEGORY_EMOJIS`/`CATEGORY_META` uitgebreid met roadtrip/town/misc), `js/state.js` (`komootSearchUrl()`, `extractKomootTourId()`, `addActivity()` uitgebreid met `komootTourUrl`), `js/screen-map.js` (`renderPdHero()` — stats-grid i.p.v. pilletjes), `js/screen-planning.js` (formulier-logica add/edit, Komoot-embed-rendering in `openActivityDetailSheet()`, `updateActivityDayBadge()`, verplaatsdag-detectie in `buildDayTabs()`/`renderPlanningDay()`, `pd-add-btn`-logica gesplitst in inplannen/afronden, "✎ Bewerken"-knop op het detailscherm, `handleUnscheduleActivity()`, `setActivityCategory()`/`updateActivityFormForCategory()` generiek met prefix-parameter), `js/screen-discover.js` (Komoot-link + top-knop-status), `js/screen-accommodation.js` (`resetActivityFormExtras()`/`updateActivityDayBadge()` hergebruikt).

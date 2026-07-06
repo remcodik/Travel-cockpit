@@ -13,6 +13,7 @@ const WEEKDAYS = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
 // maar viel elke toegevoegde activiteit terug op een generiek 📍.
 const CATEGORY_EMOJIS = {
   activity: '🏔️', restaurant: '🍽️', cafe: '☕', viewpoint: '🌄',
+  roadtrip: '🛣️', town: '🏘️', misc: '📦',
   default: '📍',
 };
 
@@ -27,6 +28,12 @@ const CATEGORY_META = {
   restaurant: { isHike: false, nearbyCategories: ['cafe'] },
   cafe:       { isHike: false, nearbyCategories: ['restaurant'] },
   viewpoint:  { isHike: false, nearbyCategories: ['restaurant', 'cafe'] },
+  roadtrip:   { isHike: false, nearbyCategories: ['restaurant', 'cafe'] },
+  town:       { isHike: false, nearbyCategories: ['restaurant', 'cafe'] },
+  // Diversen is een bewuste vangnet-categorie zonder vaste betekenis (kan
+  // van alles zijn) — geen "X nabij"-knoppen, want die veronderstellen een
+  // herkenbaar soort locatie om naar te zoeken.
+  misc:       { isHike: false, nearbyCategories: [] },
 };
 
 // Namen/emoji's voor de "X nabij"-knoppen op het activiteit-detailscherm,

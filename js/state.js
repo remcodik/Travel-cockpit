@@ -105,6 +105,26 @@ function getAccommodationForDate(date) {
   return ACCOMMODATIONS.find(acc => d >= acc.checkIn && d < acc.checkOut) || null;
 }
 
+// Virtueel "Thuis"-verblijf voor de reisdagen vóór de allereerste check-in
+// of ná de allerlaatste check-out (bv. de vertrek- of aankomstdag zelf,
+// vaak nog binnen TRIP_START..TRIP_END maar niet gedekt door een echt
+// verblijf) — puur voor weergave in Planning, geen echt opgeslagen verblijf
+// en dus niet gebruikt door getActiveAccommodation() of enige andere
+// plek die een écht verblijf verwacht (adres, lat/lng, telefoon, ...).
+// Een gat middenin de reis (tussen twee verblijven) blijft bewust
+// "reisdag · onderweg" — dat wijst eerder op een ontbrekend verblijf dan
+// op "thuis".
+const HOME_PSEUDO_ACC = { id: '__home__', name: 'Thuis', short: 'Thuis', color: '#45564C', elevation: null, isHome: true };
+function getAccommodationOrHomeForDate(date) {
+  const direct = getAccommodationForDate(date);
+  if (direct) return direct;
+  if (ACCOMMODATIONS.length === 0) return null;
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const firstCheckIn = new Date(Math.min(...ACCOMMODATIONS.map(a => a.checkIn.getTime())));
+  const lastCheckOut = new Date(Math.max(...ACCOMMODATIONS.map(a => a.checkOut.getTime())));
+  return (d < firstCheckIn || d >= lastCheckOut) ? HOME_PSEUDO_ACC : null;
+}
+
 function getActiveAccommodation() {
   const today = getToday();
   const direct = getAccommodationForDate(today);
