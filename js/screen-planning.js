@@ -8,6 +8,49 @@ function renderPlanningScreen() {
   if (!AppState.selectedPlanningDay) AppState.selectedPlanningDay = getClosestTripDay();
   buildDayTabs();
   renderPlanningDay();
+  initPlanningSwipeIfNeeded();
+}
+
+// Door de dagen heen swipen (horizontaal) op de daginhoud, als alternatief
+// voor het aantikken van een dagtab. Eenmalig gebonden (niet bij elke
+// render opnieuw) — de listener zelf leest bij elke swipe de actuele
+// geselecteerde dag uit AppState, dus hoeft niet opnieuw gebonden te worden.
+let planningSwipeInitialized = false;
+function initPlanningSwipeIfNeeded() {
+  if (planningSwipeInitialized) return;
+  const el = document.querySelector('#screen-planning .scroll');
+  if (!el) return;
+  planningSwipeInitialized = true;
+
+  let startX = 0, startY = 0, tracking = false;
+  const SWIPE_THRESHOLD = 60; // px — voorkomt dat een gewone tik of verticale scroll als swipe telt
+
+  el.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    tracking = true;
+  }, { passive: true });
+
+  el.addEventListener('touchend', e => {
+    if (!tracking) return;
+    tracking = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    // Alleen als de beweging overwegend horizontaal is — anders zou
+    // gewoon verticaal scrollen door de activiteitenlijst per ongeluk
+    // ook de dag laten verspringen.
+    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      goToAdjacentPlanningDay(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+}
+
+function goToAdjacentPlanningDay(offset) {
+  const next = new Date(AppState.selectedPlanningDay);
+  next.setDate(next.getDate() + offset);
+  if (next < TRIP_START || next > TRIP_END) return; // niet buiten het reisvenster
+  selectPlanningDay(next.toISOString());
 }
 
 function togglePlanningFilter(btn) {
@@ -125,11 +168,15 @@ function renderPlanningDay() {
       style="width:32px;height:32px;border-radius:9px;border:1.5px solid var(--line);background:white;cursor:pointer;font-size:14px;color:var(--ink-faint);flex-shrink:0;display:flex;align-items:center;justify-content:center" title="Dagnotitie">✎</button>
   `;
 
-  let dayActivities = getActivitiesForDate(day);
-  // Filter: alleen ingeplande (niet 'todo') als filter actief is
-  if (planningFilter === 'planned') {
-    dayActivities = dayActivities.filter(a => a.status !== 'todo');
-  }
+  // FIX: dayActivities bevat door getActivitiesForDate() altijd al alleen
+  // activiteiten met een datum die op deze dag valt — dus per definitie
+  // "ingepland". Er stond hier voorheen ook nog een filter op
+  // `status !== 'todo'`, die legacy 'todo'-activiteiten (zie updateActivity()
+  // hierboven) onterecht liet verdwijnen zodra ze via "+ Inplannen" alsnog
+  // een datum kregen zonder dat hun status meeveranderde — het
+  // "Ingepland"-filter hoort alleen de niet-ingeplande "Beschikbaar vanuit
+  // X"-lijst hieronder te verbergen, niet dayActivities zelf.
+  const dayActivities = getActivitiesForDate(day);
 
   // Onge-inplande activiteiten voor dit verblijf — alleen tonen als filter uit staat
   const unscheduled = (acc && planningFilter === 'all')

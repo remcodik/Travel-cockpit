@@ -258,9 +258,20 @@ function extractKomootTourId(url) {
   return match ? match[1] : null;
 }
 
+// FIX: 'todo' is een legacy-status uit de allereerste seed (js/data.js) —
+// altijd gepaard met date: null, dus feitelijk synoniem voor "nog niet
+// ingepland". Zodra zo'n activiteit alsnog een datum krijgt (via "+
+// Inplannen", verplaatsen, of bewerken) bleef de status stil op 'todo'
+// staan, omdat niets die twee velden ooit aan elkaar koppelde. Het
+// "Ingepland"-filter in Planning sluit 'todo' bewust uit, dus zo'n
+// activiteit leek daar dan onvindbaar ("Niets ingepland op deze dag"),
+// terwijl de dagtab-teller (die alleen op datum telt) 'm wél meetelde.
 async function updateActivity(id, changes) {
   const act = AppState.activities.find(a => a.id === id);
   if (!act) return null;
+  if (changes.date && act.status === 'todo') {
+    changes = { ...changes, status: 'planned' };
+  }
   Object.assign(act, changes);
   await dbSaveActivity(act);
   return act;
