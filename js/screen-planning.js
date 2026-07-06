@@ -33,16 +33,23 @@ function buildDayTabs() {
     // je vandaan komt — de rest van de rand volgt gewoon de normale regel
     // hieronder (kleur van het verblijf waar de dag nu bij hoort).
     const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
-    const isChangeover = !!(prevAcc && acc && prevAcc.id !== acc.id);
+    // FIX: de eerste en laatste reisdag (vóór het eerste verblijf / ná het
+    // laatste, "Thuis" — zie docs/10-issues/14-thuis-reisdag-randen.md) zijn
+    // net zo goed reisdagen als een verplaatsdag tussen twee verblijven,
+    // maar kregen alleen het 🚗-icoon als er toevallig een verblijf exact op
+    // die dag uitcheckte. Elke "Thuis"-dag toont nu altijd het icoon.
+    const isHomeDay = !!(acc && acc.isHome);
+    const isChangeover = isHomeDay || !!(prevAcc && acc && prevAcc.id !== acc.id);
+    const hasTwoToneBorder = !!(prevAcc && acc && prevAcc.id !== acc.id);
 
     // Elke dag krijgt een subtiele randkleur van het bijbehorende verblijf,
     // ook als hij niet geselecteerd is — alleen de selectie zelf blijft een
     // gevuld vlak.
     return `
       <button class="day-tab ${isSelected ? 'selected' : ''}"
-        style="background:${isSelected ? color : 'var(--white)'};border-color:${color};${isChangeover ? `border-left-color:${prevAcc.color};` : ''}"
+        style="background:${isSelected ? color : 'var(--white)'};border-color:${color};${hasTwoToneBorder ? `border-left-color:${prevAcc.color};` : ''}"
         onclick="selectPlanningDay('${day.toISOString()}')"
-        title="${isChangeover ? `Verplaatsdag: ${escapeHtml(prevAcc.name)} → ${escapeHtml(acc.name)}` : ''}">
+        title="${hasTwoToneBorder ? `Verplaatsdag: ${escapeHtml(prevAcc.name)} → ${escapeHtml(acc.name)}` : (isHomeDay ? 'Reisdag' : '')}">
         <span class="mono" style="font-size:10px;font-weight:700;color:${isSelected ? 'rgba(255,255,255,.85)' : color}">D${dayNum}</span>
         <span style="font-family:var(--font-display);font-size:17px;font-weight:800;color:${isSelected ? 'white' : 'var(--ink)'};line-height:1.1">${day.getDate()}</span>
         <span class="mono" style="font-size:8px;color:${isSelected ? 'rgba(255,255,255,.55)' : 'var(--ink-faint)'}">${MONTHS[day.getMonth()]}</span>
@@ -75,11 +82,16 @@ function renderPlanningDay() {
   // kleur van het verblijf waar je vandaan komt (zelfde aanpak als de
   // dagtabs hierboven, i.p.v. de eerdere, te opvallende kleurverloop-vulling).
   const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
-  const isChangeover = !!(prevAcc && acc && prevAcc.id !== acc.id);
-  const badgeBg = isChangeover ? 'var(--white)' : (acc ? acc.color : 'var(--ink-faint)');
-  const badgeBorder = isChangeover ? `border:5px solid ${acc.color};border-left:7px solid ${prevAcc.color};` : '';
-  const badgeTextColor = isChangeover ? 'var(--ink)' : 'white';
-  const badgeLabelColor = isChangeover ? 'var(--ink-faint)' : 'rgba(255,255,255,.65)';
+  // FIX: de eerste/laatste reisdag ("Thuis", vóór het eerste verblijf of ná
+  // het laatste) kreeg alleen het 🚗-icoon als er toevallig een verblijf
+  // exact op die dag uitcheckte — anders gewoon een stille "vanuit Thuis".
+  // Zo'n dag is net zo goed een reisdag, dus toont nu altijd het icoon.
+  const isHomeDay = !!(acc && acc.isHome);
+  const hasTwoToneBorder = !!(prevAcc && acc && prevAcc.id !== acc.id);
+  const badgeBg = hasTwoToneBorder ? 'var(--white)' : (acc ? acc.color : 'var(--ink-faint)');
+  const badgeBorder = hasTwoToneBorder ? `border:5px solid ${acc.color};border-left:7px solid ${prevAcc.color};` : '';
+  const badgeTextColor = hasTwoToneBorder ? 'var(--ink)' : 'white';
+  const badgeLabelColor = hasTwoToneBorder ? 'var(--ink-faint)' : 'rgba(255,255,255,.65)';
 
   document.getElementById('day-header').innerHTML = `
     <div style="background:${badgeBg};${badgeBorder}border-radius:10px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
@@ -88,14 +100,14 @@ function renderPlanningDay() {
     </div>
     <div style="flex:1">
       <p class="row-title" style="font-size:15.5px">${WEEKDAYS[day.getDay()]} ${day.getDate()} ${MONTHS[day.getMonth()]}</p>
-      ${isChangeover
+      ${hasTwoToneBorder
         ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
              <span style="width:8px;height:8px;border-radius:50%;background:${prevAcc.color};flex-shrink:0"></span><span class="mono" style="color:${prevAcc.color};font-weight:700">${escapeHtml(prevAcc.name)}</span>
              <span class="mono" style="color:var(--ink-faint)">🚗</span>
              <span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span><span class="mono" style="color:${acc.color};font-weight:700">${escapeHtml(acc.name)}</span>
            </div>`
         : (acc
-          ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span><span class="mono" style="color:${acc.color};font-weight:700">vanuit ${escapeHtml(acc.name)}</span></div>`
+          ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">${isHomeDay ? `<span class="mono">🚗</span>` : `<span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span>`}<span class="mono" style="color:${acc.color};font-weight:700">${isHomeDay ? 'Reisdag' : 'vanuit ' + escapeHtml(acc.name)}</span></div>`
           : `<p class="mono" style="margin-top:3px">reisdag · onderweg</p>`)}
     </div>
     ${acc && !acc.isHome ? renderElevationTag(acc.elevation, acc.color) : ''}
