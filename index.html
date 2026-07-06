@@ -519,6 +519,17 @@
     <p class="sheet-title">REIS BEWERKEN</p>
     <input id="edit-trip-name-input" placeholder="Naam"/>
     <select id="edit-trip-country-select" style="margin-bottom:18px"><option>🇳🇴 Noorwegen</option><option>🇮🇹 Italië</option><option>🇫🇷 Frankrijk</option><option>🇩🇪 Duitsland</option><option>🇪🇸 Spanje</option><option>🇵🇹 Portugal</option><option>🇦🇹 Oostenrijk</option><option>🇨🇭 Zwitserland</option><option>🇭🇷 Kroatië</option><option>🇬🇷 Griekenland</option><option>🇮🇸 IJsland</option><option>🇸🇪 Zweden</option></select>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1">
+        <p class="eyebrow" style="margin-bottom:5px">Begin reis</p>
+        <input id="edit-trip-start-input" type="date"/>
+      </div>
+      <div style="flex:1">
+        <p class="eyebrow" style="margin-bottom:5px">Eind reis</p>
+        <input id="edit-trip-end-input" type="date"/>
+      </div>
+    </div>
+    <p class="mono" style="margin:-8px 0 18px;color:var(--ink-faint)">Bepaalt zelf hoe lang je reis is — verblijven toevoegen verandert dit niet (wel wordt het venster automatisch verruimd als een verblijf erbuiten valt).</p>
     <button id="edit-trip-save-btn" class="btn btn-primary">Opslaan</button>
     <button onclick="closeSheet('sheet-edit-trip')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
   </div>

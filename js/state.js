@@ -114,15 +114,19 @@ function getAccommodationForDate(date) {
 // Een gat middenin de reis (tussen twee verblijven) blijft bewust
 // "reisdag · onderweg" — dat wijst eerder op een ontbrekend verblijf dan
 // op "thuis".
+// FIX: gold voorheen alleen vóór het eerste verblijf / ná het laatste —
+// een gat MIDDENIN de reis (bv. een reisdag tussen een ferry-overnachting
+// en het volgende hotel, zonder dat daar een apart verblijf voor is
+// aangemaakt) bleef dan alsnog kleurloos ("reisdag · onderweg" in grijs),
+// ook al is zo'n tussenliggende reisdag net zo reëel als de rand-dagen.
+// Nu: elke dag binnen het reisvenster die niet door een verblijf gedekt
+// wordt, krijgt dezelfde neutrale "Thuis/onderweg"-weergave.
 const HOME_PSEUDO_ACC = { id: '__home__', name: 'Thuis', short: 'Thuis', color: '#45564C', elevation: null, isHome: true };
 function getAccommodationOrHomeForDate(date) {
   const direct = getAccommodationForDate(date);
   if (direct) return direct;
-  if (ACCOMMODATIONS.length === 0) return null;
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const firstCheckIn = new Date(Math.min(...ACCOMMODATIONS.map(a => a.checkIn.getTime())));
-  const lastCheckOut = new Date(Math.max(...ACCOMMODATIONS.map(a => a.checkOut.getTime())));
-  return (d < firstCheckIn || d >= lastCheckOut) ? HOME_PSEUDO_ACC : null;
+  return (d >= TRIP_START && d <= TRIP_END) ? HOME_PSEUDO_ACC : null;
 }
 
 function getActiveAccommodation() {
@@ -358,23 +362,6 @@ function applyTripData(trip, accommodations) {
   TRIP_END.setTime(trip.endDate.getTime());
   applyCountryTheme(trip.country);
 
-  // Eenmalig herstel voor de originele Noorwegen-reis: recalculateTripDates()
-  // liet TRIP_START voorheen krimpen tot de vroegste check-in van een
-  // verblijf (16 juni, Sogndal) zodra er ook maar één verblijf werd
-  // toegevoegd/bewerkt — terwijl de reis bewust al op 15 juni begint (de
-  // vertrek-/ferrydag vóór het eerste verblijf, zie de Route-strip op Kaart
-  // en docs/10-issues/14-thuis-reisdag-randen.md). Dat is inmiddels
-  // gefixt (recalculateTripDates() kan niet meer krimpen), maar deze
-  // specifieke, al eerder foutief opgeslagen reis moet nog één keer
-  // teruggezet worden.
-  if (trip.id === DEFAULT_TRIP_ID) {
-    const knownOriginalStart = new Date(2026, 5, 15);
-    if (TRIP_START.getTime() > knownOriginalStart.getTime()) {
-      TRIP_START.setTime(knownOriginalStart.getTime());
-      updateTripMeta(DEFAULT_TRIP_ID, { startDate: new Date(TRIP_START) });
-    }
-  }
-
   ACCOMMODATIONS.length = 0;
   // Sorteert op check-in datum i.p.v. het (onbetrouwbare, vaak
   // ontbrekende) order-veld — zie de FIX-toelichting bij
@@ -414,7 +401,6 @@ function applyTripData(trip, accommodations) {
   // wél correct. Verblijven die vóór deze migratie al zijn opgeslagen
   // blijven anders voor altijd op het foute tijdstip hangen — er is geen
   // andere manier om ze te corrigeren dan bij het laden.
-  let dateFixApplied = false;
   ACCOMMODATIONS.forEach(acc => {
     const normalizedCheckIn = new Date(acc.checkIn.getFullYear(), acc.checkIn.getMonth(), acc.checkIn.getDate());
     const normalizedCheckOut = new Date(acc.checkOut.getFullYear(), acc.checkOut.getMonth(), acc.checkOut.getDate());
@@ -426,15 +412,27 @@ function applyTripData(trip, accommodations) {
         checkIn: normalizedCheckIn.toISOString(),
         checkOut: normalizedCheckOut.toISOString(),
       });
-      dateFixApplied = true;
     }
   });
-  // Reisdata (trips/{tripId}, startDate/endDate) is een tweede plek waar
-  // datum wordt opgeslagen — afgeleid als min/max van alle verblijven (zie
-  // recalculateTripDates()). Die kan dezelfde tijdstip-afwijking bevatten als
-  // 'm berekend werd tóen een verblijf nog kapotte tijden had. Alleen
-  // herberekenen als er hierboven daadwerkelijk iets gecorrigeerd is.
-  if (dateFixApplied) recalculateTripDates();
+
+  // FIX (zie docs/10-issues/16-reisdatum-krimp-bugfix.md): reisdata
+  // (trips/{tripId} startDate/endDate) mag NOOIT meer automatisch krimpen of
+  // exact op de verblijf-data worden vastgepind — de gebruiker stelt de
+  // reislengte zelf in via "Reis bewerken", los van hoeveel verblijven er al
+  // zijn ingevuld ("die kan ik later toevoegen maar vakantie blijft even
+  // lang"). Alleen een permanente ondergrens: een al opgeslagen verblijf mag
+  // nooit buiten het zichtbare reisvenster vallen (zou 'm onzichtbaar maken
+  // in Planning, zoals hierboven met Hotel Kolding gebeurde) — dus alleen
+  // verruimen, nooit krimpen, en alleen wanneer het venster een bestaand
+  // verblijf niet meer dekt.
+  if (ACCOMMODATIONS.length > 0) {
+    const accMinCheckIn = new Date(Math.min(...ACCOMMODATIONS.map(a => a.checkIn.getTime())));
+    const accMaxCheckOut = new Date(Math.max(...ACCOMMODATIONS.map(a => a.checkOut.getTime())));
+    let windowWidened = false;
+    if (accMinCheckIn.getTime() < TRIP_START.getTime()) { TRIP_START.setTime(accMinCheckIn.getTime()); windowWidened = true; }
+    if (accMaxCheckOut.getTime() > TRIP_END.getTime()) { TRIP_END.setTime(accMaxCheckOut.getTime()); windowWidened = true; }
+    if (windowWidened) updateTripMeta(trip.id, { startDate: new Date(TRIP_START), endDate: new Date(TRIP_END) });
+  }
 
   // Eenmalige hoogte-verificatie via Open-Meteo (zie docs/10-issues/12-
   // reisdag-kleur-bugfix.md): het elevation-veld had tot nu toe geen
@@ -542,12 +540,17 @@ async function createAccommodationForTrip(fields) {
     phone: fields.phone || null,
   };
   ACCOMMODATIONS.push(acc);
+  // FIX: nieuwe verblijven werden altijd achteraan toegevoegd, ongeacht hun
+  // check-in-datum — de accommodatielijst/-chips (die simpelweg ACCOMMODATIONS
+  // in array-volgorde tonen) toonden zo's een verblijf met een vroege
+  // check-in (bv. een ferry-overnachting vóór het eerste hotel) alsnog
+  // helemaal achteraan. Op datum sorteren houdt de volgorde overal correct.
+  ACCOMMODATIONS.sort((a, b) => a.checkIn - b.checkIn);
   await dbSaveAccommodation(getCurrentTripId(), {
     ...acc,
     checkIn: acc.checkIn.toISOString(),
     checkOut: acc.checkOut.toISOString(),
   });
-  await recalculateTripDates();
   return acc;
 }
 
@@ -556,6 +559,7 @@ async function updateAccommodation(accId, changes) {
   const acc = ACCOMMODATIONS.find(a => a.id === accId);
   if (!acc) return null;
   Object.assign(acc, changes);
+  ACCOMMODATIONS.sort((a, b) => a.checkIn - b.checkIn);
   // dbSaveAccommodation verwacht checkIn/checkOut als ISO-strings (zelfde
   // conventie als createTrip()) — in ACCOMMODATIONS staan ze als Date.
   await dbSaveAccommodation(getCurrentTripId(), {
@@ -563,29 +567,7 @@ async function updateAccommodation(accId, changes) {
     checkIn: acc.checkIn.toISOString(),
     checkOut: acc.checkOut.toISOString(),
   });
-  await recalculateTripDates();
   return acc;
-}
-
-// Reis start/einddatum groeit automatisch mee met verblijf-wijzigingen
-// (Fase E-besluit), herberekend uit min/max van alle verblijven.
-// FIX: "groeit mee" werd hier als "wordt exact gelijk aan" geïmplementeerd —
-// TRIP_START/TRIP_END werden altijd op de min/max van de verblijven gezet,
-// ook als de reis zelf bewust wijder was (bv. 15 juni als vertrek-/ferrydag,
-// een dag vóór Sogndal's check-in op 16 juni — zie de "Thuis"-dag en de
-// Route-strip op Kaart). Zodra er ook maar één verblijf werd toegevoegd of
-// bewerkt (wat recalculateTripDates() aanroept) verdween die extra dag dus
-// stilzwijgend. Nu: nooit krimpen, alleen verruimen als een verblijf buiten
-// het huidige venster valt.
-async function recalculateTripDates() {
-  if (ACCOMMODATIONS.length === 0) return;
-  const accStart = new Date(Math.min(...ACCOMMODATIONS.map(a => a.checkIn.getTime())));
-  const accEnd = new Date(Math.max(...ACCOMMODATIONS.map(a => a.checkOut.getTime())));
-  const newStart = accStart < TRIP_START ? accStart : new Date(TRIP_START);
-  const newEnd = accEnd > TRIP_END ? accEnd : new Date(TRIP_END);
-  TRIP_START.setTime(newStart.getTime());
-  TRIP_END.setTime(newEnd.getTime());
-  await updateTripMeta(getCurrentTripId(), { startDate: new Date(TRIP_START), endDate: new Date(TRIP_END) });
 }
 
 async function deleteAccommodationWithChoice(accId, alsoDeleteActivities) {
@@ -598,7 +580,6 @@ async function deleteAccommodationWithChoice(accId, alsoDeleteActivities) {
   await dbDeleteAccommodation(getCurrentTripId(), accId);
   const idx = ACCOMMODATIONS.findIndex(a => a.id === accId);
   if (idx !== -1) ACCOMMODATIONS.splice(idx, 1);
-  await recalculateTripDates();
 }
 
 // ── Firebase sync-initialisatie ───────────────────────────

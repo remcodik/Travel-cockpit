@@ -262,17 +262,42 @@ function openEditTripSheet(tripId) {
   const matchValue = `${trip.countryFlag || ''} ${trip.country || ''}`.trim();
   const hasMatch = Array.from(countrySelect.options).some(o => o.value === matchValue);
   countrySelect.value = hasMatch ? matchValue : countrySelect.options[0].value;
+  document.getElementById('edit-trip-start-input').value = trip.startDate.toISOString().slice(0, 10);
+  document.getElementById('edit-trip-end-input').value = trip.endDate.toISOString().slice(0, 10);
   document.getElementById('edit-trip-save-btn').onclick = () => saveTripEdit(tripId);
   openSheet('sheet-edit-trip');
 }
 
+// FIX (zie docs/10-issues/16-reisdatum-krimp-bugfix.md): de reislengte werd
+// tot nu toe uitsluitend automatisch afgeleid van de verblijven — er was
+// geen enkele manier om 'm zelf in te stellen. Nu expliciet bewerkbaar,
+// losstaand van verblijf-wijzigingen.
 async function saveTripEdit(tripId) {
   const name = document.getElementById('edit-trip-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return; }
   const countrySelect = document.getElementById('edit-trip-country-select');
   const country = countrySelect.value.replace(/^\S+\s/, '');
   const countryFlag = countrySelect.value.split(' ')[0];
-  await updateTripMeta(tripId, { name, country, countryFlag });
+  const startStr = document.getElementById('edit-trip-start-input').value;
+  const endStr = document.getElementById('edit-trip-end-input').value;
+  if (!startStr || !endStr) { showToast('Vul begin- en einddatum in'); return; }
+  const startDate = parseLocalDateInput(startStr);
+  const endDate = parseLocalDateInput(endStr);
+  if (endDate < startDate) { showToast('Einddatum ligt vóór begindatum'); return; }
+  await updateTripMeta(tripId, { name, country, countryFlag, startDate, endDate });
+  // Actieve reis: de live TRIP_START/TRIP_END (gebruikt door Planning/Home/
+  // Roadtrip) direct meenemen, anders zie je de wijziging pas na herladen.
+  if (tripId === getCurrentTripId()) {
+    TRIP_START.setTime(startDate.getTime());
+    TRIP_END.setTime(endDate.getTime());
+    // De geselecteerde Planning-dag kan buiten het nieuwe (bv. verkorte)
+    // venster zijn komen te vallen — terugklemmen naar de dichtstbijzijnde
+    // geldige dag, zelfde helper als bij het wisselen van reis.
+    if (AppState.selectedPlanningDay < TRIP_START || AppState.selectedPlanningDay > TRIP_END) {
+      AppState.selectedPlanningDay = getClosestTripDay();
+    }
+    refreshAllScreens();
+  }
   closeSheet('sheet-edit-trip');
   showToast(`✓ ${name} bijgewerkt`);
   renderTripsScreen();
