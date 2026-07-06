@@ -270,9 +270,15 @@ async function deleteActivity(id) {
   return true;
 }
 
+// FIX: telde voorheen ALLE activiteiten mee, ook niet-ingeplande (act.date
+// is null — activiteiten die nog los bij een verblijf liggen, zie
+// "Beschikbaar vanuit X" in Planning). "Voortgang reis" hoort alleen over
+// wat daadwerkelijk ingepland is te gaan, anders klopt de teller niet met
+// wat je in Planning ziet staan.
 function getProgress() {
-  const done = AppState.activities.filter(a => a.status === 'done').length;
-  const total = AppState.activities.length;
+  const scheduled = AppState.activities.filter(a => a.date);
+  const done = scheduled.filter(a => a.status === 'done').length;
+  const total = scheduled.length;
   return { done, total, percent: total > 0 ? Math.round((done / total) * 100) : 0 };
 }
 
