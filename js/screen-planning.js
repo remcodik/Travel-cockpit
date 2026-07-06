@@ -4,6 +4,20 @@
 
 let planningFilter = 'all'; // 'all' | 'planned'
 
+// Wie je "vandaan komt" op een verplaatsdag — normaliter het verblijf dat
+// exact op deze dag uitcheckt. Op de allereerste reisdag zelf checkt er
+// per definitie niemand uit (er is nog geen vorig verblijf), maar als er
+// die dag al wél een écht verblijf begint (bv. een overnachting op de
+// ferry op dag 1), vertrek je feitelijk vanuit Thuis — net zoals de
+// laatste reisdag al "Kolding → Thuis" toont zodra je daar vandaan naar
+// huis gaat.
+function getChangeoverPrevAcc(day, acc) {
+  const real = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
+  if (real) return real;
+  if (day.getTime() === TRIP_START.getTime() && acc && !acc.isHome) return HOME_PSEUDO_ACC;
+  return null;
+}
+
 function renderPlanningScreen() {
   if (!AppState.selectedPlanningDay) AppState.selectedPlanningDay = getClosestTripDay();
   buildDayTabs();
@@ -75,7 +89,7 @@ function buildDayTabs() {
     // gekleurd vlak, alleen de linkerrand in de kleur van het verblijf waar
     // je vandaan komt — de rest van de rand volgt gewoon de normale regel
     // hieronder (kleur van het verblijf waar de dag nu bij hoort).
-    const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
+    const prevAcc = getChangeoverPrevAcc(day, acc);
     // FIX: de eerste en laatste reisdag (vóór het eerste verblijf / ná het
     // laatste, "Thuis" — zie docs/10-issues/14-thuis-reisdag-randen.md) zijn
     // net zo goed reisdagen als een verplaatsdag tussen twee verblijven,
@@ -130,7 +144,7 @@ function renderPlanningDay() {
   // Subtiel weergegeven: geen gekleurd vlak, alleen een linkerrand in de
   // kleur van het verblijf waar je vandaan komt (zelfde aanpak als de
   // dagtabs hierboven, i.p.v. de eerdere, te opvallende kleurverloop-vulling).
-  const prevAcc = ACCOMMODATIONS.find(a => a.checkOut.getTime() === day.getTime());
+  const prevAcc = getChangeoverPrevAcc(day, acc);
   // FIX: de eerste/laatste reisdag ("Thuis", vóór het eerste verblijf of ná
   // het laatste) kreeg alleen het 🚗-icoon als er toevallig een verblijf
   // exact op die dag uitcheckte — anders gewoon een stille "vanuit Thuis".
