@@ -357,6 +357,44 @@ async function dbLoadAiSuggestions(accId) {
   }
 }
 
+// ── Weer-geschiedenis (per dag+locatie) ───────────────────
+// Open-Meteo's forecast-endpoint levert alleen vandaag + 16 dagen
+// vooruit — een voorbije dag valt buiten dat venster en is dan nergens
+// meer op te vragen. js/weather.js slaat de "vandaag"-waarden daarom bij
+// elke live-aanroep hier op, zodat het laatst bekende dagbeeld blijft
+// staan zodra die dag voorbij is. Doc-ID bevat de locatie (afgerond,
+// zelfde precisie als de in-memory forecast-cache) omdat eenzelfde dag
+// bij verschillende verblijven een ander weerbeeld kan hebben.
+function weatherHistoryDocId(dateStr, lat, lng) {
+  return `${dateStr}_${lat.toFixed(2)}_${lng.toFixed(2)}`;
+}
+
+async function dbSaveWeatherSnapshot(dateStr, lat, lng, snapshot) {
+  const ref = tripRef('weather_history');
+  if (!ref) return;
+  try {
+    await ref.doc(weatherHistoryDocId(dateStr, lat, lng)).set({
+      ...snapshot,
+      date: dateStr,
+      savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+  } catch (err) {
+    console.error('Weer-snapshot opslaan mislukt:', err);
+  }
+}
+
+async function dbLoadWeatherSnapshot(dateStr, lat, lng) {
+  const ref = tripRef('weather_history');
+  if (!ref) return null;
+  try {
+    const doc = await ref.doc(weatherHistoryDocId(dateStr, lat, lng)).get();
+    return doc.exists ? doc.data() : null;
+  } catch (err) {
+    console.error('Weer-snapshot laden mislukt:', err);
+    return null;
+  }
+}
+
 // ── Reisgids-cache (omgevingsinfo per verblijf) ───────────
 // Eigen subcollectie i.p.v. hergebruik van ai_cache: andere vorm
 // (paragraphs/highlights/practicalTips i.p.v. suggestions) en geen

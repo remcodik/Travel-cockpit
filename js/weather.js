@@ -67,6 +67,7 @@ async function fetchWeatherForLocation(lat, lng) {
     const data = await response.json();
     weatherCache.set(key, { data, timestamp: Date.now() });
     lastWeatherError = null;
+    persistTodaySnapshot(data, lat, lng); // fire-and-forget, zie hieronder
     return data;
   } catch (err) {
     // DIAGNOSE: bewaar de exacte fout zodat de UI die kan tonen.
@@ -79,9 +80,51 @@ async function fetchWeatherForLocation(lat, lng) {
   }
 }
 
-// Geeft het weer voor een specifieke datum terug (vandaag of een
-// dag in de toekomst, tot 16 dagen vooruit — exact wat gevraagd is).
-// Voor dagen buiten het forecast-bereik: retourneert null.
+// ── Historisch weer (voorbije dagen) ──────────────────────
+// Open-Meteo's forecast-endpoint levert alleen vandaag + 16 dagen
+// vooruit — zodra een dag voorbij is valt hij buiten dat venster en is
+// er nergens meer "het echte weer van toen" op te vragen. Daarom slaan
+// we bij elke live-forecast-aanroep de waarden van "vandaag" apart op
+// (Firestore + localStorage-fallback, zelfde dubbele-cache-patroon als
+// de AI-suggesties): zodra die dag straks voorbij is, blijft het laatst
+// opgeslagen dagbeeld staan i.p.v. stil te verdwijnen.
+function weatherHistoryLsKey(dateStr, lat, lng) {
+  return `tc_weather_hist_${dateStr}_${weatherCacheKey(lat, lng)}`;
+}
+
+function buildDailySnapshot(data, dayIndex) {
+  if (dayIndex === -1) return null;
+  return {
+    temperatureMax: Math.round(data.daily.temperature_2m_max[dayIndex]),
+    temperatureMin: Math.round(data.daily.temperature_2m_min[dayIndex]),
+    weatherCode: data.daily.weather_code[dayIndex],
+    rainProbability: data.daily.precipitation_probability_max[dayIndex] ?? 0,
+  };
+}
+
+async function persistTodaySnapshot(data, lat, lng) {
+  const todayStr = formatISODate(new Date());
+  const snapshot = buildDailySnapshot(data, data.daily.time.indexOf(todayStr));
+  if (!snapshot) return;
+  try { localStorage.setItem(weatherHistoryLsKey(todayStr, lat, lng), JSON.stringify(snapshot)); } catch (e) {}
+  try { await dbSaveWeatherSnapshot(todayStr, lat, lng, snapshot); } catch (e) {}
+}
+
+async function loadPastWeatherSnapshot(dateStr, lat, lng) {
+  try {
+    const dbSnap = await dbLoadWeatherSnapshot(dateStr, lat, lng);
+    if (dbSnap) return dbSnap;
+  } catch (e) {}
+  try {
+    const ls = localStorage.getItem(weatherHistoryLsKey(dateStr, lat, lng));
+    if (ls) return JSON.parse(ls);
+  } catch (e) {}
+  return null;
+}
+
+// Geeft het weer voor een specifieke datum terug: vandaag, een dag in de
+// toekomst (tot 16 dagen vooruit), of een voorbije dag — die laatste
+// alleen als 'ie ooit als "vandaag" is opgeslagen (zie hierboven).
 async function getWeatherForDate(lat, lng, date) {
   const data = await fetchWeatherForLocation(lat, lng);
   if (!data) return null;
@@ -104,7 +147,25 @@ async function getWeatherForDate(lat, lng, date) {
   // Zoek de datum in de dagelijkse forecast-array
   const dayIndex = data.daily.time.indexOf(dateStr);
   if (dayIndex === -1) {
-    lastWeatherError = `Datum ${dateStr} valt buiten het 16-daagse forecast-bereik`;
+    // Buiten het live forecast-venster — de toekomst zit altijd binnen
+    // forecast_days=16, dus dit is per definitie een voorbije dag.
+    // Val terug op het opgeslagen snapshot van toen die dag nog
+    // "vandaag" was, als dat bestaat.
+    const past = await loadPastWeatherSnapshot(dateStr, lat, lng);
+    if (past) {
+      const codeInfo = describeWeatherCode(past.weatherCode);
+      return {
+        temperature: Math.round((past.temperatureMax + past.temperatureMin) / 2),
+        temperatureMax: past.temperatureMax,
+        temperatureMin: past.temperatureMin,
+        emoji: codeInfo.emoji,
+        condition: codeInfo.label,
+        rainProbability: past.rainProbability,
+        isForecast: true,
+        isHistorical: true,
+      };
+    }
+    lastWeatherError = `Datum ${dateStr} valt buiten het 16-daagse forecast-bereik en is niet als geschiedenis opgeslagen`;
     return null;
   }
 
