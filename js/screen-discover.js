@@ -13,6 +13,17 @@ let isLoadingSuggestions = false;
 let discoverMode = 'accommodation'; // 'accommodation' | 'here' | 'activity'
 let discoverGpsLocation = null; // { lat, lng } als mode = 'here'
 let discoverActivityContext = null; // { lat, lng, name } als mode = 'activity' (N3)
+// FIX: in de "Verblijf"-modus was het altijd het huidige (op datum actieve)
+// verblijf — er was geen manier om ideeën voor een ánder verblijf op te
+// halen (bv. je volgende stop, vóórdat je er bent). null = terugvallen op
+// getActiveAccommodation().
+let discoverAccId = null;
+
+// Welk verblijf Discover's "Verblijf"-modus als basis gebruikt — het
+// expliciet gekozen verblijf als er een is, anders het huidige.
+function getDiscoverAccommodation() {
+  return ACCOMMODATIONS.find(a => idsMatch(a.id, discoverAccId)) || getActiveAccommodation();
+}
 
 // Eén plek die bepaalt welke locatie Discover als basis gebruikt,
 // ongeacht modus — voorkomt dat elke aanroepplek zijn eigen if/else
@@ -40,7 +51,8 @@ function openDiscoverNearActivity(act) {
 }
 
 function renderDiscoverScreen() {
-  const acc = getActiveAccommodation();
+  renderDiscoverAccChips();
+  const acc = getDiscoverAccommodation();
   updateDiscoverHeader(acc);
 
   // Toon gecachede suggesties direct — geen auto-fetch
@@ -119,8 +131,11 @@ function setDiscoverMode(mode, btnEl) {
   document.querySelectorAll('[data-discover-mode]').forEach(b => b.classList.remove('on'));
   btnEl.classList.add('on');
 
+  const accChipsEl = document.getElementById('discover-acc-chips');
+
   if (mode === 'here') {
     discoverMode = 'here';
+    if (accChipsEl) accChipsEl.style.display = 'none';
     if (!navigator.geolocation) {
       showToast('GPS niet beschikbaar op dit apparaat');
       setDiscoverMode('accommodation', document.querySelector('[data-discover-mode="accommodation"]'));
@@ -129,7 +144,7 @@ function setDiscoverMode(mode, btnEl) {
     navigator.geolocation.getCurrentPosition(
       pos => {
         discoverGpsLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        updateDiscoverHeader(getActiveAccommodation());
+        updateDiscoverHeader(getDiscoverAccommodation());
         showToast('📍 Locatie bepaald — tik ↻ voor suggesties');
       },
       err => {
@@ -142,8 +157,44 @@ function setDiscoverMode(mode, btnEl) {
     discoverMode = 'accommodation';
     discoverGpsLocation = null;
     discoverActivityContext = null;
-    updateDiscoverHeader(getActiveAccommodation());
+    if (accChipsEl) accChipsEl.style.display = 'flex';
+    renderDiscoverAccChips();
+    updateDiscoverHeader(getDiscoverAccommodation());
   }
+}
+
+// Welk verblijf de "Verblijf"-modus als basis gebruikt, kiesbaar via een
+// chips-rij (zelfde patroon als de kaart-filterchips) — voorheen alleen
+// het huidige (op datum actieve) verblijf, met geen manier om bv. alvast
+// ideeën voor het volgende verblijf op te halen.
+function renderDiscoverAccChips() {
+  const container = document.getElementById('discover-acc-chips');
+  if (!container) return;
+  const current = getDiscoverAccommodation();
+  container.innerHTML = ACCOMMODATIONS.map(a => {
+    const isOn = current && idsMatch(current.id, a.id);
+    return `<button onclick="setDiscoverAccommodation('${a.id}')" class="chip${isOn ? ' on' : ''}" style="border-color:${a.color};color:${isOn ? 'white' : a.color}">▲ ${escapeHtml(a.short)}</button>`;
+  }).join('');
+}
+
+function setDiscoverAccommodation(accId) {
+  discoverAccId = accId;
+  renderDiscoverAccChips();
+  const acc = getDiscoverAccommodation();
+  updateDiscoverHeader(acc);
+  loadCachedSuggestions(acc).then(cached => {
+    if (cached && cached.length > 0) {
+      currentSuggestions = cached;
+      renderSuggestionList();
+    } else {
+      currentSuggestions = [];
+      showEmptyDiscoverState(
+        'Geen ideeën geladen',
+        `Tik op ↻ om AI-suggesties op te halen voor ${escapeHtml(acc.name)}.`
+      );
+      updateRefreshButtonState();
+    }
+  });
 }
 
 // ── Categorie-filter ──────────────────────────────────────
@@ -157,7 +208,7 @@ function setDiscoverFilter(chipEl, category) {
 
 // ── Refresh — alleen op knop, nooit automatisch ───────────
 async function handleLoadMoreSuggestions() {
-  const acc = getActiveAccommodation();
+  const acc = getDiscoverAccommodation();
   if (!acc || isLoadingSuggestions) return;
 
   isLoadingSuggestions = true;
@@ -298,7 +349,7 @@ function showEmptyDiscoverState(title, sub) {
 }
 
 function renderSuggestionList() {
-  const acc = getActiveAccommodation();
+  const acc = getDiscoverAccommodation();
   let list = currentSuggestions;
 
   // Pas categorie-filter toe zonder API aan te roepen
@@ -372,7 +423,7 @@ function renderSuggestionCard(suggestion, acc) {
 
 function openRouteOptionsSheet(name, mapsQuery) {
   // Route-knop: keuze tussen vanaf hier (GPS) of vanaf verblijf
-  const acc = getActiveAccommodation();
+  const acc = getDiscoverAccommodation();
   const fromAccUrl = acc
     ? `https://www.google.com/maps/dir/${acc.lat},${acc.lng}/${encodeURIComponent(mapsQuery)}`
     : `https://www.google.com/maps/search/${encodeURIComponent(mapsQuery)}`;
