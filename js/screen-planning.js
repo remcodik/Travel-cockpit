@@ -39,8 +39,14 @@ function buildDayTabs() {
     // maar kregen alleen het 🚗-icoon als er toevallig een verblijf exact op
     // die dag uitcheckte. Elke "Thuis"-dag toont nu altijd het icoon.
     const isHomeDay = !!(acc && acc.isHome);
-    const isChangeover = isHomeDay || !!(prevAcc && acc && prevAcc.id !== acc.id);
+    // FIX (vervolg): ook de allereerste/-laatste kalenderdag van de reis
+    // zélf is altijd een reisdag, ook als die dag toevallig al door een
+    // écht verblijf gedekt wordt (bv. een overnachting op de ferry op dag
+    // 1) — dan gold de dag voorheen als een gewone verblijfsdag zonder
+    // icoon, terwijl je feitelijk nog aan het reizen bent.
+    const isTripBoundaryDay = day.getTime() === TRIP_START.getTime() || day.getTime() === TRIP_END.getTime();
     const hasTwoToneBorder = !!(prevAcc && acc && prevAcc.id !== acc.id);
+    const isChangeover = isHomeDay || isTripBoundaryDay || hasTwoToneBorder;
 
     // Elke dag krijgt een subtiele randkleur van het bijbehorende verblijf,
     // ook als hij niet geselecteerd is — alleen de selectie zelf blijft een
@@ -49,7 +55,7 @@ function buildDayTabs() {
       <button class="day-tab ${isSelected ? 'selected' : ''}"
         style="background:${isSelected ? color : 'var(--white)'};border-color:${color};${hasTwoToneBorder ? `border-left-color:${prevAcc.color};` : ''}"
         onclick="selectPlanningDay('${day.toISOString()}')"
-        title="${hasTwoToneBorder ? `Verplaatsdag: ${escapeHtml(prevAcc.name)} → ${escapeHtml(acc.name)}` : (isHomeDay ? 'Reisdag' : '')}">
+        title="${hasTwoToneBorder ? `Verplaatsdag: ${escapeHtml(prevAcc.name)} → ${escapeHtml(acc.name)}` : ((isHomeDay || isTripBoundaryDay) ? 'Reisdag' : '')}">
         <span class="mono" style="font-size:10px;font-weight:700;color:${isSelected ? 'rgba(255,255,255,.85)' : color}">D${dayNum}</span>
         <span style="font-family:var(--font-display);font-size:17px;font-weight:800;color:${isSelected ? 'white' : 'var(--ink)'};line-height:1.1">${day.getDate()}</span>
         <span class="mono" style="font-size:8px;color:${isSelected ? 'rgba(255,255,255,.55)' : 'var(--ink-faint)'}">${MONTHS[day.getMonth()]}</span>
@@ -87,6 +93,10 @@ function renderPlanningDay() {
   // exact op die dag uitcheckte — anders gewoon een stille "vanuit Thuis".
   // Zo'n dag is net zo goed een reisdag, dus toont nu altijd het icoon.
   const isHomeDay = !!(acc && acc.isHome);
+  // FIX (vervolg): ook de allereerste/-laatste kalenderdag van de reis zélf
+  // is altijd een reisdag, ook als die dag toevallig al door een écht
+  // verblijf gedekt wordt (bv. een overnachting op de ferry op dag 1).
+  const isTripBoundaryDay = day.getTime() === TRIP_START.getTime() || day.getTime() === TRIP_END.getTime();
   const hasTwoToneBorder = !!(prevAcc && acc && prevAcc.id !== acc.id);
   const badgeBg = hasTwoToneBorder ? 'var(--white)' : (acc ? acc.color : 'var(--ink-faint)');
   const badgeBorder = hasTwoToneBorder ? `border:5px solid ${acc.color};border-left:7px solid ${prevAcc.color};` : '';
@@ -107,7 +117,7 @@ function renderPlanningDay() {
              <span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span><span class="mono" style="color:${acc.color};font-weight:700">${escapeHtml(acc.name)}</span>
            </div>`
         : (acc
-          ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">${isHomeDay ? `<span class="mono">🚗</span>` : `<span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span>`}<span class="mono" style="color:${acc.color};font-weight:700">${isHomeDay ? 'Reisdag' : 'vanuit ' + escapeHtml(acc.name)}</span></div>`
+          ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">${(isHomeDay || isTripBoundaryDay) ? `<span class="mono">🚗</span>` : `<span style="width:8px;height:8px;border-radius:50%;background:${acc.color};flex-shrink:0"></span>`}<span class="mono" style="color:${acc.color};font-weight:700">${isHomeDay ? 'Reisdag' : (isTripBoundaryDay ? 'Reisdag · vanuit ' + escapeHtml(acc.name) : 'vanuit ' + escapeHtml(acc.name))}</span></div>`
           : `<p class="mono" style="margin-top:3px">reisdag · onderweg</p>`)}
     </div>
     ${acc && !acc.isHome ? renderElevationTag(acc.elevation, acc.color) : ''}
