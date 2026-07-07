@@ -223,6 +223,13 @@ function renderMapMarkers() {
       banner.classList.add('show');
       banner.textContent += `⚠️ Geen locatie ingesteld voor: ${invalidAccs.map(a => a.name).join(', ')} — vul coördinaten in bij het verblijf om de pin te zien.\n\n`;
     }
+    // Toast erbij (naast de banner): direct zichtbaar en met één tik naar
+    // het bewerkformulier van het eerste verblijf zonder locatie — de
+    // banner alleen meldt het probleem, dit lost het meteen op.
+    const names = invalidAccs.map(a => a.name).join(', ');
+    showToast(`⚠️ Geen locatie ingesteld: ${names} — tik om te bewerken`, 6000, () => {
+      openEditAccommodationSheet(invalidAccs[0].id);
+    });
   }
 
   // Accommodatiepins — altijd zichtbaar, ongeacht filter
