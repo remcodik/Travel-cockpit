@@ -10,7 +10,15 @@
 // Cache-versie ophogen bij een merge die JS/CSS/HTML aanpast.
 // ═══════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'v1';
+// FIX: deze constante is sinds de allereerste versie nooit opgehoogd,
+// ondanks tientallen daaropvolgende merges die JS/CSS/HTML aanpasten (in
+// weerwil van de instructie hierboven). Browsers detecteren een
+// SW-update alleen als sw.js zelf byte-voor-byte verandert — bleef die
+// constante gelijk, dan bleef sw.js identiek, dan vuurde de
+// update-banner (js/offline.js) dus nooit af, ongeacht hoeveel er
+// daadwerkelijk gewijzigd was. Vanaf nu: bij elke merge die JS/CSS/HTML
+// aanpast, dit getal ophogen.
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `travel-cockpit-${CACHE_VERSION}`;
 
 const APP_SHELL = [
@@ -32,8 +40,10 @@ const APP_SHELL = [
   '/js/screen-planning.js',
   '/js/screen-discover.js',
   '/js/screen-accommodation.js',
+  '/js/screen-guide.js',
   '/js/screen-roadtrip.js',
   '/js/screen-tickets.js',
+  '/js/notes.js',
   '/js/export.js',
   '/apple-touch-icon.png',
   '/icon-192.png',
@@ -77,8 +87,14 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // FIX: fetch(req) zonder cache-optie respecteert nog steeds de gewone
+  // HTTP-cache van de browser — een "network-first"-strategie die zelf
+  // een gecachet (mogelijk verouderd) antwoord kan terugkrijgen zonder
+  // ooit echt de server te bereiken. { cache: 'no-store' } dwingt een
+  // echt netwerkverzoek af, zodat "altijd de nieuwste versie proberen te
+  // halen" ook daadwerkelijk waar is.
   event.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-store' })
       .then(networkResponse => {
         const copy = networkResponse.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(req, copy)).catch(() => {});
