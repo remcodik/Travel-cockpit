@@ -709,11 +709,11 @@
       <button type="button" onclick="handleExtractInfoFromLink()" title="Naam/adres uit deze link halen (best-effort, alleen info — geen locatie)" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">🔗</button>
     </div>
     <input id="edit-acc-booking-ref-input" placeholder="Reserveringsnummer (optioneel)"/>
-    <details style="margin-bottom:14px">
-      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.4px;padding:2px 0 8px">Locatie instellen (voor de kaart)</summary>
+    <div style="margin-bottom:14px;padding:12px;background:var(--slope-light);border-radius:14px">
+      <p class="eyebrow" style="margin-bottom:8px;color:var(--spruce)">📍 Locatie (voor de kaart)</p>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
         <input id="edit-acc-maps-link-input" type="url" placeholder="Google Maps-link (voor locatie)" style="flex:1"/>
-        <button type="button" onclick="handleExtractLocationFromMapsLink()" title="Coördinaten uit deze Google Maps-link halen" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">📍</button>
+        <button type="button" onclick="handleExtractLocationFromMapsLink()" title="Coördinaten uit deze Google Maps-link halen" style="padding:12px 13px;background:var(--white);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">📍</button>
       </div>
       <div style="display:flex;gap:10px">
         <input id="edit-acc-lat-input" type="number" step="0.0001" placeholder="Breedtegraad" style="flex:1"/>
@@ -721,9 +721,9 @@
       </div>
       <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
         <input id="edit-acc-elevation-input" type="number" placeholder="Hoogte boven zeeniveau (m)" style="flex:1"/>
-        <button type="button" onclick="handleFetchElevation('edit-acc')" title="Hoogte ophalen op basis van coördinaten (Open-Meteo)" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">⛰️</button>
+        <button type="button" onclick="handleFetchElevation('edit-acc')" title="Hoogte ophalen op basis van coördinaten (Open-Meteo)" style="padding:12px 13px;background:var(--white);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">⛰️</button>
       </div>
-    </details>
+    </div>
     <label class="file-upload" id="edit-acc-photo-upload" for="edit-acc-photo-input">
       <div class="file-upload-icon">📷</div>
       <div class="file-upload-text">
