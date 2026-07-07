@@ -408,6 +408,58 @@ async function handleExtractFromMapsLink() {
   }
 }
 
+// Adres/plaatsnaam → coördinaten via OpenStreetMap Nominatim
+// (api/geocode.js) — gebruikt wanneer er geen boekingslink is, alleen een
+// getypt adres of plaatsnaam (bv. alleen "Kolding"). Best-effort: geeft
+// null terug bij een netwerkfout of als er niets gevonden wordt, nooit
+// een gok.
+async function geocodeAddress(query) {
+  if (!query || !query.trim()) return null;
+  try {
+    const resp = await fetch(`/api/geocode?q=${encodeURIComponent(query.trim())}`);
+    const data = await resp.json();
+    if (data && data.found && Number.isFinite(data.lat) && Number.isFinite(data.lng)) {
+      return { lat: data.lat, lng: data.lng, displayName: data.displayName };
+    }
+  } catch { /* geen internet of Nominatim onbereikbaar — gewoon null teruggeven */ }
+  return null;
+}
+
+// Knop naast het adresveld: zoekt de coördinaten voor het getypte
+// adres/plaatsnaam meteen op, voor direct feedback vóór het opslaan.
+async function handleGeocodeAddress() {
+  const addressEl = document.getElementById('edit-acc-address-input');
+  const address = addressEl.value.trim();
+  if (!address) { showToast('Vul eerst een adres of plaatsnaam in'); return; }
+  showToast('Locatie zoeken…', 4000);
+  const coords = await geocodeAddress(address);
+  if (!coords) { showToast('Geen locatie gevonden voor dit adres — vul coördinaten handmatig in'); return; }
+  document.getElementById('edit-acc-lat-input').value = coords.lat;
+  document.getElementById('edit-acc-lng-input').value = coords.lng;
+  const elevationEl = document.getElementById('edit-acc-elevation-input');
+  if (elevationEl && !elevationEl.value.trim()) handleFetchElevation('edit-acc');
+  showToast(`✓ Locatie gevonden: ${coords.displayName || address}`);
+}
+
+// FIX: een verblijf met alleen een adres/plaatsnaam ingevuld (geen
+// boekingslink, geen handmatige coördinaten) kreeg stilzwijgend lat/lng
+// 0/0 — onvindbaar op de kaart (zie docs/10-issues/27-...). Als er bij
+// het opslaan nog geen geldige coördinaten zijn maar wel een adres, wordt
+// dat nu automatisch opgezocht — het typen van alleen een plaatsnaam is
+// zo al genoeg voor een werkende pin, zonder dat de 📍-knop apart
+// aangetikt hoeft te worden.
+async function ensureAccommodationCoords(fields) {
+  if (isValidLatLng(fields.lat, fields.lng) || !fields.address) return fields;
+  const coords = await geocodeAddress(fields.address);
+  if (!coords) return fields;
+  const updated = { ...fields, lat: coords.lat, lng: coords.lng, coord: formatLatLng(coords.lat, coords.lng) };
+  if (!updated.elevationVerified && !updated.elevation) {
+    const elevation = await fetchElevationForCoords(coords.lat, coords.lng);
+    if (elevation != null) { updated.elevation = Math.round(elevation); updated.elevationVerified = true; }
+  }
+  return updated;
+}
+
 function readAccommodationFormFields() {
   const name = document.getElementById('edit-acc-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return null; }
@@ -441,8 +493,9 @@ function readAccommodationFormFields() {
 }
 
 async function saveAccommodationEdit(accId) {
-  const fields = readAccommodationFormFields();
+  let fields = readAccommodationFormFields();
   if (!fields) return;
+  fields = await ensureAccommodationCoords(fields);
   await updateAccommodation(accId, fields);
   closeSheet('sheet-edit-accommodation');
   showToast(`✓ ${fields.name} bijgewerkt`);
@@ -452,8 +505,9 @@ async function saveAccommodationEdit(accId) {
 }
 
 async function saveAccommodationCreate() {
-  const fields = readAccommodationFormFields();
+  let fields = readAccommodationFormFields();
   if (!fields) return;
+  fields = await ensureAccommodationCoords(fields);
   const acc = await createAccommodationForTrip(fields);
   closeSheet('sheet-edit-accommodation');
   showToast(`✓ ${fields.name} toegevoegd`);
