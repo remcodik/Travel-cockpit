@@ -39,13 +39,23 @@ function renderHomeScreen() {
   document.getElementById('home-progress-fill').style.width = `${getProgress().percent}%`;
 
   // Vandaag's activiteiten
+  // FIX: de knop hier deed exact hetzelfde als de altijd-zichtbare "Wat
+  // ligt er voor je?"-banner verderop op dit scherm (allebei navigateTo
+  // ('discover')) — pure duplicatie. Vervangen door een directe actie
+  // ("+ Activiteit toevoegen") en, als die er is, een voorproefje van de
+  // eerstvolgende nog geplande activiteit — nuttiger dan een dubbele knop.
   const todayActs = getActivitiesForDate(today);
   const listEl = document.getElementById('home-today-list');
   if (todayActs.length === 0) {
+    const next = getNextUpcomingActivity(today);
     listEl.innerHTML = `
       <div style="padding:24px 16px;text-align:center">
         <p class="mono" style="margin-bottom:8px">Niets gepland vandaag</p>
-        <button onclick="navigateTo('discover')" class="btn btn-outline">Bekijk AI-ideeën</button>
+        <button onclick="openAddActivitySheetForCurrentDay()" class="btn btn-outline">+ Activiteit toevoegen</button>
+        ${next ? `
+        <button onclick="goToActivityDay('${next.date.toISOString()}')" class="mono" style="display:block;width:100%;margin-top:14px;padding:0;background:none;border:none;cursor:pointer;color:var(--ink-faint)">
+          Volgende: ${next.emoji} ${escapeHtml(next.name)} · ${formatShortDate(next.date)} →
+        </button>` : ''}
       </div>`;
   } else {
     listEl.innerHTML = todayActs.map((act, i) => renderActivityRow(act, i, todayActs.length)).join('');
@@ -71,6 +81,13 @@ function renderHomeScreen() {
   }).join('');
 
   initAllTopoPanels();
+}
+
+// Springt vanaf Vandaag's "Volgende: ..."-voorproefje naar de betreffende
+// dag in Planning.
+function goToActivityDay(isoString) {
+  AppState.selectedPlanningDay = new Date(isoString);
+  navigateTo('planning');
 }
 
 // Eerlijke status i.p.v. een gefingeerde datum: buiten het reisvenster

@@ -208,6 +208,15 @@ function getActivitiesForDate(date) {
   );
 }
 
+// Eerstvolgende nog niet afgevinkte, wél ingeplande activiteit ná een
+// gegeven datum — gebruikt op Vandaag als "niets gepland vandaag" leeg
+// is, zodat er toch iets nuttigs te zien is i.p.v. alleen een knop.
+function getNextUpcomingActivity(afterDate) {
+  return AppState.activities
+    .filter(a => a.date && a.date > afterDate && a.status !== 'done')
+    .sort((a, b) => a.date - b.date)[0] || null;
+}
+
 function getUnscheduledForAccommodation(accId) {
   return AppState.activities.filter(a =>
     idsMatch(a.accId, accId) && !a.date && a.status !== 'done'
