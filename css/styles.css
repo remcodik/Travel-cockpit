@@ -320,6 +320,14 @@ input::placeholder { color: var(--ink-faint); }
 }
 @keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
+/* FIX: #debug-banner heeft een inline style="display:none" (index.html) —
+   een class-regel kan een inline display-stijl nooit overschrijven zonder
+   !important. Zonder deze regel deed classList.add('show') dus letterlijk
+   niets: elke foutmelding die via deze banner getoond had moeten worden
+   (showFatalError, reportMapError, en de "verblijf zonder locatie"-melding
+   op de kaart) is hierdoor al deze tijd onzichtbaar gebleven. */
+#debug-banner.show { display: block !important; }
+
 /* ── 19. Toast ──────────────────────────────────────────── */
 #toast {
   position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%);
