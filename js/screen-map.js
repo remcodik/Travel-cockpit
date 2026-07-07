@@ -62,12 +62,15 @@ function initMap() {
       }
       if (loadingEl) loadingEl.classList.add('hidden');
     }, 100);
-    // FIX: pins en filterchips opnieuw opbouwen bij elk bezoek — anders
-    // bleven ze na het wisselen van reis (Fase B) de vorige reis tonen,
-    // omdat dit vroeger alleen bij de allereerste kaart-load gebeurde.
+    // FIX: pins, filterchips én gezichtsveld opnieuw opbouwen bij elk
+    // bezoek — anders bleven ze na het wisselen van reis (Fase B) de
+    // vorige reis tonen, omdat dit vroeger alleen bij de allereerste
+    // kaart-load gebeurde. Zonder fitMapToAllPins() bleef het gezichtsveld
+    // ook altijd vast op Noorwegen staan, ongeacht welke reis actief is.
     mapFilterAccId = null;
     renderMapFilterChips();
     renderMapMarkers();
+    fitMapToAllPins();
     return;
   }
 
@@ -118,6 +121,7 @@ function initMap() {
 
       renderMapFilterChips();
       renderMapMarkers();
+      fitMapToAllPins();
 
       // Nogmaals invalidateSize na de eerste render, voor de zekerheid.
       setTimeout(() => {
@@ -143,6 +147,34 @@ function reportMapError(e) {
   }
 }
 
+// Geen 0/0 (ontbrekende coördinaten worden zonder invoer stilzwijgend 0,
+// zie readAccommodationFormFields() in js/screen-accommodation.js) en geen
+// NaN — zo'n verblijf heeft feitelijk geen bruikbare locatie.
+function isValidLatLng(lat, lng) {
+  return Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0);
+}
+
+// FIX: het gezichtsveld van de kaart stond altijd vast op Noorwegen
+// ([61,8], zoom 7) — een verblijf buiten dat vaste kader (een andere reis,
+// of gewoon een net toegevoegd verblijf ergens anders) viel dan buiten
+// beeld zonder dat de gebruiker dat kon weten; het leek dan of dat
+// verblijf helemaal niet op de kaart stond. Past nu altijd het
+// gezichtsveld aan zodat elk verblijf mét geldige coördinaten, plus
+// Thuis, gegarandeerd zichtbaar is.
+function fitMapToAllPins() {
+  if (!leafletMap) return;
+  const points = [[HOME_LAT, HOME_LNG]];
+  ACCOMMODATIONS.forEach(acc => {
+    if (isValidLatLng(acc.lat, acc.lng)) points.push([acc.lat, acc.lng]);
+  });
+  if (points.length < 2) return;
+  try {
+    leafletMap.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 9 });
+  } catch (e) {
+    reportMapError(e);
+  }
+}
+
 // Filterchips zijn nu afgeleid van de actieve reis i.p.v. hardcoded
 // Noorwegen-verblijven — nodig sinds Fase B (multi-trip): een andere
 // reis heeft andere verblijven, en de chips moeten meegroeien.
@@ -165,8 +197,36 @@ function renderMapMarkers() {
 
   const activeAcc = getActiveAccommodation();
 
+  // Thuis-pin — hetzelfde punt dat de rijroutes ook als vertrek/aankomst
+  // gebruiken (HOME_LAT/HOME_LNG, js/data.js).
+  const homeHtml = `
+    <div style="text-align:center">
+      <div style="background:${HOME_PSEUDO_ACC.color};width:40px;height:40px;border-radius:50%;border:2.5px solid white;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.3);margin:0 auto">
+        <span style="font-size:18px">🏠</span>
+      </div>
+      <div style="background:${HOME_PSEUDO_ACC.color};color:white;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;text-align:center;margin-top:2px;white-space:nowrap">Thuis</div>
+    </div>`;
+  const homeIcon = L.divIcon({ html: homeHtml, className: '', iconSize: [56, 60], iconAnchor: [28, 60] });
+  accommodationMarkers.push(L.marker([HOME_LAT, HOME_LNG], { icon: homeIcon }).addTo(leafletMap));
+
+  // FIX: een verblijf zonder (of met ongeldige, 0/0) coördinaten kreeg
+  // voorheen gewoon een pin op [0,0] — ver in zee bij West-Afrika, dus in
+  // de praktijk onvindbaar en onzichtbaar op een op Noorwegen gerichte
+  // kaart. Zo'n verblijf overslaan we nu i.p.v.'m ergens onzichtbaar neer
+  // te zetten, en melden we in de debug-banner zodat het opvalt i.p.v.
+  // stilzwijgend te "verdwijnen".
+  const invalidAccs = ACCOMMODATIONS.filter(acc => !isValidLatLng(acc.lat, acc.lng));
+  if (invalidAccs.length > 0) {
+    console.warn('Verblijf(en) zonder geldige coördinaten, geen pin op de kaart:', invalidAccs.map(a => a.name));
+    const banner = document.getElementById('debug-banner');
+    if (banner) {
+      banner.classList.add('show');
+      banner.textContent += `⚠️ Geen locatie ingesteld voor: ${invalidAccs.map(a => a.name).join(', ')} — vul coördinaten in bij het verblijf om de pin te zien.\n\n`;
+    }
+  }
+
   // Accommodatiepins — altijd zichtbaar, ongeacht filter
-  ACCOMMODATIONS.forEach(acc => {
+  ACCOMMODATIONS.filter(acc => isValidLatLng(acc.lat, acc.lng)).forEach(acc => {
     const isActive = activeAcc && activeAcc.id === acc.id;
     const size = isActive ? 50 : 42;
     const html = `

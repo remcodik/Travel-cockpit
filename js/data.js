@@ -134,16 +134,25 @@ const ROUTE = [
   { name: 'Nijmegen', date: '30 jun', emoji: '🏠', type: 'home', note: 'Thuis!', elevation: 9, lat: 51.8125, lng: 5.8372 },
 ];
 
-// Rijroutes (lat/lng paden voor de kaart, schematisch over land)
+// Rijroutes (lat/lng paden voor de kaart) — rechte lijn tussen de echte
+// waypoints, geen verzonnen tussenpunten. FIX: de heen- en terugrit tussen
+// Nijmegen en Denemarken hadden allebei hun eigen, los gekozen tussenpunt
+// (de heenrit via de Nederlandse kust, de terugrit via een punt bij
+// Hamburg) — dat liet de twee lijnen op de kaart lelijk kruisen ("rare
+// knik"), ook al was elke lijn afzonderlijk een redelijke schatting. Een
+// rechte lijn tussen de echte plekken (uit ROUTE hierboven) kan nooit meer
+// zo'n kunstmatige knik veroorzaken. fetchRealRoute() (js/screen-map.js,
+// N7) vervangt deze lijn alsnog door een echte, wegen-volgende route zodra
+// er een ORS_API_KEY is ingesteld — dit is alleen de fallback zonder key.
 const DRIVE_PATHS = [
-  [[51.8125, 5.8372], [52.3676, 4.9041], [53.2194, 6.5665], [55.4768, 8.4497], [57.5879, 9.9580]],
-  [[60.3913, 5.3221], [60.6, 5.7], [60.86, 6.4], [61.05, 6.8], [61.219, 7.158]],
-  [[61.219, 7.158], [61.4, 7.5], [61.564, 8.0], [61.837, 8.567], [61.913, 8.275]],
-  [[61.913, 8.275], [61.5, 8.8], [60.985, 9.236]],
-  [[60.985, 9.236], [59.7, 9.7], [58.88, 9.02]],
-  [[58.88, 9.02], [58.5, 8.5], [58.145, 7.989]],
-  [[57.5879, 9.9580], [57.0, 9.8], [55.49, 9.472]],
-  [[55.49, 9.472], [53.55, 9.99], [51.8125, 5.8372]],
+  [[51.8125, 5.8372], [57.5879, 9.9580]], // Nijmegen → Hirtshals
+  [[60.3913, 5.3221], [61.2190, 7.1580]], // Bergen → Sogndal
+  [[61.2190, 7.1580], [61.9130, 8.2750]], // Sogndal → Skjåk
+  [[61.9130, 8.2750], [60.9850, 9.2360]], // Skjåk → Valdres
+  [[60.9850, 9.2360], [58.8800, 9.0200]], // Valdres → Gjerstad
+  [[58.8800, 9.0200], [58.1450, 7.9890]], // Gjerstad → Kristiansand
+  [[57.5879, 9.9580], [55.4900, 9.4720]], // Hirtshals → Kolding
+  [[55.4900, 9.4720], [51.8125, 5.8372]], // Kolding → Nijmegen
 ];
 
 // Ferryroutes
@@ -151,3 +160,11 @@ const FERRY_PATHS = [
   [[57.5879, 9.9580], [57.9, 7.5], [58.97, 5.7331], [60.3913, 5.3221]],
   [[58.145, 7.989], [57.9, 8.5], [57.5879, 9.9580]],
 ];
+
+// "Thuis" op de kaart — hetzelfde vertrek-/aankomstpunt dat de rijroutes
+// hierboven ook al gebruiken (Nijmegen). Er bestaat nog geen apart
+// "thuisadres"-veld per reis (zie HOME_PSEUDO_ACC in js/state.js, die
+// alleen dagen markeert, geen locatie kent) — voor nu hetzelfde punt dat
+// impliciet al overal in deze route-data staat.
+const HOME_LAT = 51.8125;
+const HOME_LNG = 5.8372;
