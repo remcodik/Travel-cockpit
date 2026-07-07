@@ -107,7 +107,7 @@ async function initAuthFlow(params) {
 
 async function redeemShareLink(shareId) {
   try {
-    const resp = await fetch(`/api/redeem-share?id=${encodeURIComponent(shareId)}`);
+    const resp = await fetch(`/api/share?id=${encodeURIComponent(shareId)}`);
     const data = await resp.json();
     if (!resp.ok || !data.token) {
       console.error('Deel-link ongeldig:', data.error);
@@ -131,10 +131,10 @@ async function redeemShareLink(shareId) {
 // Geeft true/false terug zodat de UI een foutmelding kan tonen.
 async function signInAsOwner(pin) {
   try {
-    const resp = await fetch('/api/owner-login', {
+    const resp = await fetch('/api/share', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin }),
+      body: JSON.stringify({ action: 'login', pin }),
     });
     const data = await resp.json();
     if (!resp.ok || !data.token) return false;
