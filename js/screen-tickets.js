@@ -527,7 +527,7 @@ function setLanguage(chipEl, lang) {
 // De PIN wordt alleen in-memory onthouden (niet localStorage) — elke
 // keer dat je dit scherm opent na een herlaad moet je 'm opnieuw
 // intikken. Alle daadwerkelijke controle gebeurt server-side
-// (api/create-share.js e.d.); dit scherm is puur een UI eromheen.
+// (api/share.js); dit scherm is puur een UI eromheen.
 let ownerPinCache = null;
 
 function openShareLinksSheet() {
@@ -551,7 +551,7 @@ async function unlockShareLinksSheet() {
   const pin = document.getElementById('share-links-pin-input').value.trim();
   if (!pin) return;
   try {
-    await callShareApi('/api/list-shares', { pin });
+    await callShareApi('/api/share', { action: 'list', pin });
     ownerPinCache = pin;
     document.getElementById('share-links-pin-gate').style.display = 'none';
     document.getElementById('share-links-content').style.display = 'block';
@@ -572,7 +572,7 @@ function populateShareTripSelect() {
 async function loadShareLinksList() {
   const listEl = document.getElementById('share-links-list');
   try {
-    const data = await callShareApi('/api/list-shares', { pin: ownerPinCache });
+    const data = await callShareApi('/api/share', { action: 'list', pin: ownerPinCache });
     renderShareLinksList(data.shares || []);
   } catch (err) {
     listEl.innerHTML = `<p class="mono" style="padding:14px 16px;color:#dc2626">Laden mislukt: ${escapeHtml(err.message)}</p>`;
@@ -611,7 +611,7 @@ async function handleCreateShareLink() {
   const scope = document.getElementById('share-links-scope-select').value;
   const tripId = document.getElementById('share-links-trip-select').value || null;
   try {
-    const data = await callShareApi('/api/create-share', { pin: ownerPinCache, scope, tripId, label });
+    const data = await callShareApi('/api/share', { action: 'create', pin: ownerPinCache, scope, tripId, label });
     document.getElementById('share-links-label-input').value = '';
     await loadShareLinksList();
     handleCopyShareLink(data.url);
@@ -622,7 +622,7 @@ async function handleCreateShareLink() {
 
 async function handleRevokeShareLink(shareId, revoked) {
   try {
-    await callShareApi('/api/revoke-share', { pin: ownerPinCache, shareId, revoked });
+    await callShareApi('/api/share', { action: 'revoke', pin: ownerPinCache, shareId, revoked });
     showToast(revoked ? '✓ Link ingetrokken' : '✓ Link heractiveerd');
     loadShareLinksList();
   } catch (err) {
