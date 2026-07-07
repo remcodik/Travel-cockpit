@@ -250,6 +250,9 @@ function openEditAccommodationSheet(accId) {
   document.getElementById('edit-acc-lat-input').value = acc.lat || '';
   document.getElementById('edit-acc-lng-input').value = acc.lng || '';
   document.getElementById('edit-acc-elevation-input').value = acc.elevation || '';
+  // Scratch-veld, wordt niet opgeslagen — start altijd leeg, ook bij
+  // bewerken van een bestaand verblijf.
+  document.getElementById('edit-acc-maps-link-input').value = '';
   document.getElementById('edit-acc-url-input').value = acc.url || '';
   document.getElementById('edit-acc-booking-ref-input').value = acc.bookingRef || '';
   document.getElementById('edit-acc-notes-input').value = acc.notes || '';
@@ -271,6 +274,7 @@ function openAddAccommodationSheet() {
   document.getElementById('edit-acc-lat-input').value = '';
   document.getElementById('edit-acc-lng-input').value = '';
   document.getElementById('edit-acc-elevation-input').value = '';
+  document.getElementById('edit-acc-maps-link-input').value = '';
   document.getElementById('edit-acc-url-input').value = '';
   document.getElementById('edit-acc-booking-ref-input').value = '';
   document.getElementById('edit-acc-notes-input').value = '';
@@ -343,16 +347,20 @@ function extractPlaceNameFromMapsUrl(url) {
   catch { return null; }
 }
 
-function fillExtractedLocation(coords, name, address) {
-  if (coords) {
-    document.getElementById('edit-acc-lat-input').value = coords.lat;
-    document.getElementById('edit-acc-lng-input').value = coords.lng;
-    // Coördinaten net binnen — meteen ook de hoogte proberen op te halen,
-    // maar alleen als er nog niets is ingevuld (nooit een al bestaande of
-    // net handmatig getypte waarde overschrijven).
-    const elevationEl = document.getElementById('edit-acc-elevation-input');
-    if (elevationEl && !elevationEl.value.trim()) handleFetchElevation('edit-acc');
-  }
+// Vult alleen de coördinaten (+ hoogte) — gebruikt door de Google
+// Maps-link (locatie-doel). Vult nooit al ingevulde waarden over.
+function fillLocationCoords(coords, name) {
+  document.getElementById('edit-acc-lat-input').value = coords.lat;
+  document.getElementById('edit-acc-lng-input').value = coords.lng;
+  const elevationEl = document.getElementById('edit-acc-elevation-input');
+  if (elevationEl && !elevationEl.value.trim()) handleFetchElevation('edit-acc');
+  const nameEl = document.getElementById('edit-acc-name-input');
+  if (!nameEl.value.trim() && name) nameEl.value = name;
+}
+
+// Vult alleen naam/adres — gebruikt door het "Link"-veld (info-doel),
+// raakt bewust nooit coördinaten aan. Vult nooit al ingevulde waarden over.
+function fillNameAndAddress(name, address) {
   const addressEl = document.getElementById('edit-acc-address-input');
   if (!addressEl.value.trim() && (address || name)) addressEl.value = address || name;
   const nameEl = document.getElementById('edit-acc-name-input');
@@ -372,40 +380,50 @@ async function handleFetchElevation(prefix) {
   showToast(`✓ Hoogte: ${Math.round(elevation)}m`);
 }
 
-async function handleExtractFromMapsLink() {
+// FIX: het "Link"-veld was zowel het info-veld (getoond als "Boeking"-knop
+// op het accommodatiescherm) als de bron voor locatie-extractie — plak je
+// daar een boekingslink in, dan kon 'm ook coördinaten opleveren, wat
+// verwarrend is ("de link is toch voor info, niet voor locatie?"). Dit
+// haalt nu bewust alléén naam/adres op (best-effort, via de boekingspagina
+// zelf, JSON-LD/og-tags in api/extract-listing.js) — nooit coördinaten.
+// Voor locatie is er de aparte Google Maps-link hieronder.
+async function handleExtractInfoFromLink() {
   const url = document.getElementById('edit-acc-url-input').value.trim();
   if (!url) { showToast('Plak eerst een link in het linkveld'); return; }
 
+  showToast('Bezig met ophalen…', 4000);
+  try {
+    const resp = await fetch(`/api/extract-listing?url=${encodeURIComponent(url)}`);
+    const data = await resp.json();
+    if (data && data.found && (data.name || data.address)) {
+      fillNameAndAddress(data.name, data.address);
+      showToast('✓ Naam/adres overgenomen uit link');
+    } else {
+      showToast('Geen naam/adres gevonden in deze link — vul handmatig aan');
+    }
+  } catch {
+    showToast('Geen naam/adres gevonden in deze link — vul handmatig aan');
+  }
+}
+
+// Apart, doelgericht veld voor locatie: alleen een Google Maps-link, alleen
+// coördinaten als resultaat — nooit gekoppeld aan (of opgeslagen als) het
+// info-linkveld hierboven.
+function handleExtractLocationFromMapsLink() {
+  const url = document.getElementById('edit-acc-maps-link-input').value.trim();
+  if (!url) { showToast('Plak eerst een Google Maps-link'); return; }
+
   const coords = extractLatLngFromMapsUrl(url);
   if (coords) {
-    fillExtractedLocation(coords, extractPlaceNameFromMapsUrl(url), null);
-    showToast('✓ Locatie overgenomen uit link');
+    fillLocationCoords(coords, extractPlaceNameFromMapsUrl(url));
+    showToast('✓ Locatie overgenomen uit Maps-link');
     return;
   }
   if (url.includes('goo.gl')) {
     showToast('Verkorte Maps-link — open de link eerst in de browser en kopieer de volledige link');
     return;
   }
-
-  // Geen Google Maps-link: best-effort proberen via de boekingspagina zelf
-  // (JSON-LD/og-tags, zie api/extract-listing.js). Lukt dit niet, dan
-  // blijven de velden gewoon leeg voor handmatige invoer — geen gok.
-  showToast('Bezig met ophalen…', 4000);
-  try {
-    const resp = await fetch(`/api/extract-listing?url=${encodeURIComponent(url)}`);
-    const data = await resp.json();
-    if (data && data.found) {
-      fillExtractedLocation(
-        data.lat != null && data.lng != null ? { lat: data.lat, lng: data.lng } : null,
-        data.name, data.address
-      );
-      showToast('✓ Gegevens overgenomen uit link');
-    } else {
-      showToast('Geen gegevens gevonden in deze link — vul handmatig aan');
-    }
-  } catch {
-    showToast('Geen gegevens gevonden in deze link — vul handmatig aan');
-  }
+  showToast('Geen coördinaten gevonden in deze link — gebruik een volledige Google Maps-link');
 }
 
 // Adres/plaatsnaam → coördinaten via OpenStreetMap Nominatim
