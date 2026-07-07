@@ -679,7 +679,10 @@
     <div class="sheet-handle"></div>
     <p class="sheet-title" id="edit-acc-sheet-title">VERBLIJF BEWERKEN</p>
     <input id="edit-acc-name-input" placeholder="Naam accommodatie"/>
-    <input id="edit-acc-address-input" placeholder="Adres"/>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="edit-acc-address-input" placeholder="Adres of plaatsnaam" style="flex:1"/>
+      <button type="button" onclick="handleGeocodeAddress()" title="Coördinaten opzoeken op basis van dit adres/plaatsnaam" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">🔍</button>
+    </div>
     <div style="display:flex;gap:10px">
       <div style="flex:1">
         <p class="eyebrow" style="margin-bottom:5px">Check-in</p>
