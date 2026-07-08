@@ -504,7 +504,7 @@
     <div class="sheet-handle"></div>
     <p class="sheet-title">REIS TOEVOEGEN</p>
     <input id="trip-name-input" placeholder="Naam (bijv. Italië 2027)"/>
-    <select id="trip-country-select" style="margin-bottom:18px"><option>🇳🇴 Noorwegen</option><option>🇮🇹 Italië</option><option>🇫🇷 Frankrijk</option><option>🇩🇪 Duitsland</option><option>🇪🇸 Spanje</option><option>🇵🇹 Portugal</option><option>🇦🇹 Oostenrijk</option><option>🇨🇭 Zwitserland</option><option>🇭🇷 Kroatië</option><option>🇬🇷 Griekenland</option><option>🇮🇸 IJsland</option><option>🇸🇪 Zweden</option></select>
+    <input id="trip-country-input" list="country-suggestions" placeholder="Land (typ vrij — elk land werkt)" style="margin-bottom:18px"/>
     <p class="eyebrow" style="margin-bottom:9px">Verblijven</p>
     <div id="trip-accommodations-fields"></div>
     <button onclick="addAnotherTripAccommodation()" class="btn btn-outline" style="margin-bottom:18px">+ Nog een verblijf</button>
@@ -519,7 +519,7 @@
     <div class="sheet-handle"></div>
     <p class="sheet-title">REIS BEWERKEN</p>
     <input id="edit-trip-name-input" placeholder="Naam"/>
-    <select id="edit-trip-country-select" style="margin-bottom:18px"><option>🇳🇴 Noorwegen</option><option>🇮🇹 Italië</option><option>🇫🇷 Frankrijk</option><option>🇩🇪 Duitsland</option><option>🇪🇸 Spanje</option><option>🇵🇹 Portugal</option><option>🇦🇹 Oostenrijk</option><option>🇨🇭 Zwitserland</option><option>🇭🇷 Kroatië</option><option>🇬🇷 Griekenland</option><option>🇮🇸 IJsland</option><option>🇸🇪 Zweden</option></select>
+    <input id="edit-trip-country-input" list="country-suggestions" placeholder="Land (typ vrij — elk land werkt)" style="margin-bottom:18px"/>
     <div style="display:flex;gap:10px">
       <div style="flex:1">
         <p class="eyebrow" style="margin-bottom:5px">Begin reis</p>
@@ -900,6 +900,20 @@
     <span class="mono" style="color:white;font-size:11px;font-weight:700">↻ Nieuwe versie beschikbaar — tik om te herladen</span>
   </div>
 </div>
+
+<!-- Suggesties voor het vrije land-veld (reis toevoegen/bewerken) — puur
+     autocomplete-hints, elk getypt land werkt (zie flagForCountry()/
+     applyCountryTheme() in js/state.js). -->
+<datalist id="country-suggestions">
+  <option value="Noorwegen"><option value="Zweden"><option value="Finland"><option value="IJsland">
+  <option value="Denemarken"><option value="Nederland"><option value="België"><option value="Duitsland">
+  <option value="Frankrijk"><option value="Italië"><option value="Spanje"><option value="Portugal">
+  <option value="Oostenrijk"><option value="Zwitserland"><option value="Polen"><option value="Tsjechië">
+  <option value="Slovenië"><option value="Kroatië"><option value="Griekenland"><option value="Turkije">
+  <option value="Ierland"><option value="Verenigd Koninkrijk"><option value="Marokko"><option value="Egypte">
+  <option value="Japan"><option value="Thailand"><option value="Vietnam"><option value="Indonesië">
+  <option value="Verenigde Staten"><option value="Canada"><option value="Nieuw-Zeeland"><option value="Australië">
+</datalist>
 
 <!-- ═══════════ SCRIPTS ═══════════ -->
 <script src="js/firebase.js"></script>
