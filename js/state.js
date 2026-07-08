@@ -316,18 +316,43 @@ function getActiveTrip() {
 // referentie naar dezelfde array/Date-objecten vast). Zo hoeft geen
 // enkel scherm te weten dat er van reis is gewisseld; ze lezen bij de
 // eerstvolgende render gewoon de bijgewerkte waarden.
-// Regio-thema per land (Restplan #2) — alleen kleuren wisselen
-// (body[data-theme=...] in css/styles.css), het contourlijnen-patroon
-// zelf blijft overal gelijk. Onbekend/niet-gemapt land = geen data-theme
-// attribuut = het oorspronkelijke Scandinavische/alpiene thema.
-const COUNTRY_THEMES = {
-  'Italië': 'mediterranean',
-  'Spanje': 'mediterranean',
-  'Portugal': 'mediterranean',
-  'Griekenland': 'mediterranean',
-  'Kroatië': 'mediterranean',
-  'Duitsland': 'continental',
-  'Frankrijk': 'continental',
+// Land-thema per reis — niet beperkt tot een vaste lijst: elk land (ook
+// een vrij getypt land dat hier niet in staat) krijgt een eigen palet.
+// Bekende reisbestemmingen krijgen een handgekozen [terrein-tint,
+// accent-tint]-paar (Fraunces-achtige "topografische kaart"-sfeer, zelfde
+// rol als Noorwegens groen/oranje); alles daarbuiten krijgt een palet dat
+// deterministisch (dus stabiel bij herladen) uit de landnaam zelf wordt
+// afgeleid — zie getCountryHues()/applyCountryTheme() verderop.
+const COUNTRY_HUES = {
+  noorwegen: [164, 15], norway: [164, 15], norge: [164, 15],
+  zweden: [170, 25], sweden: [170, 25], sverige: [170, 25],
+  ijsland: [200, 20], iceland: [200, 20],
+  finland: [175, 30],
+  denemarken: [150, 8], denmark: [150, 8],
+  italie: [16, 193], italy: [16, 193], italia: [16, 193],
+  spanje: [20, 200], spain: [20, 200], espana: [20, 200],
+  portugal: [10, 195],
+  griekenland: [205, 25], greece: [205, 25], hellas: [205, 25],
+  kroatie: [195, 20], croatia: [195, 20],
+  turkije: [15, 205], turkey: [15, 205],
+  duitsland: [132, 12], germany: [132, 12], deutschland: [132, 12],
+  frankrijk: [140, 355], france: [140, 355],
+  oostenrijk: [150, 10], austria: [150, 10],
+  zwitserland: [155, 358], switzerland: [155, 358], suisse: [155, 358],
+  polen: [135, 5], poland: [135, 5],
+  tsjechie: [140, 350], czechia: [140, 350],
+  slovenie: [160, 18], slovenia: [160, 18],
+  nederland: [160, 20], netherlands: [160, 20],
+  belgie: [145, 15], belgium: [145, 15],
+  ierland: [130, 40], ireland: [130, 40],
+  marokko: [30, 205], morocco: [30, 205],
+  egypte: [40, 210], egypt: [40, 210],
+  japan: [340, 165], nippon: [340, 165],
+  thailand: [15, 195], vietnam: [140, 20], indonesie: [155, 25], indonesia: [155, 25],
+  vsverenigdestaten: [210, 15], usa: [210, 15], verenigdestaten: [210, 15],
+  canada: [355, 165],
+  nieuwzeeland: [155, 30], newzealand: [155, 30],
+  australie: [25, 205], australia: [25, 205],
 };
 
 // Vaste, onderling goed te onderscheiden verblijfskleuren (zelfde palet als
@@ -363,13 +388,106 @@ async function fetchElevationForCoords(lat, lng) {
   }
 }
 
+function normalizeCountryKey(name) {
+  return (name || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // diakritische tekens weg (ë → e)
+    .toLowerCase().replace(/[^a-z]/g, '');
+}
+
+// Simpele, stabiele string-hash (zelfde land = altijd hetzelfde palet,
+// ook na herladen — geen Math.random, geen server nodig).
+function hashCountryName(key) {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+// Geeft [terrein-tint, accent-tint] terug (beide 0–360°). Bekende landen
+// komen uit COUNTRY_HUES; onbekende landen krijgen een uit de naam
+// afgeleide terrein-tint met een accent op ruwweg (maar niet exact) de
+// tegenoverliggende kant van het kleurenwiel — zelfde contrastverhouding
+// als Noorwegens groen/oranje, maar dan voor een willekeurig land.
+function getCountryHues(country) {
+  const key = normalizeCountryKey(country);
+  if (COUNTRY_HUES[key]) return COUNTRY_HUES[key];
+  const h = hashCountryName(key || 'reis');
+  const terrain = h % 360;
+  const accent = (terrain + 180 + (Math.floor(h / 360) % 61) - 30 + 360) % 360;
+  return [terrain, accent];
+}
+
+function hslToken(h, s, l) {
+  return `hsl(${Math.round(((h % 360) + 360) % 360)}, ${s}%, ${l}%)`;
+}
+
+// Vervangt de vaste 2-thema's-lijst: berekent voor élk land — ook een vrij
+// getypt land dat niet voorkomt in COUNTRY_HUES — een compleet, in
+// zichzelf consistent palet en zet dat als inline custom properties op
+// :root (wint altijd van de :root{}-waarden in styles.css, dus werkt voor
+// oneindig veel landen zonder dat de CSS ooit hoeft te weten welke).
+// Verzadiging/helderheid per rol liggen vast (gekalibreerd op het
+// bestaande Noorwegen-palet); alleen de tint (H) varieert per land.
 function applyCountryTheme(country) {
-  const theme = COUNTRY_THEMES[country];
-  if (theme) {
-    document.body.dataset.theme = theme;
-  } else {
-    delete document.body.dataset.theme;
-  }
+  const [terrain, accent] = getCountryHues(country);
+  const h2 = hashCountryName(normalizeCountryKey(country) || 'reis');
+  const waterHue = 196 + (h2 % 21);        // 196–216: blijft herkenbaar "water"-blauw
+  const paperHue = 36 + ((h2 >> 8) % 17);  // 36–52: blijft een warme, papierachtige ondergrond
+
+  const root = document.documentElement.style;
+  root.setProperty('--spruce', hslToken(terrain, 60, 14));
+  root.setProperty('--spruce-deep', hslToken(terrain, 59, 8));
+  root.setProperty('--slope', hslToken(terrain, 21, 45));
+  root.setProperty('--slope-light', hslToken(terrain, 19, 94));
+  root.setProperty('--summit', hslToken(accent, 64, 47));
+  root.setProperty('--summit-light', hslToken(accent, 13, 92));
+  root.setProperty('--water', hslToken(waterHue, 67, 32));
+  root.setProperty('--water-light', hslToken(waterHue, 9, 92));
+  root.setProperty('--contour', hslToken(paperHue, 18, 52));
+  root.setProperty('--paper', hslToken(paperHue, 25, 88));
+  root.setProperty('--paper-warm', hslToken(paperHue, 28, 92));
+
+  document.querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', hslToken(terrain, 60, 14));
+}
+
+// Brede (maar per definitie nooit volledige) landnaam→vlag-lookup voor de
+// vrije land-invoer bij reizen toevoegen/bewerken — onbekend land = 🌍
+// i.p.v. een lege of foute vlag.
+const COUNTRY_FLAGS = {
+  noorwegen: '🇳🇴', norway: '🇳🇴', norge: '🇳🇴',
+  zweden: '🇸🇪', sweden: '🇸🇪', sverige: '🇸🇪',
+  ijsland: '🇮🇸', iceland: '🇮🇸',
+  finland: '🇫🇮',
+  denemarken: '🇩🇰', denmark: '🇩🇰',
+  italie: '🇮🇹', italy: '🇮🇹', italia: '🇮🇹',
+  spanje: '🇪🇸', spain: '🇪🇸', espana: '🇪🇸',
+  portugal: '🇵🇹',
+  griekenland: '🇬🇷', greece: '🇬🇷', hellas: '🇬🇷',
+  kroatie: '🇭🇷', croatia: '🇭🇷',
+  turkije: '🇹🇷', turkey: '🇹🇷',
+  duitsland: '🇩🇪', germany: '🇩🇪', deutschland: '🇩🇪',
+  frankrijk: '🇫🇷', france: '🇫🇷',
+  oostenrijk: '🇦🇹', austria: '🇦🇹',
+  zwitserland: '🇨🇭', switzerland: '🇨🇭', suisse: '🇨🇭',
+  polen: '🇵🇱', poland: '🇵🇱',
+  tsjechie: '🇨🇿', czechia: '🇨🇿',
+  slovenie: '🇸🇮', slovenia: '🇸🇮',
+  nederland: '🇳🇱', netherlands: '🇳🇱',
+  belgie: '🇧🇪', belgium: '🇧🇪',
+  ierland: '🇮🇪', ireland: '🇮🇪',
+  verenigdkoninkrijk: '🇬🇧', unitedkingdom: '🇬🇧', engeland: '🇬🇧',
+  marokko: '🇲🇦', morocco: '🇲🇦',
+  egypte: '🇪🇬', egypt: '🇪🇬',
+  japan: '🇯🇵', nippon: '🇯🇵',
+  thailand: '🇹🇭', vietnam: '🇻🇳', indonesie: '🇮🇩', indonesia: '🇮🇩',
+  vsverenigdestaten: '🇺🇸', usa: '🇺🇸', verenigdestaten: '🇺🇸',
+  canada: '🇨🇦',
+  nieuwzeeland: '🇳🇿', newzealand: '🇳🇿',
+  australie: '🇦🇺', australia: '🇦🇺',
+};
+
+function flagForCountry(country) {
+  return COUNTRY_FLAGS[normalizeCountryKey(country)] || '🌍';
 }
 
 function applyTripData(trip, accommodations) {

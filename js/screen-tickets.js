@@ -258,10 +258,7 @@ function openEditTripSheet(tripId) {
   const trip = AppState.trips.find(t => t.id === tripId);
   if (!trip) return;
   document.getElementById('edit-trip-name-input').value = trip.name;
-  const countrySelect = document.getElementById('edit-trip-country-select');
-  const matchValue = `${trip.countryFlag || ''} ${trip.country || ''}`.trim();
-  const hasMatch = Array.from(countrySelect.options).some(o => o.value === matchValue);
-  countrySelect.value = hasMatch ? matchValue : countrySelect.options[0].value;
+  document.getElementById('edit-trip-country-input').value = trip.country || '';
   document.getElementById('edit-trip-start-input').value = trip.startDate.toISOString().slice(0, 10);
   document.getElementById('edit-trip-end-input').value = trip.endDate.toISOString().slice(0, 10);
   document.getElementById('edit-trip-save-btn').onclick = () => saveTripEdit(tripId);
@@ -275,9 +272,9 @@ function openEditTripSheet(tripId) {
 async function saveTripEdit(tripId) {
   const name = document.getElementById('edit-trip-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return; }
-  const countrySelect = document.getElementById('edit-trip-country-select');
-  const country = countrySelect.value.replace(/^\S+\s/, '');
-  const countryFlag = countrySelect.value.split(' ')[0];
+  const country = document.getElementById('edit-trip-country-input').value.trim();
+  if (!country) { showToast('Voer een land in'); return; }
+  const countryFlag = flagForCountry(country);
   const startStr = document.getElementById('edit-trip-start-input').value;
   const endStr = document.getElementById('edit-trip-end-input').value;
   if (!startStr || !endStr) { showToast('Vul begin- en einddatum in'); return; }
@@ -296,6 +293,9 @@ async function saveTripEdit(tripId) {
     if (AppState.selectedPlanningDay < TRIP_START || AppState.selectedPlanningDay > TRIP_END) {
       AppState.selectedPlanningDay = getClosestTripDay();
     }
+    // Land (dus ook het kleurenpalet) kan net gewijzigd zijn — direct
+    // meenemen, anders zie je de nieuwe thema-kleuren pas na herladen.
+    applyCountryTheme(country);
     refreshAllScreens();
   }
   closeSheet('sheet-edit-trip');
@@ -371,6 +371,7 @@ let pendingNewAccommodations = [];
 
 function openAddTripSheet() {
   document.getElementById('trip-name-input').value = '';
+  document.getElementById('trip-country-input').value = '';
   pendingNewAccommodations = [{}];
   renderTripAccommodationFields();
   openSheet('sheet-trip');
@@ -407,9 +408,9 @@ function addAnotherTripAccommodation() {
 async function saveTrip() {
   const name = document.getElementById('trip-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return; }
-  const countrySelect = document.getElementById('trip-country-select');
-  const country = countrySelect.value.replace(/^\S+\s/, '');
-  const countryFlag = countrySelect.value.split(' ')[0];
+  const country = document.getElementById('trip-country-input').value.trim();
+  if (!country) { showToast('Voer een land in'); return; }
+  const countryFlag = flagForCountry(country);
 
   const accommodations = pendingNewAccommodations.map((_, i) => {
     const accName = document.getElementById(`new-acc-name-${i}`).value.trim();

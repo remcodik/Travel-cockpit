@@ -31,10 +31,13 @@
   --acc-4: #6a1b9a;
 
   /* Schaduwen */
-  --shadow-sm: 0 1px 3px rgba(14, 58, 46, 0.08), 0 1px 2px rgba(14, 58, 46, 0.06);
-  --shadow-md: 0 4px 14px rgba(14, 58, 46, 0.10), 0 2px 4px rgba(14, 58, 46, 0.06);
-  --shadow-lg: 0 12px 32px rgba(14, 58, 46, 0.16), 0 4px 8px rgba(14, 58, 46, 0.08);
-  --shadow-dark: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-sm: 0 1px 2px rgba(14, 58, 46, 0.06), 0 1px 1px rgba(14, 58, 46, 0.04);
+  --shadow-md: 0 6px 20px rgba(14, 58, 46, 0.10), 0 2px 6px rgba(14, 58, 46, 0.05);
+  --shadow-lg: 0 16px 40px rgba(14, 58, 46, 0.18), 0 6px 12px rgba(14, 58, 46, 0.08);
+  --shadow-dark: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+  /* Easing */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Typografie */
   --font-display: 'Fraunces', Georgia, serif;
@@ -42,38 +45,14 @@
   --font-mono: 'SF Mono', 'JetBrains Mono', 'Courier New', monospace;
 }
 
-/* ── 1b. Regio-thema's (Restplan #2) ───────────────────────
+/* ── 1b. Land-thema per reis ────────────────────────────────
    Zelfde tokens, andere waarden — alleen kleuren wisselen per reisland,
    het contourlijnen-patroon zelf (js/topo.js) blijft ongewijzigd.
-   applyCountryTheme() in js/state.js zet body[data-theme] bij het
-   wisselen/laden van de actieve reis. Geen data-theme = het oorspronkelijke
-   Scandinavische/alpiene thema (de :root-waarden hierboven). */
-body[data-theme="mediterranean"] {
-  --spruce: #8B4226;
-  --spruce-deep: #5C2A18;
-  --slope: #A67C52;
-  --slope-light: #F5EDE1;
-  --summit: #1E6E7A;
-  --summit-light: #DCEEEF;
-  --water: #1E5F74;
-  --water-light: #DCEAEE;
-  --contour: #B08968;
-  --paper: #F0E4D0;
-  --paper-warm: #F5EEDF;
-}
-body[data-theme="continental"] {
-  --spruce: #35513B;
-  --spruce-deep: #1E2F22;
-  --slope: #7C8B6F;
-  --slope-light: #EDEFE7;
-  --summit: #A6432B;
-  --summit-light: #F2E1DB;
-  --water: #3A6B7A;
-  --water-light: #E3EBED;
-  --contour: #8C8368;
-  --paper: #E8E2D4;
-  --paper-warm: #EFEBDD;
-}
+   Niet langer een vaste lijst van 2-3 thema's: applyCountryTheme() in
+   js/state.js berekent voor élk land (ook onbekende, vrij getypte namen)
+   een eigen palet en zet deze tokens direct als inline custom properties
+   op :root — dat wint altijd van de waarden hieronder, dus die blijven
+   puur de fallback vóór het eerste applyCountryTheme()-moment. */
 
 /* ── 2. Reset ───────────────────────────────────────────── */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -133,6 +112,7 @@ button { font-family: inherit; }
   border: 1px solid var(--line);
   border-radius: 14px;
   box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s var(--ease-out);
 }
 .card-row {
   display: flex; align-items: center; padding: 13px 15px; gap: 12px;
@@ -141,6 +121,9 @@ button { font-family: inherit; }
 }
 .card-row:active { background: var(--paper-warm); }
 .card-row:last-child { border-bottom: none; }
+@media (hover: hover) {
+  .card-row:hover { background: var(--paper-warm); }
+}
 .icon-box {
   width: 40px; height: 40px; border-radius: 11px;
   display: flex; align-items: center; justify-content: center;
@@ -165,9 +148,12 @@ body.read-only-mode .edit-pencil-btn { display: none !important; }
   border-radius: 18px; position: relative; overflow: hidden;
   cursor: pointer; border: none; text-align: left; display: block;
   width: 100%; box-shadow: var(--shadow-lg);
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
 }
 .hero-panel:active { transform: scale(0.985); box-shadow: var(--shadow-md); }
+@media (hover: hover) {
+  .hero-panel:hover { transform: translateY(-2px); box-shadow: 0 20px 46px rgba(14, 58, 46, 0.22), 0 8px 16px rgba(14, 58, 46, 0.1); }
+}
 
 /* ── 8. Statistiekenstrip ───────────────────────────────── */
 .stat-strip {
@@ -180,6 +166,9 @@ body.read-only-mode .edit-pencil-btn { display: none !important; }
   transition: background 0.12s;
 }
 .stat-cell:active { background: var(--paper-warm); }
+@media (hover: hover) {
+  .stat-cell:hover { background: var(--paper-warm); }
+}
 .stat-cell + .stat-cell { border-left: 1px solid var(--line-soft); }
 .stat-num { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: var(--ink); line-height: 1; }
 .stat-label { font-size: 8.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--ink-faint); margin-top: 5px; }
@@ -190,22 +179,30 @@ body.read-only-mode .edit-pencil-btn { display: none !important; }
   padding: 6px 13px; border-radius: 20px; font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.3px;
   border: 1.5px solid var(--line); background: var(--white); color: var(--ink-mid);
-  cursor: pointer; white-space: nowrap; transition: all 0.15s;
+  cursor: pointer; white-space: nowrap; transition: all 0.15s var(--ease-out);
 }
 .chip.on { background: var(--spruce); border-color: var(--spruce); color: var(--white); box-shadow: var(--shadow-sm); }
 .hscroll { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+@media (hover: hover) {
+  .chip:hover { border-color: var(--slope); color: var(--ink); }
+  .chip.on:hover { color: var(--white); }
+}
 
 /* ── 10. Knoppen ────────────────────────────────────────── */
 .btn {
   width: 100%; padding: 14px; border-radius: 13px; font-size: 13px;
   font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-  border: none; cursor: pointer; transition: all 0.15s;
+  border: none; cursor: pointer; transition: all 0.15s var(--ease-out);
 }
 .btn-primary { background: var(--spruce); color: var(--white); box-shadow: var(--shadow-sm); }
 .btn-primary:active { background: var(--spruce-deep); }
 .btn-outline { background: var(--white); border: 1.5px solid var(--line); color: var(--ink-mid); }
 .btn-outline:active { background: var(--paper-warm); }
 .btn-outline:disabled { opacity: 0.5; cursor: default; }
+@media (hover: hover) {
+  .btn-primary:hover { background: var(--spruce-deep); box-shadow: var(--shadow-md); }
+  .btn-outline:hover:not(:disabled) { background: var(--paper-warm); border-color: var(--slope); }
+}
 
 /* ── 11. Dag-tabs ───────────────────────────────────────── */
 .day-tab {
@@ -278,9 +275,9 @@ body.read-only-mode .edit-pencil-btn { display: none !important; }
 input, select {
   width: 100%; padding: 13px 15px; border: 1.5px solid var(--line); border-radius: 12px;
   font-size: 14.5px; background: var(--white); outline: none; margin-bottom: 11px;
-  font-family: inherit; color: var(--ink); transition: border-color 0.15s;
+  font-family: inherit; color: var(--ink); transition: border-color 0.15s, box-shadow 0.15s;
 }
-input:focus, select:focus { border-color: var(--spruce); }
+input:focus, select:focus { border-color: var(--spruce); box-shadow: 0 0 0 3px rgba(14, 58, 46, 0.1); }
 input::placeholder { color: var(--ink-faint); }
 
 /* Bestandsupload (tickets) */
