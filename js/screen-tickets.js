@@ -281,6 +281,27 @@ async function saveTripEdit(tripId) {
   const startDate = parseLocalDateInput(startStr);
   const endDate = parseLocalDateInput(endStr);
   if (endDate < startDate) { showToast('Einddatum ligt vóór begindatum'); return; }
+
+  // FIX (zie docs/10-issues/16-reisdatum-krimp-bugfix.md): dit formulier
+  // laat de reisdata bewust los van de verblijven instellen, maar zonder
+  // enige check kon je zo een venster opslaan dat een bestaand verblijf niet
+  // meer dekt — dat verblijf (en al z'n dagen/kleur) verdwijnt dan stilzwijgend
+  // uit Planning totdat de reis opnieuw geladen wordt (de auto-verruim-check
+  // in applyTripData() herstelt het pas dán). Nu wordt vooraf gecontroleerd,
+  // voor zowel de actieve reis (in-memory) als een andere reis (opgehaald),
+  // zodat opslaan geweigerd wordt in plaats van een verblijf onzichtbaar te maken.
+  const isActiveTrip = tripId === getCurrentTripId();
+  const accsToCheck = isActiveTrip ? ACCOMMODATIONS : (await dbLoadAccommodations(tripId)) || [];
+  const outOfRange = accsToCheck.filter(acc => {
+    const checkIn = acc.checkIn instanceof Date ? acc.checkIn : new Date(acc.checkIn);
+    const checkOut = acc.checkOut instanceof Date ? acc.checkOut : new Date(acc.checkOut);
+    return checkIn < startDate || checkOut > endDate;
+  });
+  if (outOfRange.length > 0) {
+    showToast(`⚠️ ${outOfRange.map(a => a.name).join(', ')} valt buiten deze data — pas de datums of het verblijf aan`, 4000);
+    return;
+  }
+
   await updateTripMeta(tripId, { name, country, countryFlag, startDate, endDate });
   // Actieve reis: de live TRIP_START/TRIP_END (gebruikt door Planning/Home/
   // Roadtrip) direct meenemen, anders zie je de wijziging pas na herladen.
