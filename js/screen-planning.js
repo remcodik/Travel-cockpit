@@ -427,6 +427,10 @@ function openActivityDetailSheet(id) {
   // Extra acties voor planning-context
   const extraEl = document.getElementById('pd-extra-actions');
   if (extraEl) {
+    // Ticket dat aan déze activiteit gekoppeld is (optioneel veld, zie
+    // sheet-ticket) — alleen tonen als er echt een gekoppeld is, anders
+    // blijft de knop weg i.p.v. een dooie/lege actie te tonen.
+    const linkedTicket = AppState.tickets.find(t => idsMatch(t.activityId, id));
     extraEl.innerHTML = `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
         <button id="pd-note-btn" onclick="openNoteScreen('activity',${id},'${escapeHtml(act.name).replace(/'/g, "\\'")}')"
@@ -445,6 +449,11 @@ function openActivityDetailSheet(id) {
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           ◎ AI-verrijking
         </button>
+        ${linkedTicket ? `
+        <button onclick="closeSheet('sheet-place-detail');navigateTo('tickets');openEditTicketSheet('${linkedTicket.id}')"
+          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
+          🎟️ Ticket
+        </button>` : ''}
         <button onclick="handleDeleteActivity(${id})" class="edit-only"
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid #dc2626;background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:#dc2626;cursor:pointer">
           🗑 Verwijder
