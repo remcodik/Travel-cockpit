@@ -733,16 +733,19 @@ function startFirebaseSync() {
       AppState.activities = [...remoteActivities, ...localOnly];
       refreshAllScreens();
 
-      // Eenmalige zelfhelende migratie: AI-suggesties (via Ideeën) kregen
-      // vóór deze fix nooit lat/lng, alleen een tekst-zoekopdracht
-      // (googleMapsQuery) — ook niet meer nadat je 'm alsnog op een dag
-      // plande. Zonder lat/lng toont renderMapMarkers() (js/screen-map.js)
-      // geen pin, dus zo'n activiteit bleef voor altijd onzichtbaar op
-      // Kaart. locationVerified voorkomt dat dit bij elke app-load opnieuw
-      // Nominatim belast voor activiteiten waar toch niets voor te vinden is.
+      // Eenmalige zelfhelende migratie: geen van beide manieren om een
+      // activiteit toe te voegen zette ooit lat/lng — AI-suggesties (via
+      // Ideeën) hadden alleen een tekst-zoekopdracht (googleMapsQuery), en
+      // "+ Activiteit toevoegen" had zelfs helemaal geen locatieveld. Zonder
+      // lat/lng toont renderMapMarkers() (js/screen-map.js) geen pin, dus
+      // zulke activiteiten bleven voor altijd onzichtbaar op Kaart, ook keurig
+      // ingepland op een dag. Probeert nu voor élke activiteit zonder
+      // coördinaten de googleMapsQuery (indien aanwezig) of anders de naam
+      // zelf op te zoeken. locationVerified voorkomt dat dit bij elke
+      // app-load opnieuw Nominatim belast voor wat toch niets oplevert.
       AppState.activities.forEach(async act => {
-        if (act.locationVerified || isValidLatLng(act.lat, act.lng) || !act.googleMapsQuery) return;
-        const coords = await geocodeAddress(act.googleMapsQuery);
+        if (act.locationVerified || isValidLatLng(act.lat, act.lng)) return;
+        const coords = await geocodeAddress(act.googleMapsQuery || act.name);
         act.locationVerified = true;
         if (coords) { act.lat = coords.lat; act.lng = coords.lng; }
         await dbSaveActivity(act);
