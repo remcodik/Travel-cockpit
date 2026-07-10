@@ -329,14 +329,28 @@ function resetAccPhotoUpload() {
 // bevatten (bv. .../@60.123,10.456,15z of ?q=60.123,10.456). Verkorte
 // links (maps.app.goo.gl/...) bevatten geen coördinaten totdat ze door de
 // browser bezocht worden — dat kan hier niet client-side opgelost worden.
+//
+// FIX: het "@lat,lng"-deel van een Maps-URL is het midden van het
+// kaartbeeld (viewport) op het moment dat de link gemaakt werd — niet per
+// se de aangeklikte/opgezochte plek zelf. Was de kaart ingezoomd op een
+// ander gebied (bv. de hele reisroute) toen de link gedeeld werd, dan wijst
+// "@" ergens middenin dat bredere beeld, mogelijk ver van de echte pin (zo
+// belandde een Hirtshals-ferrylink ooit midden in Engeland). De werkelijk
+// gemarkeerde plek staat i.p.v. daarvan in het "data="-deel van de URL als
+// "!3d{lat}!4d{lng}" — die heeft, indien aanwezig, altijd voorrang.
 function extractLatLngFromMapsUrl(url) {
   if (!url) return null;
-  const atMatch = url.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
-  if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+  const markerMatch = url.match(/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/);
+  if (markerMatch) return { lat: parseFloat(markerMatch[1]), lng: parseFloat(markerMatch[2]) };
   const qMatch = url.match(/[?&]q=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
   if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
   const llMatch = url.match(/[?&]ll=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
   if (llMatch) return { lat: parseFloat(llMatch[1]), lng: parseFloat(llMatch[2]) };
+  // Laatste redmiddel: het kaartbeeld-midden ("@lat,lng") — minder
+  // betrouwbaar (zie hierboven), maar beter dan niets als er geen preciezere
+  // marker-coördinaten in de link zitten.
+  const atMatch = url.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
   return null;
 }
 
