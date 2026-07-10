@@ -108,6 +108,27 @@ function populateTicketAccSelect(selectedAccId) {
     ACCOMMODATIONS.map(a => `<option value="${a.id}" ${idsMatch(a.id, selectedAccId) ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('');
 }
 
+// Optioneel koppelen aan een activiteit (bijv. een klimparkticket bij de
+// wandeling ernaartoe) — zelfde "geen"-optie-patroon als het verblijf
+// hierboven. Ingeplande activiteiten eerst en op datum, dan de nog niet
+// ingeplande — zo staat de meest waarschijnlijke koppeling bovenaan.
+function populateTicketActivitySelect(selectedActivityId) {
+  const select = document.getElementById('ticket-activity-select');
+  if (!select) return;
+  const sorted = AppState.activities.slice().sort((a, b) => {
+    if (a.date && b.date) return a.date - b.date;
+    if (a.date) return -1;
+    if (b.date) return 1;
+    return 0;
+  });
+  select.innerHTML = `<option value="">Geen specifieke activiteit</option>` +
+    sorted.map(act => {
+      const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, act.accId));
+      const label = `${act.emoji} ${act.name}${acc ? ' — ' + acc.short : ''} · ${act.date ? formatShortDate(act.date) : 'niet ingepland'}`;
+      return `<option value="${act.id}" ${idsMatch(act.id, selectedActivityId) ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+    }).join('');
+}
+
 function openAddTicketSheet(accId) {
   editingTicketId = null;
   document.getElementById('ticket-sheet-title').textContent = 'TICKET TOEVOEGEN';
@@ -115,6 +136,7 @@ function openAddTicketSheet(accId) {
   document.getElementById('ticket-venue-input').value = '';
   document.getElementById('ticket-code-input').value = '';
   populateTicketAccSelect(accId || '');
+  populateTicketActivitySelect('');
   pendingTicketFile = null;
   resetTicketFileUpload();
   openSheet('sheet-ticket');
@@ -131,6 +153,7 @@ function openEditTicketSheet(ticketId) {
   document.getElementById('ticket-date-input').value = ticket.date || '';
   document.getElementById('ticket-time-input').value = ticket.time || '';
   populateTicketAccSelect(ticket.accId || '');
+  populateTicketActivitySelect(ticket.activityId || '');
   pendingTicketFile = ticket.fileDataUrl ? { dataUrl: ticket.fileDataUrl, name: ticket.fileName, type: ticket.fileType } : null;
   updateTicketFileUploadUI();
   openSheet('sheet-ticket');
@@ -182,6 +205,7 @@ async function saveTicket() {
     date: document.getElementById('ticket-date-input').value,
     time: document.getElementById('ticket-time-input').value,
     accId: document.getElementById('ticket-acc-select').value || null,
+    activityId: document.getElementById('ticket-activity-select').value || null,
     status: existing ? existing.status : 'active',
     fileDataUrl: pendingTicketFile ? pendingTicketFile.dataUrl : null,
     fileName: pendingTicketFile ? pendingTicketFile.name : null,
