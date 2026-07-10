@@ -266,7 +266,12 @@ function renderMapMarkers() {
     ? AppState.activities.filter(a => idsMatch(a.accId, mapFilterAccId))
     : AppState.activities;
 
-  filtered.filter(a => a.lat && a.lng).forEach(act => {
+  // FIX: een activiteit zonder dag ("Beschikbaar vanuit X" in Planning) kreeg
+  // hier gewoon een pin zodra 'm coördinaten had — dat oogt als een vaste
+  // plek in de reis terwijl je 'm nog niet eens hebt ingepland. Nu pas een
+  // pin zodra er ook echt een dag aan hangt; los idee blijft intussen gewoon
+  // vindbaar via Planning ("Beschikbaar vanuit...") en Ideeën.
+  filtered.filter(a => a.lat && a.lng && a.date).forEach(act => {
     const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, act.accId));
     if (!acc) return;
     // Dag-label met volgnummer ("D4-2") als er meerdere activiteiten op
