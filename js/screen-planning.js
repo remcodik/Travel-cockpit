@@ -818,7 +818,17 @@ async function saveActivity() {
   const level = document.getElementById('activity-level-select').value;
   const komootTourUrl = document.getElementById('activity-komoot-input').value.trim();
   const link = document.getElementById('activity-link-input').value.trim();
-  await addActivity({ name, accId, date, emoji, category: selectedActivityCategory, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl, link });
+  // FIX: dit formulier heeft geen locatieveld, dus een handmatig toegevoegde
+  // activiteit kreeg nooit lat/lng — onvindbaar op Kaart, ook als 'm keurig
+  // op een dag staat (renderMapMarkers() toont alleen activiteiten mét
+  // coördinaten). Best-effort dezelfde Nominatim-opzoeking als bij een
+  // verblijf zonder handmatige coördinaten, op basis van de naam — geen gok
+  // als er niets gevonden wordt, dan blijft de activiteit gewoon zonder pin.
+  const coords = await geocodeAddress(name);
+  await addActivity({
+    name, accId, date, emoji, category: selectedActivityCategory, distance: distance || '—', duration: duration || '—',
+    elevation, level, komootTourUrl, link, lat: coords?.lat || 0, lng: coords?.lng || 0, googleMapsQuery: name,
+  });
   closeSheet('sheet-activity');
   showToast(`✓ ${name} toegevoegd`);
   if (date) AppState.selectedPlanningDay = date;
