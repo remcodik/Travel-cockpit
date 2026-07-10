@@ -732,6 +732,22 @@ function startFirebaseSync() {
       const localOnly = AppState.activities.filter(a => !remoteIds.has(a.id));
       AppState.activities = [...remoteActivities, ...localOnly];
       refreshAllScreens();
+
+      // Eenmalige zelfhelende migratie: AI-suggesties (via Ideeën) kregen
+      // vóór deze fix nooit lat/lng, alleen een tekst-zoekopdracht
+      // (googleMapsQuery) — ook niet meer nadat je 'm alsnog op een dag
+      // plande. Zonder lat/lng toont renderMapMarkers() (js/screen-map.js)
+      // geen pin, dus zo'n activiteit bleef voor altijd onzichtbaar op
+      // Kaart. locationVerified voorkomt dat dit bij elke app-load opnieuw
+      // Nominatim belast voor activiteiten waar toch niets voor te vinden is.
+      AppState.activities.forEach(async act => {
+        if (act.locationVerified || isValidLatLng(act.lat, act.lng) || !act.googleMapsQuery) return;
+        const coords = await geocodeAddress(act.googleMapsQuery);
+        act.locationVerified = true;
+        if (coords) { act.lat = coords.lat; act.lng = coords.lng; }
+        await dbSaveActivity(act);
+        if (document.getElementById('screen-map').classList.contains('active')) renderMapMarkers();
+      });
     } else if (getCurrentTripId() === DEFAULT_TRIP_ID) {
       // Eerste keer voor de standaardreis: push de seed-data naar Firebase.
       // Nieuwe, door de gebruiker aangemaakte reizen starten bewust leeg —

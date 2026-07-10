@@ -455,6 +455,16 @@ async function handleAddSuggestion(name, accId, category) {
   // op te baseren (geen lat/lng in AI-suggesties, alleen een tekst-
   // zoekopdracht). Nu wordt de volledige suggestie meegenomen.
   const suggestion = currentSuggestions.find(s => s.name === name);
+  const locationQuery = suggestion?.google_maps_query || name;
+
+  // FIX: een AI-suggestie heeft nooit lat/lng (alleen een tekst-
+  // zoekopdracht), dus zonder dit bleef zo'n ingeplande activiteit voor
+  // altijd onzichtbaar op Kaart — ook als 'm daarna netjes op een dag werd
+  // gezet (Kaart's renderMapMarkers() toont alleen activiteiten mét lat/lng).
+  // Zelfde geocoding (Nominatim via api/geocode.js) als bij een verblijf
+  // zonder handmatige coördinaten. Best-effort: geen internet of niets
+  // gevonden → gewoon lat/lng 0/0, geen gok, geen blokkade van het toevoegen.
+  const coords = await geocodeAddress(locationQuery);
 
   // Voeg toe zonder datum zodat het als "beschikbaar" verschijnt
   await addActivity({
@@ -465,7 +475,9 @@ async function handleAddSuggestion(name, accId, category) {
       ? (suggestion.duration_minutes >= 60 ? `${Math.round(suggestion.duration_minutes / 60)} u` : `${suggestion.duration_minutes} min`)
       : '—',
     elevation: suggestion?.elevation_gain_m || 0,
-    googleMapsQuery: suggestion?.google_maps_query || name,
+    lat: coords?.lat || 0,
+    lng: coords?.lng || 0,
+    googleMapsQuery: locationQuery,
     whyRecommended: suggestion?.why_recommended || '',
   });
   AppState.discoveredAdded.add(key);
