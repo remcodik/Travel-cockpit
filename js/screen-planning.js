@@ -833,10 +833,14 @@ async function saveActivity() {
   // coördinaten). Best-effort dezelfde Nominatim-opzoeking als bij een
   // verblijf zonder handmatige coördinaten, op basis van de naam — geen gok
   // als er niets gevonden wordt, dan blijft de activiteit gewoon zonder pin.
-  const coords = await geocodeAddress(name);
+  // Land van de reis erbij als context, anders kan een naam als "Solvorn"
+  // net zo goed naar een gelijknamige plek elders ter wereld matchen.
+  const country = getActiveTrip()?.country || '';
+  const coords = await geocodeAddress(country ? `${name}, ${country}` : name);
   await addActivity({
     name, accId, date, emoji, category: selectedActivityCategory, distance: distance || '—', duration: duration || '—',
     elevation, level, komootTourUrl, link, lat: coords?.lat || 0, lng: coords?.lng || 0, googleMapsQuery: name,
+    locationVerifiedV2: true,
   });
   closeSheet('sheet-activity');
   showToast(`✓ ${name} toegevoegd`);

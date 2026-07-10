@@ -271,15 +271,21 @@ function renderMapMarkers() {
   // plek in de reis terwijl je 'm nog niet eens hebt ingepland. Nu pas een
   // pin zodra er ook echt een dag aan hangt; los idee blijft intussen gewoon
   // vindbaar via Planning ("Beschikbaar vanuit...") en Ideeën.
-  filtered.filter(a => a.lat && a.lng && a.date).forEach(act => {
+  const withPin = filtered.filter(a => a.lat && a.lng && a.date);
+  withPin.forEach(act => {
     const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, act.accId));
     if (!acc) return;
     // Dag-label met volgnummer ("D4-2") als er meerdere activiteiten op
     // dezelfde dag zijn — anders zijn hun pins niet te onderscheiden.
+    // FIX: telde voorheen ook activiteiten zónder coördinaten mee (die
+    // helemaal geen pin krijgen) — een dag met 2 geplande activiteiten
+    // waarvan er maar 1 een pin kreeg, toonde die ene toch als "D4-1"
+    // (lijkt op "de eerste van meerdere" terwijl er maar 1 pin te zien is)
+    // i.p.v. gewoon "D4". Nu geteld op wat er ook echt als pin verschijnt.
     let dayLabel = '';
     if (act.date) {
-      const sameDay = AppState.activities
-        .filter(a => a.date && a.date.toDateString() === act.date.toDateString())
+      const sameDay = withPin
+        .filter(a => a.date.toDateString() === act.date.toDateString())
         .sort((a, b) => a.id - b.id);
       const seq = sameDay.findIndex(a => a.id === act.id) + 1;
       dayLabel = sameDay.length > 1 ? `D${getDayNumber(act.date)}-${seq}` : `D${getDayNumber(act.date)}`;

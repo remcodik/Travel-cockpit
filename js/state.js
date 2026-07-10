@@ -244,13 +244,14 @@ async function addActivity({
   name, accId, date, emoji = '📍', category = '', desc = '', level = 'Makkelijk',
   distance = '—', duration = '—', elevation = 0, lat = 0, lng = 0,
   googleMapsQuery = '', whyRecommended = '', komootTourUrl = '', link = '',
+  locationVerifiedV2 = false,
 }) {
   const existingIds = AppState.activities.map(a => typeof a.id === 'number' ? a.id : 0);
   const newId = Math.max(...existingIds, 0) + 1;
   const activity = {
     id: newId, name, emoji, category: category || categoryForEmoji(emoji), accId, status: 'planned', date: date || null,
     distance, duration, level, elevation, lat, lng, desc,
-    googleMapsQuery, whyRecommended, komootTourUrl, link,
+    googleMapsQuery, whyRecommended, komootTourUrl, link, locationVerifiedV2,
   };
   AppState.activities.push(activity);
   await dbSaveActivity(activity);
@@ -720,6 +721,41 @@ async function deleteAccommodationWithChoice(accId, alsoDeleteActivities) {
   if (idx !== -1) ACCOMMODATIONS.splice(idx, 1);
 }
 
+// Eenmalige zelfhelende migratie: geen van beide manieren om een activiteit
+// toe te voegen zette ooit lat/lng — AI-suggesties (via Ideeën) hadden
+// alleen een tekst-zoekopdracht (googleMapsQuery), en "+ Activiteit
+// toevoegen" had zelfs helemaal geen locatieveld. Zonder lat/lng toont
+// renderMapMarkers() (js/screen-map.js) geen pin, dus zulke activiteiten
+// bleven voor altijd onzichtbaar op Kaart, ook keurig ingepland op een dag.
+//
+// FIX: de eerste versie van deze migratie vuurde alle opzoekingen tegelijk
+// af (Array.forEach met een async callback wacht niet op elkaar) — bij een
+// hele reis met meerdere onopgeloste activiteiten in één keer overtreedt
+// dat Nominatim's gebruiksbeperking (max 1 verzoek/seconde), waardoor een
+// deel gewoon niets terugkreeg terwijl locationVerified sowieso op true
+// werd gezet — dus voor altijd overgeslagen, ook al kwam dat alleen door
+// het overbelaste verzoek zelf. Nu strikt na elkaar (met een korte pauze
+// ertussen) en met het land van de reis als context (anders kan bv.
+// "Solvorn" naar een gelijknamige plek elders ter wereld matchen i.p.v.
+// Noorwegen). locationVerifiedV2 i.p.v. het oude, mogelijk al kapot-
+// gemarkeerde locationVerified — zodat activiteiten die door de kapotte
+// eerste versie stilzwijgend zonder coördinaten bleven hangen, nu alsnog
+// één eerlijke nieuwe poging krijgen.
+async function geocodeUnresolvedActivities() {
+  const country = getActiveTrip()?.country || '';
+  const todo = AppState.activities.filter(act => !act.locationVerifiedV2 && !isValidLatLng(act.lat, act.lng));
+  for (const act of todo) {
+    const query = act.googleMapsQuery || act.name;
+    const coords = await geocodeAddress(country ? `${query}, ${country}` : query);
+    act.locationVerifiedV2 = true;
+    if (coords) { act.lat = coords.lat; act.lng = coords.lng; }
+    await dbSaveActivity(act);
+    if (document.getElementById('screen-map').classList.contains('active')) renderMapMarkers();
+    // Nominatim's gebruiksvoorwaarden: max 1 verzoek per seconde.
+    if (todo.indexOf(act) < todo.length - 1) await new Promise(r => setTimeout(r, 1100));
+  }
+}
+
 // ── Firebase sync-initialisatie ───────────────────────────
 // Wordt aangeroepen vanuit initAppState nadat Firebase klaar is, en
 // opnieuw vanuit switchToTrip() bij het wisselen van reis.
@@ -733,24 +769,7 @@ function startFirebaseSync() {
       AppState.activities = [...remoteActivities, ...localOnly];
       refreshAllScreens();
 
-      // Eenmalige zelfhelende migratie: geen van beide manieren om een
-      // activiteit toe te voegen zette ooit lat/lng — AI-suggesties (via
-      // Ideeën) hadden alleen een tekst-zoekopdracht (googleMapsQuery), en
-      // "+ Activiteit toevoegen" had zelfs helemaal geen locatieveld. Zonder
-      // lat/lng toont renderMapMarkers() (js/screen-map.js) geen pin, dus
-      // zulke activiteiten bleven voor altijd onzichtbaar op Kaart, ook keurig
-      // ingepland op een dag. Probeert nu voor élke activiteit zonder
-      // coördinaten de googleMapsQuery (indien aanwezig) of anders de naam
-      // zelf op te zoeken. locationVerified voorkomt dat dit bij elke
-      // app-load opnieuw Nominatim belast voor wat toch niets oplevert.
-      AppState.activities.forEach(async act => {
-        if (act.locationVerified || isValidLatLng(act.lat, act.lng)) return;
-        const coords = await geocodeAddress(act.googleMapsQuery || act.name);
-        act.locationVerified = true;
-        if (coords) { act.lat = coords.lat; act.lng = coords.lng; }
-        await dbSaveActivity(act);
-        if (document.getElementById('screen-map').classList.contains('active')) renderMapMarkers();
-      });
+      geocodeUnresolvedActivities();
     } else if (getCurrentTripId() === DEFAULT_TRIP_ID) {
       // Eerste keer voor de standaardreis: push de seed-data naar Firebase.
       // Nieuwe, door de gebruiker aangemaakte reizen starten bewust leeg —

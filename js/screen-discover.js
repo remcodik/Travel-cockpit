@@ -462,9 +462,12 @@ async function handleAddSuggestion(name, accId, category) {
   // altijd onzichtbaar op Kaart — ook als 'm daarna netjes op een dag werd
   // gezet (Kaart's renderMapMarkers() toont alleen activiteiten mét lat/lng).
   // Zelfde geocoding (Nominatim via api/geocode.js) als bij een verblijf
-  // zonder handmatige coördinaten. Best-effort: geen internet of niets
+  // zonder handmatige coördinaten, met het land van de reis als context
+  // (anders kan de zoekopdracht net zo goed naar een gelijknamige plek
+  // elders ter wereld matchen). Best-effort: geen internet of niets
   // gevonden → gewoon lat/lng 0/0, geen gok, geen blokkade van het toevoegen.
-  const coords = await geocodeAddress(locationQuery);
+  const country = getActiveTrip()?.country || '';
+  const coords = await geocodeAddress(country ? `${locationQuery}, ${country}` : locationQuery);
 
   // Voeg toe zonder datum zodat het als "beschikbaar" verschijnt
   await addActivity({
@@ -477,6 +480,7 @@ async function handleAddSuggestion(name, accId, category) {
     elevation: suggestion?.elevation_gain_m || 0,
     lat: coords?.lat || 0,
     lng: coords?.lng || 0,
+    locationVerifiedV2: true,
     googleMapsQuery: locationQuery,
     whyRecommended: suggestion?.why_recommended || '',
   });
