@@ -423,7 +423,15 @@ async function handleExtractInfoFromLink() {
 // Apart, doelgericht veld voor locatie: alleen een Google Maps-link, alleen
 // coördinaten als resultaat — nooit gekoppeld aan (of opgeslagen als) het
 // info-linkveld hierboven.
-function handleExtractLocationFromMapsLink() {
+//
+// FIX: de "Delen"-knop naast een neergezette speld in de Google Maps-app
+// genereert op de telefoon altíjd een verkorte maps.app.goo.gl-link — die
+// bevat pas coördinaten ná de redirect, wat hier client-side niet kan.
+// Zo'n link liet de gebruiker eerder alleen een foutmelding zien ("open 'm
+// eerst in een browser") — nu wordt 'ie in dat geval naar api/geocode.js
+// gestuurd, die de link server-side volgt en de coördinaten er alsnog
+// uithaalt (zelfde extractielogica als hieronder, zie die server-kant).
+async function handleExtractLocationFromMapsLink() {
   const url = document.getElementById('edit-acc-maps-link-input').value.trim();
   if (!url) { showToast('Plak eerst een Google Maps-link'); return; }
 
@@ -434,7 +442,17 @@ function handleExtractLocationFromMapsLink() {
     return;
   }
   if (url.includes('goo.gl')) {
-    showToast('Verkorte Maps-link — open de link eerst in de browser en kopieer de volledige link');
+    showToast('Verkorte link — bezig met opzoeken…', 6000);
+    try {
+      const resp = await fetch(`/api/geocode?mapsUrl=${encodeURIComponent(url)}`);
+      const data = await resp.json();
+      if (data && data.found && Number.isFinite(data.lat) && Number.isFinite(data.lng)) {
+        fillLocationCoords({ lat: data.lat, lng: data.lng }, null);
+        showToast('✓ Locatie overgenomen uit Maps-link');
+        return;
+      }
+    } catch { /* netwerkfout — val door naar de foutmelding hieronder */ }
+    showToast('Kon deze verkorte link niet oplossen — open de link eerst in een browser en kopieer de volledige link');
     return;
   }
   showToast('Geen coördinaten gevonden in deze link — gebruik een volledige Google Maps-link');
