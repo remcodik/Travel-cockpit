@@ -410,12 +410,20 @@ function openActivityDetailSheet(id) {
     // Alleen een echte http(s)-link tonen — nooit een javascript:-achtige
     // waarde als href gebruiken.
     const hasSafeLink = act.link && /^https?:\/\//i.test(act.link);
+    // FIX: dit gebruikte altijd een automatisch gegenereerde Komoot-
+    // zoekopdracht, ook als er al een echte, door de gebruiker opgeslagen
+    // Komoot-routelink (act.komootTourUrl) was — die link zelf kwam dan
+    // nergens als klikbare link terecht, alleen (best-effort en niet altijd
+    // matchend) als bron voor het hoogteprofiel-embed hieronder. Nu wint de
+    // eigen link altijd, zoekopdracht blijft de terugval zonder eigen link.
+    const hasSafeKomootLink = act.komootTourUrl && /^https?:\/\//i.test(act.komootTourUrl);
+    const komootHref = hasSafeKomootLink ? act.komootTourUrl : komootSearchUrl(locationQuery);
     nearbyEl.innerHTML = `
         ${hasSafeLink ? `<a href="${escapeHtml(act.link)}" target="_blank"
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;display:inline-block">
           🔗 Link
         </a>` : ''}
-        ${meta.isHike ? `<a href="${komootSearchUrl(locationQuery)}" target="_blank"
+        ${meta.isHike ? `<a href="${escapeHtml(komootHref)}" target="_blank"
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;display:inline-block">
           🥾 Komoot
         </a>` : ''}
