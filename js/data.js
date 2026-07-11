@@ -14,6 +14,7 @@ const WEEKDAYS = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
 const CATEGORY_EMOJIS = {
   activity: '🏔️', restaurant: '🍽️', cafe: '☕', viewpoint: '🌄',
   roadtrip: '🛣️', town: '🏘️', misc: '📦',
+  travelday: '🧳', culture: '🏛️',
   default: '📍',
 };
 
@@ -30,6 +31,11 @@ const CATEGORY_META = {
   viewpoint:  { isHike: false, nearbyCategories: ['restaurant', 'cafe'] },
   roadtrip:   { isHike: false, nearbyCategories: ['restaurant', 'cafe'] },
   town:       { isHike: false, nearbyCategories: ['restaurant', 'cafe'] },
+  // Reisdag: een dag vooral onderweg tussen twee plekken (trein/ferry/etc.)
+  // — bewust apart van "roadtrip" (die staat voor een autoritje/roadtrip-
+  // etappe zelf, reisdag voor de dag als geheel).
+  travelday:  { isHike: false, nearbyCategories: ['restaurant', 'cafe'] },
+  culture:    { isHike: false, nearbyCategories: ['restaurant', 'cafe'] },
   // Diversen is een bewuste vangnet-categorie zonder vaste betekenis (kan
   // van alles zijn) — geen "X nabij"-knoppen, want die veronderstellen een
   // herkenbaar soort locatie om naar te zoeken.
