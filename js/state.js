@@ -161,6 +161,22 @@ function komootSearchUrl(query) {
   return `https://www.google.com/search?q=${encodeURIComponent(query + ' wandeling site:komoot.com')}`;
 }
 
+// Generieke "open deze link"-knop voor een linkveld in een bewerkformulier
+// (Komoot-routelink, Link-veld, boekingslink, Maps-link) — een gewoon
+// <input> is zelf niet klikbaar zoals een <a>, dus zonder dit was de enige
+// manier om een al ingevulde link te bezoeken 'm eerst te kopiëren en apart
+// te plakken. Alleen een echte http(s)-link openen, nooit een
+// javascript:-achtige waarde.
+function openLinkFromInput(inputId) {
+  const input = document.getElementById(inputId);
+  const url = input && input.value.trim();
+  if (!url || !/^https?:\/\//i.test(url)) {
+    showToast('Voer eerst een geldige link in (begint met http:// of https://)');
+    return;
+  }
+  window.open(url, '_blank');
+}
+
 // Veilige, altijd-werkende zoeklinks voor de reisgids-sectie (js/screen-guide.js)
 // — MediaWiki's eigen zoek-URL i.p.v. een gegokte kant-en-klare artikel-URL
 // (die kan 404'en bij een spellingsverschil). Werkt voor elke taalcode die

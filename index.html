@@ -603,7 +603,10 @@
       <button type="button" onclick="setActivityCategory(this,'town')" class="chip" data-category="town">🏘️ Stadje bezichtigen</button>
       <button type="button" onclick="setActivityCategory(this,'misc')" class="chip" data-category="misc">📦 Diversen</button>
     </div>
-    <input id="activity-link-input" type="url" placeholder="Link (website, menu, reservering — optioneel)"/>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="activity-link-input" type="url" placeholder="Link (website, menu, reservering — optioneel)" style="flex:1"/>
+      <button type="button" onclick="openLinkFromInput('activity-link-input')" title="Deze link openen" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">↗</button>
+    </div>
     <details style="margin-bottom:14px">
       <summary id="activity-extra-summary" style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.4px;padding:2px 0 8px">Wandelinfo toevoegen (optioneel)</summary>
       <div style="display:flex;gap:10px">
@@ -621,6 +624,7 @@
       <div id="activity-komoot-row" style="display:flex;gap:8px;align-items:center">
         <input id="activity-komoot-input" type="url" placeholder="Komoot-routelink (voor echt hoogteprofiel)" style="flex:1"/>
         <button type="button" onclick="handleExtractFromKomootLink('activity')" title="Afstand/duur/hoogte proberen over te nemen uit deze link" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">🔍</button>
+        <button type="button" onclick="openLinkFromInput('activity-komoot-input')" title="Deze link openen" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">↗</button>
       </div>
     </details>
     <button onclick="saveActivity()" class="btn btn-primary">Toevoegen</button>
@@ -645,7 +649,10 @@
       <button type="button" onclick="setActivityCategory(this,'town','edit-activity')" class="chip" data-category="town">🏘️ Stadje bezichtigen</button>
       <button type="button" onclick="setActivityCategory(this,'misc','edit-activity')" class="chip" data-category="misc">📦 Diversen</button>
     </div>
-    <input id="edit-activity-link-input" type="url" placeholder="Link (website, menu, reservering — optioneel)"/>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="edit-activity-link-input" type="url" placeholder="Link (website, menu, reservering — optioneel)" style="flex:1"/>
+      <button type="button" onclick="openLinkFromInput('edit-activity-link-input')" title="Deze link openen" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">↗</button>
+    </div>
     <details style="margin-bottom:14px">
       <summary id="edit-activity-extra-summary" style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.4px;padding:2px 0 8px">Wandelinfo (optioneel)</summary>
       <div style="display:flex;gap:10px">
@@ -663,6 +670,7 @@
       <div id="edit-activity-komoot-row" style="display:flex;gap:8px;align-items:center">
         <input id="edit-activity-komoot-input" type="url" placeholder="Komoot-routelink (voor echt hoogteprofiel)" style="flex:1"/>
         <button type="button" onclick="handleExtractFromKomootLink('edit-activity')" title="Afstand/duur/hoogte (en, indien te vinden, locatie) proberen over te nemen uit deze link" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">🔍</button>
+        <button type="button" onclick="openLinkFromInput('edit-activity-komoot-input')" title="Deze link openen" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">↗</button>
       </div>
     </details>
     <div style="margin-bottom:14px;padding:12px;background:var(--slope-light);border-radius:14px">
@@ -715,6 +723,7 @@
     <div style="display:flex;gap:8px;align-items:center">
       <input id="edit-acc-url-input" type="url" placeholder="Link (boeking/website, voor info)" style="flex:1"/>
       <button type="button" onclick="handleExtractInfoFromLink()" title="Naam/adres uit deze link halen (best-effort, alleen info — geen locatie)" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">🔗</button>
+      <button type="button" onclick="openLinkFromInput('edit-acc-url-input')" title="Deze link openen" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">↗</button>
     </div>
     <input id="edit-acc-booking-ref-input" placeholder="Reserveringsnummer (optioneel)"/>
     <div style="margin-bottom:14px;padding:12px;background:var(--slope-light);border-radius:14px">
