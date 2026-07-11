@@ -53,8 +53,8 @@ export default async function handler(req, res) {
     }
 
     const html = await readBounded(response, 2_000_000);
-    const info = extractTourStats(html);
-    const found = !!(info.distance_km || info.duration_minutes || info.elevation_gain_m);
+    const info = { ...extractTourStats(html), ...extractStartCoords(html) };
+    const found = !!(info.distance_km || info.duration_minutes || info.elevation_gain_m || (info.lat != null && info.lng != null));
     return res.status(200).json({ found, ...info });
   } catch (err) {
     console.error('extract-komoot-tour fout:', err);
@@ -117,4 +117,34 @@ function extractTourStats(html) {
   }
 
   return { distance_km: null, duration_minutes: null, elevation_gain_m: null };
+}
+
+// Best-effort startpunt-coördinaten uit dezelfde pagina — geen aparte
+// aanroep nodig, de HTML is al opgehaald voor extractTourStats().
+// Onbevestigd/fragiel: Komoot heeft geen publieke data-API, dit gokt op
+// waarschijnlijke veldnamen in de ingebouwde paginastaat (start_point) en,
+// als terugval, de generieke Open Graph plaats-meta-tags (zelfde patroon
+// als api/extract-listing.js). Levert null als geen van beide iets
+// oplevert — nooit een verzonnen locatie.
+function extractStartCoords(html) {
+  const latThenLng = html.match(/"start_point"\s*:\s*\{[^}]*?"lat"\s*:\s*(-?\d+(?:\.\d+)?)[^}]*?"lng"\s*:\s*(-?\d+(?:\.\d+)?)/);
+  if (latThenLng) return { lat: parseFloat(latThenLng[1]), lng: parseFloat(latThenLng[2]) };
+
+  const lngThenLat = html.match(/"start_point"\s*:\s*\{[^}]*?"lng"\s*:\s*(-?\d+(?:\.\d+)?)[^}]*?"lat"\s*:\s*(-?\d+(?:\.\d+)?)/);
+  if (lngThenLat) return { lat: parseFloat(lngThenLat[2]), lng: parseFloat(lngThenLat[1]) };
+
+  const latMeta = matchMetaContent(html, 'place:location:latitude');
+  const lngMeta = matchMetaContent(html, 'place:location:longitude');
+  if (latMeta && lngMeta) {
+    return { lat: parseFloat(latMeta), lng: parseFloat(lngMeta) };
+  }
+
+  return { lat: null, lng: null };
+}
+
+function matchMetaContent(html, property) {
+  const re1 = new RegExp(`<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']+)["']`, 'i');
+  const re2 = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${property}["']`, 'i');
+  const m = html.match(re1) || html.match(re2);
+  return m ? m[1] : null;
 }

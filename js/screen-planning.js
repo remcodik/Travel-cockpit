@@ -525,6 +525,41 @@ async function handleRetryActivityLocation(id) {
   openActivityDetailSheet(id);
 }
 
+// Zelfde Google Maps-link-extractie als bij een verblijf
+// (extractLatLngFromMapsUrl()/js/screen-accommodation.js, inclusief de
+// server-side fallback in api/geocode.js voor verkorte maps.app.goo.gl-
+// links) — hier voor het bewerkformulier van een activiteit i.p.v. een
+// verblijf, voor als Nominatim de naam zelf niet kan vinden maar je wél
+// een Maps-link hebt (bv. gedeeld vanuit de Maps-app zelf).
+async function handleExtractActivityLocationFromMapsLink() {
+  const url = document.getElementById('edit-activity-maps-link-input').value.trim();
+  if (!url) { showToast('Plak eerst een Google Maps-link'); return; }
+
+  const coords = extractLatLngFromMapsUrl(url);
+  if (coords) {
+    document.getElementById('edit-activity-lat-input').value = coords.lat;
+    document.getElementById('edit-activity-lng-input').value = coords.lng;
+    showToast('✓ Locatie overgenomen uit Maps-link');
+    return;
+  }
+  if (url.includes('goo.gl')) {
+    showToast('Verkorte link — bezig met opzoeken…', 6000);
+    try {
+      const resp = await fetch(`/api/geocode?mapsUrl=${encodeURIComponent(url)}`);
+      const data = await resp.json();
+      if (data && data.found && Number.isFinite(data.lat) && Number.isFinite(data.lng)) {
+        document.getElementById('edit-activity-lat-input').value = data.lat;
+        document.getElementById('edit-activity-lng-input').value = data.lng;
+        showToast('✓ Locatie overgenomen uit Maps-link');
+        return;
+      }
+    } catch { /* netwerkfout — val door naar de foutmelding hieronder */ }
+    showToast('Kon deze verkorte link niet oplossen — open de link eerst in een browser en kopieer de volledige link');
+    return;
+  }
+  showToast('Geen coördinaten gevonden in deze link — gebruik een volledige Google Maps-link');
+}
+
 // ── Activiteit bewerken (Fase E) ───────────────────────────
 function openEditActivitySheet(id) {
   const act = AppState.activities.find(a => a.id === id);
@@ -537,6 +572,9 @@ function openEditActivitySheet(id) {
   document.getElementById('edit-activity-level-select').value = act.level && act.level !== '—' ? act.level : 'Makkelijk';
   document.getElementById('edit-activity-komoot-input').value = act.komootTourUrl || '';
   document.getElementById('edit-activity-link-input').value = act.link || '';
+  document.getElementById('edit-activity-maps-link-input').value = '';
+  document.getElementById('edit-activity-lat-input').value = isValidLatLng(act.lat, act.lng) ? act.lat : '';
+  document.getElementById('edit-activity-lng-input').value = isValidLatLng(act.lat, act.lng) ? act.lng : '';
 
   // FIX: de categorie/het icoon was ooit alleen bij het toevoegen te kiezen
   // — eenmaal opgeslagen kon je 'm niet meer wijzigen. Chips vooraf
@@ -564,8 +602,17 @@ async function saveActivityEdit(id) {
   const link = document.getElementById('edit-activity-link-input').value.trim();
   const category = selectedEditActivityCategory;
   const emoji = CATEGORY_EMOJIS[category] || CATEGORY_EMOJIS.default;
+  // Handmatig ingevulde/overgenomen coördinaten winnen altijd — als je hier
+  // zelf iets invult, telt dat als "geprobeerd", ook als het leeg blijft
+  // (dan kies je bewust voor geen pin), zodat de achtergrondmigratie dit
+  // niet later alsnog overschrijft met een eigen gok.
+  const latVal = parseFloat(document.getElementById('edit-activity-lat-input').value);
+  const lngVal = parseFloat(document.getElementById('edit-activity-lng-input').value);
+  const lat = Number.isFinite(latVal) ? latVal : 0;
+  const lng = Number.isFinite(lngVal) ? lngVal : 0;
   await updateActivity(id, {
     name, desc, distance: distance || '—', duration: duration || '—', elevation, level, komootTourUrl, link, category, emoji,
+    lat, lng, locationVerifiedV2: true,
   });
   closeSheet('sheet-edit-activity');
   showToast('✓ Activiteit bijgewerkt');
@@ -818,6 +865,16 @@ async function handleExtractFromKomootLink(prefix) {
       filledAny = true;
     }
     if (data.elevation_gain_m && !elevationEl.value.trim()) { elevationEl.value = data.elevation_gain_m; filledAny = true; }
+    // Startpunt-coördinaten (best-effort, zie extractStartCoords() in
+    // api/extract-komoot-tour.js) — alleen relevant bij het activiteit-
+    // bewerkformulier, dat als enige lat/lng-velden heeft.
+    const latEl = document.getElementById(`${prefix}-lat-input`);
+    const lngEl = document.getElementById(`${prefix}-lng-input`);
+    if (latEl && lngEl && Number.isFinite(data.lat) && Number.isFinite(data.lng) && !latEl.value.trim()) {
+      latEl.value = data.lat;
+      lngEl.value = data.lng;
+      filledAny = true;
+    }
     showToast(filledAny ? '✓ Gegevens overgenomen uit Komoot-link' : 'Gegevens uit link waren al ingevuld');
   } catch {
     showToast('Geen gegevens gevonden in deze link — vul handmatig aan');
