@@ -964,6 +964,13 @@ function updateActivityFormForCategory(category, prefix = 'activity') {
   if (hikeFields) hikeFields.style.display = isHike ? 'flex' : 'none';
   if (komootRow) komootRow.style.display = isHike ? 'flex' : 'none';
   if (summary) summary.textContent = isHike ? 'Wandelinfo toevoegen (optioneel)' : 'Extra info toevoegen (optioneel)';
+  // FIX: bij een wandeling staan de belangrijkste velden (Komoot-link voor
+  // hoogteprofiel/locatie) hier al meteen zichtbaar i.p.v. achter een
+  // dichtgeklapt "optioneel"-uitklapje verstopt — bij elke andere categorie
+  // blijft het dicht, zoals voorheen.
+  if (summary && summary.parentElement && summary.parentElement.tagName === 'DETAILS') {
+    summary.parentElement.open = isHike;
+  }
 }
 
 async function saveActivity() {

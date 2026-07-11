@@ -674,17 +674,16 @@
         <button type="button" onclick="openLinkFromInput('edit-activity-komoot-input')" title="Deze link openen" style="padding:12px 13px;background:var(--slope-light);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">↗</button>
       </div>
     </details>
-    <div style="margin-bottom:14px;padding:12px;background:var(--slope-light);border-radius:14px">
-      <p class="eyebrow" style="margin-bottom:8px;color:var(--spruce)">📍 Locatie (voor de kaart)</p>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-        <input id="edit-activity-maps-link-input" type="url" placeholder="Google Maps-link (voor locatie)" style="flex:1"/>
+    <details style="margin-bottom:14px;padding:12px;background:var(--slope-light);border-radius:14px">
+      <summary class="eyebrow" style="cursor:pointer;color:var(--spruce)">📍 Locatie (voor de kaart)</summary>
+      <div style="display:flex;gap:8px;align-items:center;margin:10px 0"><input id="edit-activity-maps-link-input" type="url" placeholder="Google Maps-link (voor locatie)" style="flex:1;margin-bottom:0"/>
         <button type="button" onclick="handleExtractActivityLocationFromMapsLink()" title="Coördinaten uit deze Google Maps-link halen" style="padding:12px 13px;background:var(--white);color:var(--spruce);border:none;border-radius:12px;cursor:pointer;font-size:15px;white-space:nowrap">📍</button>
       </div>
       <div style="display:flex;gap:10px">
         <input id="edit-activity-lat-input" type="number" step="0.0001" placeholder="Breedtegraad" style="flex:1"/>
         <input id="edit-activity-lng-input" type="number" step="0.0001" placeholder="Lengtegraad" style="flex:1"/>
       </div>
-    </div>
+    </details>
     <button id="edit-activity-save-btn" class="btn btn-primary">Opslaan</button>
     <button onclick="closeSheet('sheet-edit-activity')" class="btn btn-outline" style="margin-top:8px">Annuleer</button>
   </div>
