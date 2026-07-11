@@ -892,27 +892,34 @@ async function handleExtractFromKomootLink(prefix) {
       showToast('Geen gegevens gevonden in deze link — vul handmatig aan');
       return;
     }
+    // FIX: vulde eerder alleen nog lege velden, dus als Komoot een andere
+    // (of eerder verkeerd overgenomen) afstand/duur/hoogte/locatie teruggaf,
+    // bleef de oude waarde onopgemerkt staan. Komoot is de belangrijkste,
+    // meest betrouwbare bron voor wandelgegevens — een expliciete klik op
+    // deze knop is een bewuste "haal het uit Komoot"-actie, die dus altijd
+    // mag overschrijven, ook als er al iets (mogelijk verouderd of fout)
+    // ingevuld stond.
     const distanceEl = document.getElementById(`${prefix}-distance-input`);
     const durationEl = document.getElementById(`${prefix}-duration-input`);
     const elevationEl = document.getElementById(`${prefix}-elevation-input`);
     let filledAny = false;
-    if (data.distance_km && !distanceEl.value.trim()) { distanceEl.value = `${data.distance_km} km`; filledAny = true; }
-    if (data.duration_minutes && !durationEl.value.trim()) {
+    if (data.distance_km) { distanceEl.value = `${data.distance_km} km`; filledAny = true; }
+    if (data.duration_minutes) {
       durationEl.value = data.duration_minutes >= 60 ? `${Math.round(data.duration_minutes / 60)} u` : `${data.duration_minutes} min`;
       filledAny = true;
     }
-    if (data.elevation_gain_m && !elevationEl.value.trim()) { elevationEl.value = data.elevation_gain_m; filledAny = true; }
+    if (data.elevation_gain_m) { elevationEl.value = data.elevation_gain_m; filledAny = true; }
     // Startpunt-coördinaten (best-effort, zie extractStartCoords() in
     // api/extract-komoot-tour.js) — alleen relevant bij het activiteit-
     // bewerkformulier, dat als enige lat/lng-velden heeft.
     const latEl = document.getElementById(`${prefix}-lat-input`);
     const lngEl = document.getElementById(`${prefix}-lng-input`);
-    if (latEl && lngEl && Number.isFinite(data.lat) && Number.isFinite(data.lng) && !latEl.value.trim()) {
+    if (latEl && lngEl && Number.isFinite(data.lat) && Number.isFinite(data.lng)) {
       latEl.value = data.lat;
       lngEl.value = data.lng;
       filledAny = true;
     }
-    showToast(filledAny ? '✓ Gegevens overgenomen uit Komoot-link' : 'Gegevens uit link waren al ingevuld');
+    showToast(filledAny ? '✓ Gegevens overgenomen uit Komoot-link' : 'Geen gegevens gevonden in deze link');
   } catch {
     showToast('Geen gegevens gevonden in deze link — vul handmatig aan');
   }
