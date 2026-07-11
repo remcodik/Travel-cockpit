@@ -568,6 +568,35 @@ async function handleExtractActivityLocationFromMapsLink() {
   showToast('Geen coördinaten gevonden in deze link — gebruik een volledige Google Maps-link');
 }
 
+// Locatie proberen te halen uit het gewone Link-veld (website/menu/
+// reservering) — niet alleen Komoot of een Maps-link, maar bijvoorbeeld ook
+// een restaurant- of café-website, die vaak net als boekingssites
+// gestructureerde locatiegegevens meestuurt (JSON-LD/Open Graph). Hergebruikt
+// api/extract-listing.js (al bestaand, gebruikt voor verblijven — daar
+// bewust alleen voor naam/adres, hier ook voor coördinaten, want een
+// activiteit heeft al een apart naamveld en dit is de enige plek waar
+// coördinaten voor de kaart vandaan kunnen komen als Komoot/Maps-link niets
+// opleveren). Best-effort: vult alleen in als er nog geen coördinaten zijn,
+// nooit een gok als er niets gevonden wordt.
+async function handleExtractActivityLocationFromLink() {
+  const url = document.getElementById('edit-activity-link-input').value.trim();
+  if (!url) { showToast('Plak eerst een link'); return; }
+  if (!/^https?:\/\//i.test(url)) { showToast('Geen geldige http(s)-link'); return; }
+
+  showToast('Locatie zoeken in link…', 4000);
+  try {
+    const resp = await fetch(`/api/extract-listing?url=${encodeURIComponent(url)}`);
+    const data = await resp.json();
+    if (data && data.found && Number.isFinite(data.lat) && Number.isFinite(data.lng)) {
+      document.getElementById('edit-activity-lat-input').value = data.lat;
+      document.getElementById('edit-activity-lng-input').value = data.lng;
+      showToast('✓ Locatie gevonden in link');
+      return;
+    }
+  } catch { /* netwerkfout — val door naar de melding hieronder */ }
+  showToast('Geen locatie gevonden in deze link — probeer Komoot of een Google Maps-link');
+}
+
 // ── Activiteit bewerken (Fase E) ───────────────────────────
 function openEditActivitySheet(id) {
   const act = AppState.activities.find(a => a.id === id);
