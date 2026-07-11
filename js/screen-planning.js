@@ -346,6 +346,26 @@ function openActivityDetailSheet(id) {
     }
   }
 
+  // Zichtbaar maken of deze activiteit een pin op Kaart heeft en waarom
+  // (niet) — voorheen puur onzichtbare achtergrondstaat (lat/lng,
+  // locationVerifiedV2), onmogelijk te controleren zonder in de broncode
+  // te kijken. Zo kan een gebruiker het zelf zien i.p.v. te moeten gokken
+  // of de automatische opzoekactie nog moet lopen of al iets opleverde.
+  const locationStatusEl = document.getElementById('pd-location-status');
+  if (locationStatusEl) {
+    if (isValidLatLng(act.lat, act.lng)) {
+      locationStatusEl.textContent = `📍 ${act.lat.toFixed(4)}°N ${act.lng.toFixed(4)}°E — staat op Kaart`;
+      locationStatusEl.style.color = 'var(--ink-faint)';
+    } else if (act.locationVerifiedV2) {
+      locationStatusEl.textContent = '📍 Geen locatie gevonden voor deze naam — staat niet op Kaart';
+      locationStatusEl.style.color = 'var(--summit)';
+    } else {
+      locationStatusEl.textContent = '📍 Locatie nog niet opgezocht — staat nog niet op Kaart';
+      locationStatusEl.style.color = 'var(--ink-faint)';
+    }
+    locationStatusEl.style.display = 'block';
+  }
+
   // Plan-knop: dit was één knop met twee door elkaar gehaalde acties —
   // "niet ingepland" gaf de tekst "+ Inplannen" maar de klik deed
   // hetzelfde als bij een wél ingeplande activiteit (status togglen naar
@@ -454,6 +474,11 @@ function openActivityDetailSheet(id) {
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           🎟️ Ticket
         </button>` : ''}
+        ${!isValidLatLng(act.lat, act.lng) ? `
+        <button id="pd-retry-location-btn" onclick="handleRetryActivityLocation(${id})" class="edit-only"
+          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
+          🔍 Locatie zoeken
+        </button>` : ''}
         <button onclick="handleDeleteActivity(${id})" class="edit-only"
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid #dc2626;background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:#dc2626;cursor:pointer">
           🗑 Verwijder
@@ -471,6 +496,33 @@ function openActivityDetailSheet(id) {
   }
 
   openSheet('sheet-place-detail');
+}
+
+// Directe, zichtbare locatie-opzoekpoging voor één activiteit — i.p.v. te
+// moeten wachten op (en te moeten vertrouwen op) de onzichtbare
+// achtergrondmigratie in startFirebaseSync(). Toont meteen succes/falen via
+// een toast, zodat duidelijk is of Nominatim deze naam simpelweg niet kent
+// (geen bug, een grens van automatisch zoeken) i.p.v. dat het overkomt als
+// "de app doet het niet".
+async function handleRetryActivityLocation(id) {
+  const act = AppState.activities.find(a => a.id === id);
+  if (!act) return;
+  showToast('Locatie zoeken…', 4000);
+  const country = getActiveTrip()?.country || '';
+  const query = act.googleMapsQuery || act.name;
+  const coords = await geocodeAddress(country ? `${query}, ${country}` : query);
+  act.locationVerifiedV2 = true;
+  if (coords) {
+    act.lat = coords.lat;
+    act.lng = coords.lng;
+    await dbSaveActivity(act);
+    showToast(`✓ Locatie gevonden: ${coords.displayName || act.name}`);
+    if (document.getElementById('screen-map').classList.contains('active')) renderMapMarkers();
+  } else {
+    await dbSaveActivity(act);
+    showToast('Geen locatie gevonden voor deze naam');
+  }
+  openActivityDetailSheet(id);
 }
 
 // ── Activiteit bewerken (Fase E) ───────────────────────────
