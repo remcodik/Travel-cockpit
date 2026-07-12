@@ -833,10 +833,13 @@ async function openAiEnrichSheet(id) {
     if (enriched) {
       enriched.photo_url = photoUrl;
       lastEnrichedResult = enriched;
-      // "Groter" kopje alleen tonen als er ook echt losstaande site-info is
-      // (titel/omschrijving/keuken/prijs) — anders blijft het gewoon de
-      // AI-tekst zoals voorheen, geen kopjes voor niets.
-      const hasSiteInfo = siteInfo && (siteInfo.title || siteInfo.description || siteInfo.excerpt || siteInfo.cuisine || siteInfo.priceRange);
+      // FIX: telde eerder ook mee als er ALLEEN een titel was (bv. gewoon de
+      // <title>-tag als enige terugval) — dat geeft een "Site-info"-blok met
+      // niets dan een naam erin, net zo nutteloos als geen blok tonen maar
+      // dan verwarrender (lijkt een halve/kapotte fetch i.p.v. duidelijk
+      // "niets bruikbaars gevonden"). Nu pas een eigen blok bij iets met
+      // echte inhoud: omschrijving, keuken of prijsklasse.
+      const hasSiteInfo = siteInfo && (siteInfo.description || siteInfo.excerpt || siteInfo.cuisine || siteInfo.priceRange);
       const siteInfoHtml = hasSiteInfo ? `
         <p class="eyebrow" style="margin-bottom:6px">🌐 Site-info</p>
         <div style="background:var(--paper-warm);border-radius:11px;padding:12px 14px;margin-bottom:14px">
