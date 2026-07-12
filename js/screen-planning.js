@@ -795,7 +795,13 @@ async function openAiEnrichSheet(id) {
     // restaurant/café gebruiken we in plaats daarvan straks de og:image
     // van de eigen opgeslagen link (dat IS de plek); Wikipedia slaan we
     // dan over in plaats van te gokken.
-    const isFoodCategory = act.category === 'restaurant' || act.category === 'cafe';
+    // FIX: act.category is pas sinds later toegevoegd — oudere activiteiten
+    // hebben alleen act.emoji. Overal elders (categoryMetaForActivity())
+    // wordt daarom altijd met categoryForEmoji() teruggevallen; dat miste ik
+    // hier, waardoor deze check bij een activiteit zonder .category-veld
+    // altijd false gaf en Wikipedia dus tóch nog gewoon aangeroepen werd.
+    const resolvedCategory = act.category || categoryForEmoji(act.emoji);
+    const isFoodCategory = resolvedCategory === 'restaurant' || resolvedCategory === 'cafe';
     const [response, wikipediaPhoto] = await Promise.all([
       fetch('/api/enrich-activity', {
         method: 'POST',
@@ -838,7 +844,13 @@ async function openAiEnrichSheet(id) {
           ${(siteInfo.cuisine || siteInfo.priceRange) ? `<p class="mono" style="margin-bottom:6px">${[siteInfo.cuisine, siteInfo.priceRange].filter(Boolean).map(escapeHtml).join(' · ')}</p>` : ''}
           ${(siteInfo.description || siteInfo.excerpt) ? `<p style="font-size:12.5px;line-height:1.5;color:var(--ink-mid)">${escapeHtml(siteInfo.description || siteInfo.excerpt)}</p>` : ''}
         </div>
-        <p class="eyebrow" style="margin-bottom:6px">🤖 AI-info</p>` : '';
+        <p class="eyebrow" style="margin-bottom:6px">🤖 AI-info</p>`
+        // FIX: bij een opgeslagen link die niets opleverde bleef dit
+        // eerder gewoon stil — onmogelijk te zien of het ooit geprobeerd
+        // is. Sommige sites blokkeren geautomatiseerde verzoeken (bv.
+        // Cloudflare-botwering) — dat kunnen we niet altijd omzeilen zonder
+        // een volledige browser, maar wél zichtbaar maken i.p.v. verzwijgen.
+        : (activityLink ? `<p class="mono" style="color:var(--ink-faint);margin-bottom:12px">ℹ️ Kon geen extra info van de opgeslagen link ophalen — de AI-tekst hieronder is dus niet op die site gebaseerd.</p>` : '');
 
       document.getElementById('enrich-result').innerHTML = `
         ${photoUrl ? `<img src="${escapeHtml(photoUrl)}" alt="" style="width:100%;height:160px;object-fit:cover;border-radius:12px;margin-bottom:12px" onerror="this.remove()"/>` : ''}

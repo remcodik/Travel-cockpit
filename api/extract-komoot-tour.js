@@ -39,8 +39,14 @@ export default async function handler(req, res) {
     const timeout = setTimeout(() => controller.abort(), 8000);
     let response;
     try {
+      // FIX: een zelf-identificerende bot-UA is precies het soort verzoek
+      // dat Komoot's bot-detectie eerder al blokkeerde (zie dossier
+      // hierboven) — een browser-UA is minder kwetsbaar daarvoor.
       response = await fetch(parsed.toString(), {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TravelCockpitBot/1.0)' },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
         redirect: 'follow',
         signal: controller.signal,
       });
