@@ -31,6 +31,26 @@ function onDbReady(fn) {
   dbReadyCallbacks.push(fn);
 }
 
+// FIX (root cause van "af en toe veranderen mijn reisdatums vanzelf"):
+// db.enablePersistence() hierboven cachet elke read lokaal in IndexedDB.
+// Een gewone .get() (zonder source) kan direct na een pagina-herlaad —
+// vóórdat de SDK weer met de server verbonden is — een verouderd gecachet
+// document teruggeven in plaats van te wachten op de echte, actuele data.
+// Voor reizen/verblijven is dat funest: hun datums worden meteen
+// klakkeloos overgenomen in TRIP_START/TRIP_END (applyTripData()) en
+// kunnen via de auto-verruim-check zelfs teruggeschreven worden naar
+// Firestore — zo kwam een alweer gecorrigeerde reisdatum herhaaldelijk
+// terug, zonder dat er iets bewerkt was. Eerst expliciet de server
+// proberen; alleen bij een mislukte/offline poging terugvallen op de
+// lokale cache, zodat de app offline blijft werken.
+async function getFreshSnapshot(ref) {
+  try {
+    return await ref.get({ source: 'server' });
+  } catch {
+    return await ref.get();
+  }
+}
+
 // ── Toegang: eigenaar-PIN of deel-link (Fase G — deel-links met rechten) ──
 // Standaard (geen link, geen PIN) blijft dit vol-toegang — exact het
 // gedrag van vandaag. Alleen een deel-link met scope:'view' of een
@@ -442,7 +462,7 @@ async function dbLoadAllTrips() {
   const ref = allTripsRef();
   if (!ref) return null;
   try {
-    const snap = await ref.get();
+    const snap = await getFreshSnapshot(ref);
     return snap.docs
       .filter(doc => doc.data().name) // sluit lege/legacy trip-docs uit
       .map(doc => {
@@ -571,7 +591,7 @@ async function dbLoadAccommodations(forTripId) {
   const ref = db && db.collection('trips').doc(forTripId).collection('accommodations');
   if (!ref) return null;
   try {
-    const snap = await ref.orderBy('checkIn').get();
+    const snap = await getFreshSnapshot(ref.orderBy('checkIn'));
     // Foto terug ophalen uit localStorage — zelfde patroon als tickets
     // (dbSaveTicket): base64-fotodata gaat niet mee in het Firestore-
     // document zelf (1MB-limiet per document), alleen een hasPhoto-vlag.

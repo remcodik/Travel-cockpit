@@ -863,6 +863,7 @@
   <div class="sheet" onclick="event.stopPropagation()" style="max-height:92vh">
     <div class="sheet-handle"></div>
     <p class="sheet-title" id="text-viewer-title">TEKST</p>
+    <img id="text-viewer-photo" alt="" style="display:none;width:100%;height:180px;object-fit:cover;border-radius:12px;margin-bottom:14px" onerror="this.style.display='none'"/>
     <textarea id="text-viewer-textarea" rows="14" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:15px;line-height:1.6;margin-bottom:14px;font-family:inherit;resize:vertical"></textarea>
     <p id="text-viewer-readonly" style="display:none;font-size:15px;line-height:1.7;color:var(--ink);white-space:pre-line;margin-bottom:18px"></p>
     <button id="text-viewer-save-btn" onclick="saveTextViewer()" class="btn btn-primary" style="margin-bottom:8px">Gebruik deze tekst</button>

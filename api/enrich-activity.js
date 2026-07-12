@@ -10,6 +10,8 @@
 // daadwerkelijk de genoemde activiteit.
 // ═══════════════════════════════════════════════════════════
 
+import { fetchPageContext } from './_lib/fetchPageContext.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Alleen POST toegestaan' });
@@ -20,13 +22,23 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY ontbreekt in Vercel environment variables' });
   }
 
-  const { activityName, accommodationName, accommodationLocation, country, language } = req.body || {};
+  const { activityName, accommodationName, accommodationLocation, country, language, activityLink } = req.body || {};
 
   if (!activityName || typeof activityName !== 'string' || activityName.length > 200) {
     return res.status(400).json({ error: 'activityName ontbreekt of is ongeldig' });
   }
   if (!accommodationName || typeof accommodationName !== 'string' || accommodationName.length > 200) {
     return res.status(400).json({ error: 'accommodationName ontbreekt of is ongeldig' });
+  }
+
+  // Opgeslagen Komoot-/website-link (act.komootTourUrl of act.link) erbij
+  // ophalen: de gebruiker koos deze link zelf als "dit is de plek", dus de
+  // AI moet hierop gronden i.p.v. gokken op alleen de activiteitnaam — dat
+  // gaf eerder een omschrijving die niets met de daadwerkelijk gelinkte
+  // plek te maken had.
+  let linkContext = null;
+  if (activityLink && typeof activityLink === 'string' && /^https?:\/\//i.test(activityLink)) {
+    linkContext = await fetchPageContext(activityLink);
   }
 
   const systemPrompt = `Je bent de reisassistent in Travel Cockpit. Je verrijkt ÉÉN al bestaande, door de gebruiker ingeplande activiteit met meer achtergrond — je stelt geen nieuwe plekken voor.
@@ -53,7 +65,13 @@ Retourneer exact dit formaat:
 Verblijf: ${accommodationName}, ${accommodationLocation || ''}
 Land: ${country || 'onbekend'}
 Taal: ${language || 'nl'}
-
+${linkContext ? `
+De gebruiker heeft zelf deze link bij de activiteit opgeslagen (dit IS de
+bedoelde plek — baseer je omschrijving hierop, niet alleen op de naam
+hierboven):
+Titel op de link: ${linkContext.title || '(geen titel gevonden)'}
+Omschrijving op de link: ${linkContext.description || '(geen omschrijving gevonden)'}
+` : ''}
 Verrijk deze specifieke activiteit.`;
 
   try {

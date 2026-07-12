@@ -752,7 +752,7 @@ function openEnrichDescriptionViewer() {
   if (!lastEnrichedResult) return;
   const text = [lastEnrichedResult.description, lastEnrichedResult.fun_fact ? `💡 ${lastEnrichedResult.fun_fact}` : null]
     .filter(Boolean).join('\n\n');
-  openTextViewer('AI-verrijking', text);
+  openTextViewer('AI-verrijking', text, null, lastEnrichedResult.photo_url);
 }
 
 async function openAiEnrichSheet(id) {
@@ -789,6 +789,11 @@ async function openAiEnrichSheet(id) {
           accommodationLocation: acc.address,
           country: (trip && trip.country) || 'Noorwegen',
           language: AppState.language || 'nl',
+          // Opgeslagen Komoot-/website-link meesturen (zelfde volgorde als
+          // elders: Komoot voor wandelingen, anders het gewone Link-veld) —
+          // zodat de AI zich baseert op de plek die de gebruiker zelf koos,
+          // niet op alleen de activiteitnaam raden.
+          activityLink: act.komootTourUrl || act.link || null,
         }),
       }),
       fetchWikipediaPhoto(act.name, AppState.language),
