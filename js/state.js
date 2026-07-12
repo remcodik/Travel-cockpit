@@ -890,6 +890,10 @@ function initAppState() {
     // keer ooit), de standaardreis + haar accommodaties zaaien —
     // zelfde patroon als de bestaande activiteiten-seed hieronder.
     let trips = await dbLoadAllTrips();
+    // FIX: onthoudt of we hier zonet pas de standaardreis hebben aangemaakt
+    // — verderop bepaalt dat of een lege/mislukte accommodaties-load mag
+    // terugvallen op de hardcoded ACCOMMODATIONS-seed (zie hieronder).
+    let justSeededDefaultTrip = false;
     if (!trips || trips.length === 0) {
       const seedTrip = {
         id: DEFAULT_TRIP_ID, name: 'Noorwegen 2026', country: 'Noorwegen',
@@ -906,6 +910,7 @@ function initAppState() {
         });
       }
       trips = [seedTrip];
+      justSeededDefaultTrip = true;
     }
     AppState.trips = trips;
 
@@ -928,8 +933,22 @@ function initAppState() {
     }
     setCurrentTripId(targetTripId);
 
+    // FIX (kritiek): een lege/mislukte dbLoadAccommodations() (bv. een
+    // Firestore-leescache die nog niet gesynchroniseerd is, vlak na een
+    // reload) viel hier altijd terug op de hardcoded Noorwegen-seed uit
+    // js/data.js — ook voor een allang bestaande, allang aangepaste reis.
+    // ACCOMMODATIONS werd dan stilzwijgend vervangen door de bevroren
+    // demo-data, en de auto-verruim-check in applyTripData() kon die
+    // afwijkende (verkeerde) data vervolgens gewoon terugschrijven naar de
+    // écht reis — precies de "af en toe veranderen mijn reisdatums vanzelf"-
+    // klacht, zonder dat er ooit iets bewerkt was. De seed-terugval is nu
+    // alleen nog geldig direct ná het hierboven aanmaken van een
+    // gloednieuwe standaardreis (dan wéten we dat de seed klopt, want die
+    // is net pas geschreven) — voor elke andere, bestaande reis betekent
+    // een lege/mislukte load "nog niet geladen", niet "vervang door demo-
+    // data", zelfde veilige terugval als switchToTrip() al gebruikte.
     const accs = await dbLoadAccommodations(targetTripId);
-    applyTripData(targetTrip, accs && accs.length > 0 ? accs : ACCOMMODATIONS);
+    applyTripData(targetTrip, (accs && accs.length > 0) ? accs : (justSeededDefaultTrip ? ACCOMMODATIONS : []));
     AppState.selectedPlanningDay = getClosestTripDay();
     AppState.viewingAccommodationId = getActiveAccommodation() ? getActiveAccommodation().id : null;
 
