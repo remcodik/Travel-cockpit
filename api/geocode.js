@@ -97,8 +97,12 @@ async function handleMapsUrl(rawUrl, res) {
     const timeout = setTimeout(() => controller.abort(), 8000);
     let response;
     try {
+      // FIX: een zelf-identificerende bot-UA wordt eerder geblokkeerd bij
+      // het volgen van de redirect — een browser-UA is hier gepast (géén
+      // Nominatim-aanroep, die policy geldt alleen voor de zoekopdracht
+      // hierboven) en minder kwetsbaar daarvoor.
       response = await fetch(parsed.toString(), {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TravelCockpitBot/1.0)' },
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' },
         redirect: 'follow',
         signal: controller.signal,
       });

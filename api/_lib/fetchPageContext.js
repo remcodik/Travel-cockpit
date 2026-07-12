@@ -27,8 +27,19 @@ export async function fetchPageContext(url) {
     const timeout = setTimeout(() => controller.abort(), 8000);
     let response;
     try {
+      // FIX: een User-Agent die zichzelf als bot identificeert
+      // ("TravelCockpitBot/1.0") wordt door veel gewone restaurant-/
+      // horecasites (Cloudflare, Wordfence, en andere basis bot-weringen op
+      // gedeelde hosting) standaard geblokkeerd — dit is één lichte,
+      // eenmalige aanvraag namens de gebruiker voor hun eigen, zelf
+      // opgeslagen link, geen crawler, dus een gewone browser-UA is hier
+      // gepast en veel minder kwetsbaar voor zo'n blokkade.
       response = await fetch(parsed.toString(), {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TravelCockpitBot/1.0)' },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'nl,en;q=0.8',
+        },
         redirect: 'follow',
         signal: controller.signal,
       });
@@ -93,9 +104,13 @@ async function readBounded(response, maxBytes) {
 // zoekopdracht op naam, die bij een klein restaurant/café al snel een
 // totaal ongerelateerd artikel kan raken.
 function extractPageInfo(html, pageUrl) {
-  let title = matchMetaContent(html, 'og:title') || matchTitleTag(html);
-  let description = matchMetaContent(html, 'og:description') || matchMetaName(html, 'description');
-  let image = matchMetaContent(html, 'og:image');
+  // Twitter Card-tags als extra terugval na Open Graph — veel sites
+  // gebouwd met een moderne pagebuilder (Framer/Webflow/Squarespace, zoals
+  // een restaurant-onepager) vullen die minstens even betrouwbaar als
+  // og:title/og:description.
+  let title = matchMetaContent(html, 'og:title') || matchMetaName(html, 'twitter:title') || matchTitleTag(html);
+  let description = matchMetaContent(html, 'og:description') || matchMetaName(html, 'twitter:description') || matchMetaName(html, 'description');
+  let image = matchMetaContent(html, 'og:image') || matchMetaName(html, 'twitter:image');
   let cuisine = null;
   let priceRange = null;
 

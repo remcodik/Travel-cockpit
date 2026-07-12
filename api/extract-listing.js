@@ -36,8 +36,16 @@ export default async function handler(req, res) {
     const timeout = setTimeout(() => controller.abort(), 8000);
     let response;
     try {
+      // FIX: een zelf-identificerende bot-UA wordt door veel gewone
+      // verblijf-/horecasites (Cloudflare/Wordfence e.d.) standaard
+      // geblokkeerd — dit is één lichte aanvraag namens de gebruiker voor
+      // hun eigen opgeslagen link, geen crawler, dus een browser-UA past
+      // hier beter en is veel minder kwetsbaar voor zo'n blokkade.
       response = await fetch(parsed.toString(), {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TravelCockpitBot/1.0)' },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
         redirect: 'follow',
         signal: controller.signal,
       });
