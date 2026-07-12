@@ -38,8 +38,8 @@ export async function fetchPageContext(url) {
     if (!response.ok) return null;
 
     const html = await readBounded(response, 1_500_000);
-    const info = extractPageInfo(html);
-    if (!info.title && !info.description && !info.excerpt) return null;
+    const info = extractPageInfo(html, parsed);
+    if (!info.title && !info.description && !info.excerpt && !info.image) return null;
     return info;
   } catch (err) {
     console.error('fetchPageContext fout:', err);
@@ -81,17 +81,21 @@ async function readBounded(response, maxBytes) {
   return html;
 }
 
-// Titel/beschrijving uit Open Graph-meta (breed ondersteund door
+// Titel/beschrijving/foto uit Open Graph-meta (breed ondersteund door
 // restaurant-/attractiesites en Komoot) met JSON-LD als aanvulling. Voor
 // eet-/drinkgelegenheden (schema.org Restaurant/CafeOrCoffeeShop/Bar/
 // FoodEstablishment) ook keuken/prijsklasse eruit halen — precies het
 // soort concreets ("Italiaans, €€") dat een AI-omschrijving specifiek
 // maakt in plaats van "lijkt een lokaal restaurant te zijn". Zonder
 // og:description als terugval een korte, opgeschoonde bodytekst-excerpt
-// — sommige sites laten die meta gewoon leeg/generiek.
-function extractPageInfo(html) {
+// — sommige sites laten die meta gewoon leeg/generiek. og:image is de
+// eigen foto van de plek zelf — veel betrouwbaarder dan een Wikipedia-
+// zoekopdracht op naam, die bij een klein restaurant/café al snel een
+// totaal ongerelateerd artikel kan raken.
+function extractPageInfo(html, pageUrl) {
   let title = matchMetaContent(html, 'og:title') || matchTitleTag(html);
   let description = matchMetaContent(html, 'og:description') || matchMetaName(html, 'description');
+  let image = matchMetaContent(html, 'og:image');
   let cuisine = null;
   let priceRange = null;
 
@@ -103,6 +107,9 @@ function extractPageInfo(html) {
       for (const item of items) {
         if (!title && item && item.name) title = item.name;
         if (!description && item && item.description) description = item.description;
+        if (!image && item && item.image) {
+          image = Array.isArray(item.image) ? item.image[0] : (item.image.url || item.image);
+        }
         if (!cuisine && item && item.servesCuisine) {
           cuisine = Array.isArray(item.servesCuisine) ? item.servesCuisine.join(', ') : item.servesCuisine;
         }
@@ -115,12 +122,25 @@ function extractPageInfo(html) {
 
   const excerpt = description ? null : extractBodyExcerpt(html);
 
+  // Relatieve og:image-paden ("/uploads/foto.jpg") komen zo vaak voor dat
+  // ze zonder dit gewoon kapotte <img>'s zouden geven — tegen de eigen
+  // pagina-URL resolven maakt er altijd een absolute URL van.
+  let resolvedImage = null;
+  if (image) {
+    try {
+      resolvedImage = new URL(image, pageUrl).toString();
+    } catch {
+      resolvedImage = null;
+    }
+  }
+
   return {
     title: title ? decodeHtmlEntities(title).slice(0, 200) : null,
     description: description ? decodeHtmlEntities(description).slice(0, 600) : null,
     cuisine: cuisine ? decodeHtmlEntities(String(cuisine)).slice(0, 150) : null,
     priceRange: priceRange ? decodeHtmlEntities(String(priceRange)).slice(0, 20) : null,
     excerpt,
+    image: resolvedImage,
   };
 }
 

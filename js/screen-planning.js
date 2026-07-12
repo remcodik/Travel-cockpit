@@ -786,11 +786,17 @@ async function openAiEnrichSheet(id) {
     // déze activiteit. Apart endpoint dat de opgegeven activiteit echt
     // verrijkt, nu ook met iets meer tekst en een optioneel achtergrondfeitje.
     const trip = AppState.trips.find(t => t.id === getCurrentTripId());
-    // Echte foto (Wikipedia, best-effort) en AI-tekst tegelijk ophalen —
-    // twee onafhankelijke, losstaande bronnen, dus geen reden om op elkaar
-    // te wachten. Geeft alleen een idee van de plek; geen AI-gegenereerde
-    // (dus verzonnen) afbeelding.
-    const [response, photoUrl] = await Promise.all([
+    const activityLink = act.komootTourUrl || act.link || null;
+    // FIX: een Wikipedia-zoekopdracht op de activiteitnaam werkte prima
+    // voor bekende wandelingen/uitzichtpunten, maar bij een klein
+    // restaurant/café (bv. "Nøgen") matcht Wikipedia al snel een compleet
+    // ongerelateerd artikel (en dus een totaal verkeerde foto) — Wikipedia
+    // heeft simpelweg geen pagina's over de meeste eetgelegenheden. Voor
+    // restaurant/café gebruiken we in plaats daarvan straks de og:image
+    // van de eigen opgeslagen link (dat IS de plek); Wikipedia slaan we
+    // dan over in plaats van te gokken.
+    const isFoodCategory = act.category === 'restaurant' || act.category === 'cafe';
+    const [response, wikipediaPhoto] = await Promise.all([
       fetch('/api/enrich-activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -804,21 +810,39 @@ async function openAiEnrichSheet(id) {
           // elders: Komoot voor wandelingen, anders het gewone Link-veld) —
           // zodat de AI zich baseert op de plek die de gebruiker zelf koos,
           // niet op alleen de activiteitnaam raden.
-          activityLink: act.komootTourUrl || act.link || null,
+          activityLink,
         }),
       }),
-      fetchWikipediaPhoto(act.name, AppState.language),
+      isFoodCategory ? Promise.resolve(null) : fetchWikipediaPhoto(act.name, AppState.language),
     ]);
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Onbekende fout');
     const enriched = data.enriched;
+    const siteInfo = data.siteInfo || null;
+    // Eigen foto van de gelinkte site (og:image) is betrouwbaarder dan een
+    // Wikipedia-gok op naam — wint dus altijd als 'm er is.
+    const photoUrl = (siteInfo && siteInfo.image) || wikipediaPhoto || null;
 
     if (enriched) {
       enriched.photo_url = photoUrl;
       lastEnrichedResult = enriched;
+      // "Groter" kopje alleen tonen als er ook echt losstaande site-info is
+      // (titel/omschrijving/keuken/prijs) — anders blijft het gewoon de
+      // AI-tekst zoals voorheen, geen kopjes voor niets.
+      const hasSiteInfo = siteInfo && (siteInfo.title || siteInfo.description || siteInfo.excerpt || siteInfo.cuisine || siteInfo.priceRange);
+      const siteInfoHtml = hasSiteInfo ? `
+        <p class="eyebrow" style="margin-bottom:6px">🌐 Site-info</p>
+        <div style="background:var(--paper-warm);border-radius:11px;padding:12px 14px;margin-bottom:14px">
+          ${siteInfo.title ? `<p style="font-weight:800;font-size:13.5px;margin-bottom:4px">${escapeHtml(siteInfo.title)}</p>` : ''}
+          ${(siteInfo.cuisine || siteInfo.priceRange) ? `<p class="mono" style="margin-bottom:6px">${[siteInfo.cuisine, siteInfo.priceRange].filter(Boolean).map(escapeHtml).join(' · ')}</p>` : ''}
+          ${(siteInfo.description || siteInfo.excerpt) ? `<p style="font-size:12.5px;line-height:1.5;color:var(--ink-mid)">${escapeHtml(siteInfo.description || siteInfo.excerpt)}</p>` : ''}
+        </div>
+        <p class="eyebrow" style="margin-bottom:6px">🤖 AI-info</p>` : '';
+
       document.getElementById('enrich-result').innerHTML = `
         ${photoUrl ? `<img src="${escapeHtml(photoUrl)}" alt="" style="width:100%;height:160px;object-fit:cover;border-radius:12px;margin-bottom:12px" onerror="this.remove()"/>` : ''}
+        ${siteInfoHtml}
         <p onclick="openEnrichDescriptionViewer()" style="font-size:13.5px;line-height:1.65;color:var(--ink-mid);margin-bottom:12px;cursor:pointer">${escapeHtml(enriched.description || '')}</p>
         <p onclick="openEnrichDescriptionViewer()" style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--spruce);cursor:pointer;margin:-9px 0 12px">⤢ Groter lezen</p>
         ${enriched.fun_fact ? `<p style="font-size:12.5px;line-height:1.5;color:var(--spruce);background:var(--paper-warm);border-radius:10px;padding:10px 12px;margin-bottom:12px">💡 ${escapeHtml(enriched.fun_fact)}</p>` : ''}
