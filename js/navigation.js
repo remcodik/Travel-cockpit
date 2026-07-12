@@ -97,8 +97,13 @@ function openSheet(sheetId) {
 // popup zelf hoeft te weten waar de tekst vandaan komt of heen gaat.
 let textViewerSaveCallback = null;
 
-function openTextViewer(title, text, onSave) {
+function openTextViewer(title, text, onSave, photoUrl) {
   document.getElementById('text-viewer-title').textContent = title;
+  const photo = document.getElementById('text-viewer-photo');
+  if (photo) {
+    if (photoUrl) { photo.src = photoUrl; photo.style.display = 'block'; }
+    else { photo.style.display = 'none'; photo.removeAttribute('src'); }
+  }
   const textarea = document.getElementById('text-viewer-textarea');
   const readonly = document.getElementById('text-viewer-readonly');
   const saveBtn = document.getElementById('text-viewer-save-btn');
