@@ -330,7 +330,18 @@ function openActivityDetailSheet(id) {
   if (metaEl) metaEl.innerHTML += `<span class="mono" style="background:rgba(255,255,255,0.16);color:white;padding:3px 9px;border-radius:20px;font-size:11px">${escapeHtml(dateLabel)}</span>`;
 
   const descEl = document.getElementById('pd-desc');
-  if (descEl) descEl.textContent = act.desc || `Activiteit vanuit ${acc.name}.`;
+  const descText = act.desc || `Activiteit vanuit ${acc.name}.`;
+  if (descEl) {
+    descEl.textContent = descText;
+    descEl.onclick = () => openTextViewer(act.name, descText, null, act.photoUrl);
+  }
+  // "Groter lezen"-hint alleen tonen bij tekst die ook echt baat heeft bij
+  // een groter scherm — niet bij de korte placeholderzin hierboven.
+  const descHintEl = document.getElementById('pd-desc-hint');
+  if (descHintEl) {
+    descHintEl.style.display = (act.desc && act.desc.length > 80) ? 'block' : 'none';
+    descHintEl.onclick = () => openTextViewer(act.name, descText, null, act.photoUrl);
+  }
 
   // "Waarom relevant" — AI-context die vroeger verloren ging zodra een
   // suggestie werd ingepland (zie FIX in handleAddSuggestion()).
@@ -461,7 +472,7 @@ function openActivityDetailSheet(id) {
     const linkedTicket = AppState.tickets.find(t => idsMatch(t.activityId, id));
     extraEl.innerHTML = `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-        <button id="pd-note-btn" onclick="openNoteScreen('activity',${id},'${escapeHtml(act.name).replace(/'/g, "\\'")}')"
+        <button id="pd-note-btn" onclick="closeSheet('sheet-place-detail');openNoteScreen('activity',${id},'${escapeHtml(act.name).replace(/'/g, "\\'")}')"
           style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           ✎ Notitie
         </button>
