@@ -316,12 +316,24 @@ function renderPdHero(act, acc) {
   const hero = document.getElementById('pd-hero');
   if (hero) hero.style.background = acc.color;
 
+  // Echte foto (Wikipedia, best-effort via AI-verrijking — zie
+  // fetchWikipediaPhoto() in js/state.js) krijgt voorrang op het
+  // topografische decoratiepatroon, zelfde idee als een verblijf met foto.
+  if (hero) {
+    hero.style.backgroundImage = act.photoUrl
+      ? `linear-gradient(155deg, transparent 25%, rgba(8, 31, 24, 0.86) 100%), url(${act.photoUrl})`
+      : '';
+    hero.style.backgroundSize = 'cover';
+    hero.style.backgroundPosition = 'center';
+  }
+
   // Zelfde topografisch decoratiepatroon als de accommodatie-hero, nu ook
   // in het (vergrote) activiteit-detailscherm, afgeleid van de echte
-  // locatie/hoogte van deze activiteit.
+  // locatie/hoogte van deze activiteit. Alleen zonder eigen foto — anders
+  // concurreren beide decoraties om dezelfde achtergrond.
   const topoSvg = document.getElementById('pd-topo-svg');
   if (topoSvg) {
-    if (act.lat && act.lng) {
+    if (!act.photoUrl && act.lat && act.lng) {
       topoSvg.style.display = '';
       topoSvg.innerHTML = generateTopoLines(topoSeedForLocation(act.lat, act.lng, act.elevation), act.elevation);
     } else {

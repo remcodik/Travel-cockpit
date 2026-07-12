@@ -640,7 +640,8 @@
     <div class="sheet-handle"></div>
     <p class="sheet-title">ACTIVITEIT BEWERKEN</p>
     <input id="edit-activity-name-input" placeholder="Naam activiteit"/>
-    <textarea id="edit-activity-desc-input" placeholder="Beschrijving (optioneel)" rows="3" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:14.5px;margin-bottom:11px;font-family:inherit;resize:vertical"></textarea>
+    <textarea id="edit-activity-desc-input" placeholder="Beschrijving (optioneel)" rows="3" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:14.5px;margin-bottom:6px;font-family:inherit;resize:vertical"></textarea>
+    <button type="button" onclick="openDescTextEditor('edit-activity-desc-input')" style="background:none;border:none;color:var(--spruce);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;padding:0 0 11px;display:block">⤢ Groter bewerken</button>
     <p class="eyebrow" style="margin-bottom:7px">Soort — bepaalt het icoon</p>
     <div id="edit-activity-category-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
       <button type="button" onclick="setActivityCategory(this,'activity','edit-activity')" class="chip" data-category="activity">🏔️ Wandeling</button>
@@ -854,6 +855,18 @@
     <p class="sheet-title" id="enrich-activity-title">AI-verrijking</p>
     <div id="enrich-result"></div>
     <button onclick="closeSheet('sheet-enrich-activity')" class="btn btn-outline" style="margin-top:12px">Sluiten</button>
+  </div>
+</div>
+
+<!-- ═══════════ SHEET: Grotere tekstweergave (voor lange, zelf getypte of AI-tekst) ═══════════ -->
+<div class="sheet-backdrop" id="sheet-text-viewer">
+  <div class="sheet" onclick="event.stopPropagation()" style="max-height:92vh">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title" id="text-viewer-title">TEKST</p>
+    <textarea id="text-viewer-textarea" rows="14" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-size:15px;line-height:1.6;margin-bottom:14px;font-family:inherit;resize:vertical"></textarea>
+    <p id="text-viewer-readonly" style="display:none;font-size:15px;line-height:1.7;color:var(--ink);white-space:pre-line;margin-bottom:18px"></p>
+    <button id="text-viewer-save-btn" onclick="saveTextViewer()" class="btn btn-primary" style="margin-bottom:8px">Gebruik deze tekst</button>
+    <button onclick="closeSheet('sheet-text-viewer')" class="btn btn-outline">Sluiten</button>
   </div>
 </div>
 

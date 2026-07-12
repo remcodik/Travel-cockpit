@@ -188,6 +188,32 @@ function wikivoyageSearchUrl(query, lang) {
   return `https://${lang || 'en'}.wikivoyage.org/w/index.php?search=${encodeURIComponent(query)}`;
 }
 
+// Best-effort ECHTE foto bij AI-verrijking (i.p.v. een AI-gegenereerde
+// afbeelding) — via Wikipedia's eigen, gratis, CORS-toegestane API's, dus
+// rechtstreeks vanuit de client, geen nieuwe serverless function nodig
+// (Vercel's functielimiet, zie docs/10-issues/32-...). Zoekt eerst het
+// best passende artikel (search-API), haalt daarvan de samenvatting op
+// (rest_v1/page/summary) voor de thumbnail. Probeert eerst de opgegeven
+// taal, dan Engels — een obscuur lokaal paadje/restaurant heeft vaak geen
+// artikel, een bekende bezienswaardigheid/natuurgebied vaak wel. Geen gok:
+// null als er niets gevonden wordt.
+async function fetchWikipediaPhoto(query, lang) {
+  for (const l of [...new Set([lang || 'nl', 'en'])]) {
+    try {
+      const searchUrl = `https://${l}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*&srlimit=1`;
+      const searchResp = await fetch(searchUrl);
+      const searchData = await searchResp.json();
+      const title = searchData?.query?.search?.[0]?.title;
+      if (!title) continue;
+      const summaryResp = await fetch(`https://${l}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+      const summaryData = await summaryResp.json();
+      const photo = summaryData?.thumbnail?.source || summaryData?.originalimage?.source;
+      if (photo) return photo;
+    } catch { /* geen internet of Wikipedia onbereikbaar — volgende taal/null */ }
+  }
+  return null;
+}
+
 // Haalt alleen de plaatsnaam uit een adres ("Straat 1, 6857 Sogndal" → "Sogndal")
 // — een zoekopdracht met het volledige adres levert bij Wikipedia/Wikivoyage
 // vrijwel nooit iets op, alleen de plaatsnaam wel.

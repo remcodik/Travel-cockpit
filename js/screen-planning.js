@@ -733,6 +733,28 @@ async function handleDeleteActivity(id) {
 }
 
 // ── AI-verrijking ─────────────────────────────────────────
+// Grotere weergave van een lang, zelf getypt tekstveld (bv. de
+// beschrijving, die maar 3 regels tekstvak heeft) — via de gedeelde
+// openTextViewer() (js/navigation.js). Schrijft de nieuwe waarde bij
+// "Gebruik deze tekst" terug naar het oorspronkelijke tekstvak.
+function openDescTextEditor(textareaId) {
+  const el = document.getElementById(textareaId);
+  if (!el) return;
+  openTextViewer('Beschrijving', el.value, newValue => { el.value = newValue; });
+}
+
+// Laatst getoonde AI-verrijking — alleen om openEnrichDescriptionViewer()
+// de tekst te kunnen doorgeven zonder 'm in een onclick-attribuut te
+// moeten proppen (kan aanhalingstekens/regeleinden bevatten).
+let lastEnrichedResult = null;
+
+function openEnrichDescriptionViewer() {
+  if (!lastEnrichedResult) return;
+  const text = [lastEnrichedResult.description, lastEnrichedResult.fun_fact ? `💡 ${lastEnrichedResult.fun_fact}` : null]
+    .filter(Boolean).join('\n\n');
+  openTextViewer('AI-verrijking', text);
+}
+
 async function openAiEnrichSheet(id) {
   const act = AppState.activities.find(a => a.id === id);
   if (!act) return;
@@ -753,25 +775,36 @@ async function openAiEnrichSheet(id) {
     // déze activiteit. Apart endpoint dat de opgegeven activiteit echt
     // verrijkt, nu ook met iets meer tekst en een optioneel achtergrondfeitje.
     const trip = AppState.trips.find(t => t.id === getCurrentTripId());
-    const response = await fetch('/api/enrich-activity', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        activityName: act.name,
-        accommodationName: acc.name,
-        accommodationLocation: acc.address,
-        country: (trip && trip.country) || 'Noorwegen',
-        language: AppState.language || 'nl',
+    // Echte foto (Wikipedia, best-effort) en AI-tekst tegelijk ophalen —
+    // twee onafhankelijke, losstaande bronnen, dus geen reden om op elkaar
+    // te wachten. Geeft alleen een idee van de plek; geen AI-gegenereerde
+    // (dus verzonnen) afbeelding.
+    const [response, photoUrl] = await Promise.all([
+      fetch('/api/enrich-activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          activityName: act.name,
+          accommodationName: acc.name,
+          accommodationLocation: acc.address,
+          country: (trip && trip.country) || 'Noorwegen',
+          language: AppState.language || 'nl',
+        }),
       }),
-    });
+      fetchWikipediaPhoto(act.name, AppState.language),
+    ]);
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Onbekende fout');
     const enriched = data.enriched;
 
     if (enriched) {
+      enriched.photo_url = photoUrl;
+      lastEnrichedResult = enriched;
       document.getElementById('enrich-result').innerHTML = `
-        <p style="font-size:13.5px;line-height:1.65;color:var(--ink-mid);margin-bottom:12px">${escapeHtml(enriched.description || '')}</p>
+        ${photoUrl ? `<img src="${escapeHtml(photoUrl)}" alt="" style="width:100%;height:160px;object-fit:cover;border-radius:12px;margin-bottom:12px" onerror="this.remove()"/>` : ''}
+        <p onclick="openEnrichDescriptionViewer()" style="font-size:13.5px;line-height:1.65;color:var(--ink-mid);margin-bottom:12px;cursor:pointer">${escapeHtml(enriched.description || '')}</p>
+        <p onclick="openEnrichDescriptionViewer()" style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--spruce);cursor:pointer;margin:-9px 0 12px">⤢ Groter lezen</p>
         ${enriched.fun_fact ? `<p style="font-size:12.5px;line-height:1.5;color:var(--spruce);background:var(--paper-warm);border-radius:10px;padding:10px 12px;margin-bottom:12px">💡 ${escapeHtml(enriched.fun_fact)}</p>` : ''}
         ${enriched.tips && enriched.tips.length ? `
           <div style="background:var(--slope-light);border-radius:11px;padding:12px 14px;margin-bottom:12px">
@@ -800,6 +833,10 @@ async function applyAiEnrichment(id, enriched) {
   if (enriched.duration_minutes) changes.duration = Math.round(enriched.duration_minutes / 60) + ' u';
   if (enriched.distance_km) changes.distance = enriched.distance_km + ' km';
   if (enriched.difficulty) changes.level = { easy: 'Makkelijk', medium: 'Gemiddeld', hard: 'Zwaar' }[enriched.difficulty] || enriched.difficulty;
+  // Echte foto (Wikipedia, best-effort — zie fetchWikipediaPhoto() in
+  // js/state.js) die bij het verrijken al werd opgehaald, nu bewaren zodat
+  // 'm ook zichtbaar blijft op het activiteit-detailscherm (renderPdHero()).
+  if (enriched.photo_url) changes.photoUrl = enriched.photo_url;
   await updateActivity(id, changes);
   closeSheet('sheet-enrich-activity');
   showToast('✓ Activiteit verrijkt');

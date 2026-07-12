@@ -88,6 +88,41 @@ function openSheet(sheetId) {
   document.getElementById(sheetId).classList.add('open');
 }
 
+// Generieke "grotere tekst"-popup — voor zowel lange, zelf getypte tekst
+// (bv. de beschrijving van een activiteit, die maar 3 regels tekstvak
+// heeft) als lange AI-gegenereerde tekst (AI-verrijking) die in een smal
+// bottom-sheet lastig leest. Zonder onSave: alleen-lezen weergave in een
+// groter lettertype. Met onSave: een groter tekstvak, en "Gebruik deze
+// tekst" schrijft de nieuwe waarde terug naar de aanroeper i.p.v. dat deze
+// popup zelf hoeft te weten waar de tekst vandaan komt of heen gaat.
+let textViewerSaveCallback = null;
+
+function openTextViewer(title, text, onSave) {
+  document.getElementById('text-viewer-title').textContent = title;
+  const textarea = document.getElementById('text-viewer-textarea');
+  const readonly = document.getElementById('text-viewer-readonly');
+  const saveBtn = document.getElementById('text-viewer-save-btn');
+  if (onSave) {
+    textarea.style.display = 'block';
+    readonly.style.display = 'none';
+    saveBtn.style.display = 'block';
+    textarea.value = text || '';
+    textViewerSaveCallback = onSave;
+  } else {
+    textarea.style.display = 'none';
+    readonly.style.display = 'block';
+    saveBtn.style.display = 'none';
+    readonly.textContent = text || '';
+    textViewerSaveCallback = null;
+  }
+  openSheet('sheet-text-viewer');
+}
+
+function saveTextViewer() {
+  if (textViewerSaveCallback) textViewerSaveCallback(document.getElementById('text-viewer-textarea').value);
+  closeSheet('sheet-text-viewer');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.sheet-backdrop').forEach(bg => {
     bg.addEventListener('click', e => {
