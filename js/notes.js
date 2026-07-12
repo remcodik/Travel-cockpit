@@ -81,6 +81,14 @@ async function openNoteScreen(type, contextId, title) {
   const savedEl = document.getElementById('note-saved-indicator');
   if (savedEl) savedEl.textContent = '';
 
+  // FIX: de activiteit-notitieknop leeft in sheet-place-detail (een
+  // .sheet-backdrop, z-index 2000, blijft altijd bovenop elk .screen
+  // staan zolang de 'open'-klasse niet expliciet verwijderd wordt).
+  // navigateTo() zelf raakt geen sheets aan — zonder dit bleef die sheet
+  // gewoon zichtbaar bovenop het net geactiveerde notitiescherm, en kwam
+  // je er na het terug-knopje ook niet meer normaal uit ("sluit niet").
+  document.querySelectorAll('.sheet-backdrop.open').forEach(s => s.classList.remove('open'));
+
   navigateTo('notes');
 
   const existing = await dbLoadNote(type, contextId);

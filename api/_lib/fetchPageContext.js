@@ -39,7 +39,7 @@ export async function fetchPageContext(url) {
 
     const html = await readBounded(response, 1_500_000);
     const info = extractPageInfo(html);
-    if (!info.title && !info.description) return null;
+    if (!info.title && !info.description && !info.excerpt) return null;
     return info;
   } catch (err) {
     console.error('fetchPageContext fout:', err);
@@ -82,12 +82,18 @@ async function readBounded(response, maxBytes) {
 }
 
 // Titel/beschrijving uit Open Graph-meta (breed ondersteund door
-// restaurant-/attractiesites en Komoot) met JSON-LD name/description
-// als aanvulling — geen ruwe bodytekst, dat is te ruis-gevoelig om
-// zomaar in een AI-prompt te plakken.
+// restaurant-/attractiesites en Komoot) met JSON-LD als aanvulling. Voor
+// eet-/drinkgelegenheden (schema.org Restaurant/CafeOrCoffeeShop/Bar/
+// FoodEstablishment) ook keuken/prijsklasse eruit halen — precies het
+// soort concreets ("Italiaans, €€") dat een AI-omschrijving specifiek
+// maakt in plaats van "lijkt een lokaal restaurant te zijn". Zonder
+// og:description als terugval een korte, opgeschoonde bodytekst-excerpt
+// — sommige sites laten die meta gewoon leeg/generiek.
 function extractPageInfo(html) {
   let title = matchMetaContent(html, 'og:title') || matchTitleTag(html);
   let description = matchMetaContent(html, 'og:description') || matchMetaName(html, 'description');
+  let cuisine = null;
+  let priceRange = null;
 
   const ldJsonBlocks = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
   for (const block of ldJsonBlocks) {
@@ -97,16 +103,45 @@ function extractPageInfo(html) {
       for (const item of items) {
         if (!title && item && item.name) title = item.name;
         if (!description && item && item.description) description = item.description;
+        if (!cuisine && item && item.servesCuisine) {
+          cuisine = Array.isArray(item.servesCuisine) ? item.servesCuisine.join(', ') : item.servesCuisine;
+        }
+        if (!priceRange && item && item.priceRange) priceRange = item.priceRange;
       }
     } catch {
       // geen bruikbare JSON in dit blok — volgende proberen
     }
   }
 
+  const excerpt = description ? null : extractBodyExcerpt(html);
+
   return {
     title: title ? decodeHtmlEntities(title).slice(0, 200) : null,
     description: description ? decodeHtmlEntities(description).slice(0, 600) : null,
+    cuisine: cuisine ? decodeHtmlEntities(String(cuisine)).slice(0, 150) : null,
+    priceRange: priceRange ? decodeHtmlEntities(String(priceRange)).slice(0, 20) : null,
+    excerpt,
   };
+}
+
+// Best-effort, ruwe terugval als er geen og:description/meta-omschrijving
+// is: script/style/nav/header/footer eruit, tags eruit, whitespace
+// opgeschoond, eerste stuk leesbare tekst. Bewust niet gebruikt als de
+// nette meta-omschrijving er al is — dit is veel ruis-gevoeliger.
+function extractBodyExcerpt(html) {
+  let body = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  let text = body ? body[1] : html;
+  text = text
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, ' ')
+    .replace(/<header[\s\S]*?<\/header>/gi, ' ')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  text = decodeHtmlEntities(text);
+  return text.length > 40 ? text.slice(0, 800) : null;
 }
 
 function matchMetaContent(html, property) {

@@ -46,8 +46,9 @@ export default async function handler(req, res) {
 Regels die je ALTIJD volgt:
 1. Verzin geen specifieke adressen, telefoonnummers of openingstijden die je niet zeker weet.
 2. Noem onzekerheid over geschiedenis/feiten expliciet ("naar verluidt", "vermoedelijk") i.p.v. iets stellig te beweren dat je niet zeker weet.
-3. Antwoord in de voorkeurstaal van de gebruiker.
-4. Antwoord ALTIJD met geldige JSON, precies 1 object. Nooit platte tekst of markdown.
+3. Krijg je hieronder concrete info van de eigen website van de plek (titel/omschrijving/keuken/prijsklasse)? Gebruik die dan expliciet en specifiek — vermijd vage vulzinnen als "lijkt dit een lokaal restaurant te zijn" of "waarschijnlijk" wanneer je het gewoon zeker weet uit die bron.
+4. Antwoord in de voorkeurstaal van de gebruiker.
+5. Antwoord ALTIJD met geldige JSON, precies 1 object. Nooit platte tekst of markdown.
 
 Retourneer exact dit formaat:
 {
@@ -70,8 +71,8 @@ De gebruiker heeft zelf deze link bij de activiteit opgeslagen (dit IS de
 bedoelde plek — baseer je omschrijving hierop, niet alleen op de naam
 hierboven):
 Titel op de link: ${linkContext.title || '(geen titel gevonden)'}
-Omschrijving op de link: ${linkContext.description || '(geen omschrijving gevonden)'}
-` : ''}
+Omschrijving op de link: ${linkContext.description || linkContext.excerpt || '(geen omschrijving gevonden)'}
+${linkContext.cuisine ? `Keuken: ${linkContext.cuisine}\n` : ''}${linkContext.priceRange ? `Prijsklasse: ${linkContext.priceRange}\n` : ''}` : ''}
 Verrijk deze specifieke activiteit.`;
 
   try {
