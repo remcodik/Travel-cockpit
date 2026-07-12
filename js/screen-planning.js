@@ -377,22 +377,21 @@ function openActivityDetailSheet(id) {
     locationStatusEl.style.display = 'block';
   }
 
-  // Plan-knop: dit was één knop met twee door elkaar gehaalde acties —
-  // "niet ingepland" gaf de tekst "+ Inplannen" maar de klik deed
-  // hetzelfde als bij een wél ingeplande activiteit (status togglen naar
-  // 'done'), zonder ooit een datum toe te kennen. Nu twee losse, kloppende
-  // acties: ingepland → afronden/heropenen togglen; niet ingepland →
-  // daadwerkelijk inplannen (handleQuickSchedule, kent een datum toe).
+  // Plan-knop: alleen nog relevant om een datum toe te kennen aan een
+  // niet-ingeplande activiteit. Afronden/Heropenen is hier weggehaald —
+  // dat kon via deze knop (bij een wél ingeplande activiteit) altijd al
+  // dubbelop met het vinkje op de Planning-rij zelf, en staat voortaan in
+  // Bewerken (minder drukte in dit eerste scherm). Route neemt de volle
+  // breedte over zodra dit vakje verborgen is (flex-sibling zonder display).
   const addBtn = document.getElementById('pd-add-btn');
   if (addBtn) {
-    const isDone = act.status === 'done';
-    addBtn.disabled = false;
     if (!act.date) {
+      addBtn.style.display = '';
+      addBtn.disabled = false;
       addBtn.textContent = '+ Inplannen';
       addBtn.onclick = () => { handleQuickSchedule(id); closeSheet('sheet-place-detail'); };
     } else {
-      addBtn.textContent = isDone ? '↺ Heropenen' : '✓ Afronden';
-      addBtn.onclick = () => { handleToggleActivity(id); closeSheet('sheet-place-detail'); };
+      addBtn.style.display = 'none';
     }
   }
 
@@ -431,7 +430,7 @@ function openActivityDetailSheet(id) {
     const komootHref = hasSafeKomootLink ? act.komootTourUrl : komootSearchUrl(locationQuery);
     nearbyEl.innerHTML = `
         ${hasSafeLink ? `<a href="${escapeHtml(act.link)}" target="_blank"
-          style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;display:inline-block">
+          style="padding:7px 14px;border:1.5px solid var(--spruce);border-radius:20px;background:var(--spruce);font-size:11px;font-weight:700;text-transform:uppercase;color:white;text-decoration:none;display:inline-block">
           🔗 Link
         </a>` : ''}
         ${meta.isHike ? `<a href="${escapeHtml(komootHref)}" target="_blank"
@@ -470,39 +469,39 @@ function openActivityDetailSheet(id) {
     // sheet-ticket) — alleen tonen als er echt een gekoppeld is, anders
     // blijft de knop weg i.p.v. een dooie/lege actie te tonen.
     const linkedTicket = AppState.tickets.find(t => idsMatch(t.activityId, id));
+    const actionBtnStyle = 'flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer';
+    // FIX (betere indeling): dit was één lange, wrappende rij van 5-7
+    // knoppen door elkaar (inclusief Verwijder/AI-verrijking, die zelden
+    // per ongeluk aangetikt moeten worden). Nu in duidelijke rijen: de
+    // twee meest gebruikte acties bovenaan, "uit planning halen" direct
+    // naast Verplaatsen (voorheen alleen één laag dieper, in dat sheet
+    // zelf, te vinden) i.p.v. pas via Bewerken. Verwijder en AI-verrijking
+    // staan voortaan in Bewerken — bewuster te bereiken, minder drukte
+    // hier. Afronden/Heropenen stond hier ook al dubbelop met het vinkje
+    // op de Planning-rij zelf, en staat nu ook in Bewerken.
     extraEl.innerHTML = `
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      <div style="display:flex;gap:8px;margin-top:4px;margin-bottom:8px">
         <button id="pd-note-btn" onclick="closeSheet('sheet-place-detail');openNoteScreen('activity',${id},'${escapeHtml(act.name).replace(/'/g, "\\'")}')"
-          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
-          ✎ Notitie
-        </button>
+          style="${actionBtnStyle}">✎ Notitie</button>
         <button onclick="closeSheet('sheet-place-detail');openEditActivitySheet(${id})" class="edit-only"
-          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
-          ✎ Bewerken
-        </button>
+          style="${actionBtnStyle}">✎ Bewerken</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px" class="edit-only">
         <button onclick="closeSheet('sheet-place-detail');openMoveActivitySheet(${id})" class="edit-only"
-          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
-          ↕ Verplaatsen
-        </button>
-        <button onclick="closeSheet('sheet-place-detail');openAiEnrichSheet(${id})" class="edit-only"
-          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
-          ◎ AI-verrijking
-        </button>
+          style="${actionBtnStyle}">↕ Verplaatsen</button>
+        ${act.date ? `
+        <button onclick="handleQuickUnschedule(${id})" class="edit-only"
+          style="${actionBtnStyle}">↩ Uit planning</button>` : ''}
+      </div>
+      ${(linkedTicket || !isValidLatLng(act.lat, act.lng)) ? `
+      <div style="display:flex;gap:8px;margin-bottom:8px">
         ${linkedTicket ? `
         <button onclick="closeSheet('sheet-place-detail');navigateTo('tickets');openEditTicketSheet('${linkedTicket.id}')"
-          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
-          🎟️ Ticket
-        </button>` : ''}
+          style="${actionBtnStyle}">🎟️ Ticket</button>` : ''}
         ${!isValidLatLng(act.lat, act.lng) ? `
         <button id="pd-retry-location-btn" onclick="handleRetryActivityLocation(${id})" class="edit-only"
-          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line);background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
-          🔍 Locatie zoeken
-        </button>` : ''}
-        <button onclick="handleDeleteActivity(${id})" class="edit-only"
-          style="flex:1;padding:10px;border-radius:11px;border:1.5px solid #dc2626;background:white;font-size:12px;font-weight:700;text-transform:uppercase;color:#dc2626;cursor:pointer">
-          🗑 Verwijder
-        </button>
-      </div>`;
+          style="${actionBtnStyle}">🔍 Locatie zoeken</button>` : ''}
+      </div>` : ''}`;
 
     // Toont of er al een notitie bestaat, zelfde patroon als de
     // notitie-knop op het accommodatiescherm (acc-note-btn).
@@ -635,6 +634,30 @@ function openEditActivitySheet(id) {
   updateActivityFormForCategory(selectedEditActivityCategory, 'edit-activity');
 
   document.getElementById('edit-activity-save-btn').onclick = () => saveActivityEdit(id);
+
+  // FIX (betere knoppen-indeling): Afronden/Heropenen, AI-verrijking en
+  // Verwijder stonden voorheen allemaal naast elkaar in het eerste,
+  // veelgebruikte detailscherm — Afronden zat daar al dubbelop met het
+  // vinkje op de Planning-rij zelf, en Verwijder/AI-verrijking zijn
+  // bewuster te bereiken vanuit Bewerken, minder kans op per-ongeluk-tikken.
+  const secondaryEl = document.getElementById('edit-activity-secondary-actions');
+  if (secondaryEl) {
+    const isDone = act.status === 'done';
+    secondaryEl.innerHTML = `
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        ${act.date ? `
+        <button onclick="closeSheet('sheet-edit-activity');handleToggleActivity(${id})" class="btn btn-outline" style="flex:1;margin:0">
+          ${isDone ? '↺ Heropenen' : '✓ Afronden'}
+        </button>` : ''}
+        <button onclick="closeSheet('sheet-edit-activity');openAiEnrichSheet(${id})" class="btn btn-outline" style="flex:1;margin:0">
+          ◎ AI-verrijking
+        </button>
+      </div>
+      <button onclick="handleDeleteActivity(${id})" class="btn btn-outline" style="border-color:#dc2626;color:#dc2626">
+        🗑 Verwijder
+      </button>`;
+  }
+
   openSheet('sheet-edit-activity');
 }
 
@@ -721,6 +744,18 @@ async function handleUnscheduleActivity() {
   await saveMoveActivity(currentMoveActivityId);
 }
 
+// Zelfde actie, maar als directe snelknop op het activiteit-detailscherm
+// zelf — voorheen alleen te bereiken via "Verplaatsen" (dit sheet), nu ook
+// zonder tussenstap voor wie een activiteit alleen even wil loskoppelen
+// van een dag, niet verplaatsen naar een andere.
+async function handleQuickUnschedule(id) {
+  await updateActivity(id, { date: null });
+  closeSheet('sheet-place-detail');
+  showToast('✓ Uit planning gehaald (niet verwijderd)');
+  renderPlanningScreen();
+  renderHomeScreen();
+}
+
 // ── Activiteit verwijderen (met bevestiging) ──────────────
 async function handleDeleteActivity(id) {
   const act = AppState.activities.find(a => a.id === id);
@@ -736,7 +771,10 @@ async function handleDeleteActivity(id) {
     return;
   }
   window._deleteConfirm = null;
-  closeSheet('sheet-place-detail');
+  // FIX: sloot voorheen altijd hardcoded 'sheet-place-detail' — sinds
+  // Verwijder ook vanuit Bewerken aan te roepen is, sluit dit nu elk open
+  // sheet i.p.v. per ongeluk het bewerkformulier open te laten staan.
+  document.querySelectorAll('.sheet-backdrop.open').forEach(s => s.classList.remove('open'));
   await deleteActivity(id);
   showToast(`🗑 ${act.name} verwijderd`);
   renderPlanningScreen();
@@ -817,6 +855,11 @@ async function openAiEnrichSheet(id) {
           // zodat de AI zich baseert op de plek die de gebruiker zelf koos,
           // niet op alleen de activiteitnaam raden.
           activityLink,
+          // FIX: AI-tekst over een restaurant/café zonder gevonden site-info
+          // was altijd vage vulling ("lijkt een lokaal restaurant te zijn")
+          // — server slaat die tekst nu over i.p.v. te gokken wanneer dit een
+          // eetgelegenheid is.
+          category: resolvedCategory,
         }),
       }),
       isFoodCategory ? Promise.resolve(null) : fetchWikipediaPhoto(act.name, AppState.language),
@@ -855,11 +898,22 @@ async function openAiEnrichSheet(id) {
         // een volledige browser, maar wél zichtbaar maken i.p.v. verzwijgen.
         : (activityLink ? `<p class="mono" style="color:var(--ink-faint);margin-bottom:12px">ℹ️ Kon geen extra info van de opgeslagen link ophalen — de AI-tekst hieronder is dus niet op die site gebaseerd.</p>` : '');
 
+      // FIX: bij een restaurant/café zonder gegronde site-info retourneert
+      // de server nu bewust description:null i.p.v. een vage vulzin (zie
+      // api/enrich-activity.js) — dat moet dan ook duidelijk zo getoond
+      // worden i.p.v. een lege alinea met een dooie "groter lezen"-knop
+      // erbij, of stilzwijgend een leeg sheet.
+      const hasDescription = !!(enriched.description && enriched.description.trim());
+      const hasAnyContent = hasDescription || enriched.fun_fact || (enriched.tips && enriched.tips.length) || enriched.duration_minutes || enriched.distance_km;
+      const noInfoNote = (!hasDescription && isFoodCategory) ? `
+        <p class="mono" style="color:var(--ink-faint);margin-bottom:12px">Voor restaurants/cafés toont AI-verrijking alleen tekst als er concrete info is gevonden (via een opgeslagen link) — geen algemene gok. Voeg een link toe voor specifiekere info.</p>` : '';
+
       document.getElementById('enrich-result').innerHTML = `
         ${photoUrl ? `<img src="${escapeHtml(photoUrl)}" alt="" style="width:100%;height:160px;object-fit:cover;border-radius:12px;margin-bottom:12px" onerror="this.remove()"/>` : ''}
         ${siteInfoHtml}
-        <p onclick="openEnrichDescriptionViewer()" style="font-size:13.5px;line-height:1.65;color:var(--ink-mid);margin-bottom:12px;cursor:pointer">${escapeHtml(enriched.description || '')}</p>
-        <p onclick="openEnrichDescriptionViewer()" style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--spruce);cursor:pointer;margin:-9px 0 12px">⤢ Groter lezen</p>
+        ${hasDescription ? `
+        <p onclick="openEnrichDescriptionViewer()" style="font-size:13.5px;line-height:1.65;color:var(--ink-mid);margin-bottom:12px;cursor:pointer">${escapeHtml(enriched.description)}</p>
+        <p onclick="openEnrichDescriptionViewer()" style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--spruce);cursor:pointer;margin:-9px 0 12px">⤢ Groter lezen</p>` : noInfoNote}
         ${enriched.fun_fact ? `<p style="font-size:12.5px;line-height:1.5;color:var(--spruce);background:var(--paper-warm);border-radius:10px;padding:10px 12px;margin-bottom:12px">💡 ${escapeHtml(enriched.fun_fact)}</p>` : ''}
         ${enriched.tips && enriched.tips.length ? `
           <div style="background:var(--slope-light);border-radius:11px;padding:12px 14px;margin-bottom:12px">
@@ -867,7 +921,7 @@ async function openAiEnrichSheet(id) {
             ${enriched.tips.map(t => `<p style="font-size:12.5px;color:var(--spruce);margin-bottom:5px">· ${escapeHtml(t)}</p>`).join('')}
           </div>` : ''}
         ${enriched.best_time ? `<p class="mono" style="margin-bottom:12px">⏰ ${escapeHtml(enriched.best_time)}</p>` : ''}
-        <button onclick="applyAiEnrichment(${id}, ${JSON.stringify(enriched).replace(/"/g, '&quot;')})" class="btn btn-primary" style="margin-bottom:9px">✓ Opslaan</button>
+        ${hasAnyContent ? `<button onclick="applyAiEnrichment(${id}, ${JSON.stringify(enriched).replace(/"/g, '&quot;')})" class="btn btn-primary" style="margin-bottom:9px">✓ Opslaan</button>` : ''}
         ${enriched.komoot_search ? `<a href="${komootSearchUrl(enriched.komoot_search)}" target="_blank" style="display:block;padding:13px;border-radius:13px;border:1.5px solid #6fbe6f;text-align:center;font-size:13px;font-weight:700;text-transform:uppercase;color:#3d8c3d;text-decoration:none">🗺 Bekijk op Komoot</a>` : ''}`;
     } else {
       document.getElementById('enrich-result').innerHTML = `<p class="mono" style="color:var(--summit)">Geen verrijking ontvangen</p>`;
@@ -884,7 +938,11 @@ async function applyAiEnrichment(id, enriched) {
   // zodat het ook zichtbaar blijft op het activiteit-detailscherm nadat de
   // verrijking is opgeslagen, niet alleen in dit sheet.
   const desc = [enriched.description, enriched.fun_fact ? `💡 ${enriched.fun_fact}` : null].filter(Boolean).join('\n\n');
-  const changes = { desc };
+  // FIX: bij een restaurant/café zonder gegronde site-info is description
+  // nu bewust null (zie api/enrich-activity.js) — zonder deze check zou
+  // "Opslaan" dan een lege string wegschrijven en een al bestaande,
+  // handmatig ingevulde omschrijving stilzwijgend wissen.
+  const changes = desc ? { desc } : {};
   if (enriched.duration_minutes) changes.duration = Math.round(enriched.duration_minutes / 60) + ' u';
   if (enriched.distance_km) changes.distance = enriched.distance_km + ' km';
   if (enriched.difficulty) changes.level = { easy: 'Makkelijk', medium: 'Gemiddeld', hard: 'Zwaar' }[enriched.difficulty] || enriched.difficulty;

@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY ontbreekt in Vercel environment variables' });
   }
 
-  const { activityName, accommodationName, accommodationLocation, country, language, activityLink } = req.body || {};
+  const { activityName, accommodationName, accommodationLocation, country, language, activityLink, category } = req.body || {};
 
   if (!activityName || typeof activityName !== 'string' || activityName.length > 200) {
     return res.status(400).json({ error: 'activityName ontbreekt of is ongeldig' });
@@ -41,6 +41,15 @@ export default async function handler(req, res) {
     linkContext = await fetchPageContext(activityLink);
   }
 
+  // FIX: bij een restaurant/café zonder gevonden site-info (of alleen een
+  // kale titel — geen echte inhoud) schreef de AI altijd een generieke
+  // vulzin ("lijkt een lokaal restaurant te zijn... weinig info
+  // beschikbaar") — daar heeft de gebruiker niets aan. Voor die situatie
+  // instrueren we de AI expliciet om NIET te gokken.
+  const isFoodCategory = category === 'restaurant' || category === 'cafe';
+  const hasGroundedSiteInfo = !!(linkContext && (linkContext.description || linkContext.excerpt || linkContext.cuisine || linkContext.priceRange));
+  const suppressGenericFoodText = isFoodCategory && !hasGroundedSiteInfo;
+
   const systemPrompt = `Je bent de reisassistent in Travel Cockpit. Je verrijkt ÉÉN al bestaande, door de gebruiker ingeplande activiteit met meer achtergrond — je stelt geen nieuwe plekken voor.
 
 Regels die je ALTIJD volgt:
@@ -49,10 +58,11 @@ Regels die je ALTIJD volgt:
 3. Krijg je hieronder concrete info van de eigen website van de plek (titel/omschrijving/keuken/prijsklasse)? Gebruik die dan expliciet en specifiek — vermijd vage vulzinnen als "lijkt dit een lokaal restaurant te zijn" of "waarschijnlijk" wanneer je het gewoon zeker weet uit die bron.
 4. Antwoord in de voorkeurstaal van de gebruiker.
 5. Antwoord ALTIJD met geldige JSON, precies 1 object. Nooit platte tekst of markdown.
+${suppressGenericFoodText ? `6. Dit is een restaurant/café en je hebt hierboven GEEN concrete site-info gekregen. Verzin dan geen algemene omschrijving over sfeer/keuken/concept — dat is altijd een gok zonder waarde. Retourneer in dat geval "description": null, "fun_fact": null, "tips": []. Duration/distance/difficulty/best_time/komoot_search blijven sowieso null (dit is geen wandeling).` : ''}
 
 Retourneer exact dit formaat:
 {
-  "description": "4-6 zinnen — wat het is, waarom de moeite waard, wat je er kunt verwachten",
+  "description": "4-6 zinnen — wat het is, waarom de moeite waard, wat je er kunt verwachten (of null, zie regel hierboven)",
   "fun_fact": "1 kort, interessant achtergrondfeitje (geschiedenis/cultuur) — of null als je niets met voldoende zekerheid weet",
   "duration_minutes": getal of null,
   "distance_km": getal of null,
@@ -63,6 +73,7 @@ Retourneer exact dit formaat:
 }`;
 
   const userMessage = `Activiteit: "${activityName}"
+Categorie: ${category || 'onbekend'}
 Verblijf: ${accommodationName}, ${accommodationLocation || ''}
 Land: ${country || 'onbekend'}
 Taal: ${language || 'nl'}
