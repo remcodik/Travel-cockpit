@@ -110,7 +110,12 @@ Verrijk deze specifieke activiteit.`;
       return res.status(502).json({ error: 'AI-antwoord was geen geldige JSON', raw: cleaned });
     }
 
-    return res.status(200).json({ enriched });
+    // linkContext apart teruggeven (i.p.v. 'm alleen in de AI-tekst te
+    // laten verwerken): de client toont 'm nu als eigen "SITE INFO"-blok
+    // met de rauwe feiten van de site zelf (titel/omschrijving/keuken/
+    // prijsklasse/foto), naast — niet vermengd met — de AI-tekst. Zo blijft
+    // zichtbaar wat écht van de site komt versus wat de AI erbij verzint.
+    return res.status(200).json({ enriched, siteInfo: linkContext });
   } catch (err) {
     return res.status(500).json({ error: 'Onverwachte serverfout', message: err.message });
   }
