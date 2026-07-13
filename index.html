@@ -502,7 +502,17 @@
     <p class="sheet-title">REIS TOEVOEGEN</p>
     <input id="trip-name-input" placeholder="Naam (bijv. Italië 2027)"/>
     <input id="trip-country-input" list="country-suggestions" placeholder="Land (typ vrij — elk land werkt)" style="margin-bottom:18px"/>
-    <p class="eyebrow" style="margin-bottom:9px">Verblijven</p>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1">
+        <p class="eyebrow" style="margin-bottom:5px">Begin reis</p>
+        <input id="trip-start-input" type="date"/>
+      </div>
+      <div style="flex:1">
+        <p class="eyebrow" style="margin-bottom:5px">Eind reis</p>
+        <input id="trip-end-input" type="date"/>
+      </div>
+    </div>
+    <p class="eyebrow" style="margin-bottom:9px">Verblijven (optioneel — kan ook later)</p>
     <div id="trip-accommodations-fields"></div>
     <button onclick="addAnotherTripAccommodation()" class="btn btn-outline" style="margin-bottom:18px">+ Nog een verblijf</button>
     <button onclick="saveTrip()" class="btn btn-primary">Reis toevoegen</button>

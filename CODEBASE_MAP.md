@@ -264,6 +264,8 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `getToday()`
 - `getTripPhase()`
 - `getDayNumber(date)`
+- `parseLocalDateInput(str)`
+- `formatDateInputValue(date)`
 - `getAccommodationForDate(date)`
 - `getActiveAccommodation()`
 - `getAllTripDays()`
@@ -278,6 +280,7 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `deleteActivity(id)`
 - `getProgress()`
 - `getActiveTrip()`
+- `getTripThemeColors(country)`
 - `applyTripData(trip, accommodations)`
 - `switchToTrip(tripId)`
 - `createTrip({ name, country, countryFlag, startDate, endDate, accommodations })`
