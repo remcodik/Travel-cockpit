@@ -571,6 +571,9 @@ function applyTripData(trip, accommodations) {
   TRIP_START.setTime(trip.startDate.getTime());
   TRIP_END.setTime(trip.endDate.getTime());
   applyCountryTheme(trip.country);
+  // Browsertab/PWA-titel volgt de actieve reis — stond vast op
+  // "Noorwegen 2026" (index.html), welke reis er ook actief was.
+  document.title = `Travel Cockpit · ${trip.name}`;
 
   ACCOMMODATIONS.length = 0;
   // Sorteert op check-in datum i.p.v. het (onbetrouwbare, vaak
@@ -685,6 +688,11 @@ async function switchToTrip(tripId) {
 
   AppState.activities = [];
   AppState.tickets = [];
+  // FIX: de "al toegevoegd"-markeringen van AI-ideeën (Ideeën-scherm)
+  // bleven bij het wisselen van reis staan — een suggestie met dezelfde
+  // naam leek in de nieuwe reis dan al toegevoegd terwijl die daar
+  // helemaal niet bestaat.
+  AppState.discoveredAdded = new Set();
   AppState.selectedPlanningDay = getClosestTripDay();
   AppState.viewingAccommodationId = getActiveAccommodation() ? getActiveAccommodation().id : null;
 

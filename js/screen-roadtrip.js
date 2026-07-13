@@ -91,6 +91,7 @@ function openMapsForCoords(lat, lng, label) {
 // tijdens roadtrip-modus niet hoeft weg te navigeren om te zien
 // waar je bent t.o.v. de verblijven. Lazy-init pas bij het uitklappen.
 let roadtripMiniMap = null;
+let roadtripMiniMarkers = [];
 
 function toggleRoadtripMiniMap() {
   const container = document.getElementById('rt-minimap-container');
@@ -111,21 +112,33 @@ function toggleRoadtripMiniMap() {
     return;
   }
 
+  const acc = getActiveAccommodation();
   if (!roadtripMiniMap) {
-    const acc = getActiveAccommodation();
-    roadtripMiniMap = L.map(container, { zoomControl: false, attributionControl: false }).setView([acc ? acc.lat : 61.0, acc ? acc.lng : 8.0], 9);
+    // Geen vast Noorwegen-middelpunt meer als terugval — Thuis is voor
+    // elke reis een zinnig startpunt zolang er nog geen verblijf is.
+    roadtripMiniMap = L.map(container, { zoomControl: false, attributionControl: false }).setView([acc ? acc.lat : HOME_LAT, acc ? acc.lng : HOME_LNG], 9);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(roadtripMiniMap);
-
-    ACCOMMODATIONS.forEach(a => {
-      const isActive = acc && acc.id === a.id;
-      const icon = L.divIcon({
-        html: `<div style="background:${a.color};width:${isActive ? 28 : 20}px;height:${isActive ? 28 : 20}px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:${isActive ? 14 : 11}px;box-shadow:0 2px 6px ${a.color}55">🏡</div>`,
-        className: '', iconSize: [30, 30], iconAnchor: [15, 15],
-      });
-      L.marker([a.lat, a.lng], { icon }).addTo(roadtripMiniMap)
-        .on('click', () => { AppState.viewingAccommodationId = a.id; navigateTo('accommodation'); });
-    });
+  } else {
+    roadtripMiniMap.setView([acc ? acc.lat : HOME_LAT, acc ? acc.lng : HOME_LNG], 9);
   }
+
+  // FIX: de verblijf-pins werden voorheen alleen bij de allereerste keer
+  // uitklappen toegevoegd en daarna nooit meer ververst — na het wisselen
+  // van reis bleven de verblijven van de vórige reis op de mini-kaart
+  // staan. Nu bij elk uitklappen opnieuw opgebouwd uit de actieve reis.
+  roadtripMiniMarkers.forEach(m => m.remove());
+  roadtripMiniMarkers = [];
+  ACCOMMODATIONS.filter(a => isValidLatLng(a.lat, a.lng)).forEach(a => {
+    const isActive = acc && acc.id === a.id;
+    const icon = L.divIcon({
+      html: `<div style="background:${a.color};width:${isActive ? 28 : 20}px;height:${isActive ? 28 : 20}px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:${isActive ? 14 : 11}px;box-shadow:0 2px 6px ${a.color}55">🏡</div>`,
+      className: '', iconSize: [30, 30], iconAnchor: [15, 15],
+    });
+    roadtripMiniMarkers.push(
+      L.marker([a.lat, a.lng], { icon }).addTo(roadtripMiniMap)
+        .on('click', () => { AppState.viewingAccommodationId = a.id; navigateTo('accommodation'); })
+    );
+  });
 
   setTimeout(() => { try { roadtripMiniMap.invalidateSize(); } catch (e) { console.error('Mini-kaart fout:', e); } }, 100);
 }

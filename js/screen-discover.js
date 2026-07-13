@@ -247,7 +247,10 @@ async function handleLoadMoreSuggestions() {
     accommodationLocation: discoverMode === 'accommodation'
       ? acc.address
       : `${baseLat.toFixed(4)}, ${baseLng.toFixed(4)}`,
-    country: 'Noorwegen',
+    // FIX: stond hardcoded op 'Noorwegen' — de AI kreeg dus voor élke reis
+    // Noorwegen als land mee en suggereerde daar plekken voor. Nu het land
+    // van de actieve reis (fallback alleen voor de allereerste load).
+    country: (getActiveTrip() && getActiveTrip().country) || 'Noorwegen',
     today: formatShortDate(getToday()),
     temperature: liveWeather ? liveWeather.temperature : 12,
     weatherCondition: liveWeather ? liveWeather.condition : 'bewolkt',

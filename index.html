@@ -113,7 +113,7 @@
     <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">
       <p style="font-family:var(--font-display);font-size:19px;font-weight:800;letter-spacing:-0.4px;flex:1">KAART</p>
       <button onclick="toggleGPS()" id="gps-toggle-btn" class="chip">📍 GPS</button>
-      <button onclick="toggleFullRoute()" class="chip" id="route-toggle-btn">NO</button>
+      <button onclick="toggleFullRoute()" class="chip" id="route-toggle-btn">Reis</button>
     </div>
     <div class="hscroll" id="map-filter-chips">
       <button data-filter-chip="all" onclick="setMapFilter(null)" class="chip on">Alles</button>
@@ -131,20 +131,9 @@
       <span class="eyebrow">Route</span>
       <span class="mono">━ rij &nbsp;┅ ferry</span>
     </div>
-    <div class="hscroll px" style="padding-bottom:9px">
-      <div class="chip" style="border-left:3px solid var(--summit)">🏠 Nijmegen · 15 jun</div>
-      <div class="chip" style="border-left:3px solid var(--water)">⚓ Hirtshals · ferry</div>
-      <div class="chip" style="border-left:3px solid var(--water)">🌊 Stavanger · stop</div>
-      <div class="chip" style="border-left:3px solid var(--water)">⚓ Bergen · 16 jun</div>
-      <div class="chip" style="border-left:3px solid var(--acc-1)">▲ Sogndal · 16–19</div>
-      <div class="chip" style="border-left:3px solid var(--acc-2)">▲ Skjåk · 19–23</div>
-      <div class="chip" style="border-left:3px solid var(--acc-3)">▲ Valdres · 23–27</div>
-      <div class="chip" style="border-left:3px solid var(--acc-4)">▲ Gjerstad · 27–29</div>
-      <div class="chip" style="border-left:3px solid var(--water)">⚓ Kristiansand · ferry</div>
-      <div class="chip" style="border-left:3px solid var(--water)">⚓ Hirtshals · aankomst</div>
-      <div class="chip" style="border-left:3px solid #795548">🏨 Kolding · 29–30</div>
-      <div class="chip" style="border-left:3px solid var(--summit)">🏠 Nijmegen · 30 jun</div>
-    </div>
+    <!-- Gevuld per actieve reis door renderMapRouteStrip() (js/screen-map.js)
+         — stond hier voorheen hardcoded als de Noorwegen-route. -->
+    <div class="hscroll px" id="map-route-strip" style="padding-bottom:9px"></div>
   </div>
 </div>
 
@@ -595,12 +584,9 @@
       <span id="activity-day-badge" class="mono" style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:var(--ink-faint);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px">—</span>
       <select id="activity-day-select" onchange="updateActivityDayBadge()" style="flex:1;margin-bottom:0"></select>
     </div>
-    <select id="activity-acc-select" style="margin-bottom:14px">
-      <option value="1">Sogndal (16–19 jun)</option>
-      <option value="2">Skjåk Solside (19–23 jun)</option>
-      <option value="3">Valdres / Noord-Aurdal (23–27 jun)</option>
-      <option value="4">Gjerstad (27–29 jun)</option>
-    </select>
+    <!-- Opties komen per actieve reis uit ACCOMMODATIONS (zie
+         openAddActivitySheet) — geen hardcoded seed-verblijven meer. -->
+    <select id="activity-acc-select" style="margin-bottom:14px"></select>
     <p class="eyebrow" style="margin-bottom:7px">Soort — bepaalt het icoon</p>
     <div id="activity-category-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
       <button type="button" onclick="setActivityCategory(this,'activity')" class="chip on" data-category="activity">🏔️ Wandeling</button>

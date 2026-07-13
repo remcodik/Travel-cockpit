@@ -181,6 +181,10 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `reportMapError(e)`
 - `renderMapFilterChips()`
 - `renderMapMarkers()`
+- `renderMapRoutes()`
+- `buildTripDrivePaths()`
+- `renderMapRouteStrip()`
+- `fitMapToAllPins()`
 - `renderPdHero(act, acc)`
 - `setMapFilter(accId)`
 - `toggleFullRoute()`
