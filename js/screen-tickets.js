@@ -431,56 +431,21 @@ async function handlePickActiveTrip(tripId) {
   await switchToTrip(tripId);
 }
 
-let pendingNewAccommodations = [];
-
 function openAddTripSheet() {
   document.getElementById('trip-name-input').value = '';
   document.getElementById('trip-country-input').value = '';
   document.getElementById('trip-start-input').value = '';
   document.getElementById('trip-end-input').value = '';
-  pendingNewAccommodations = [{}];
-  renderTripAccommodationFields();
   openSheet('sheet-trip');
 }
 
-// Verblijven zijn optioneel bij het aanmaken (de reisdatums staan op
-// zichzelf, zie saveTrip()) — verdere/eerste verblijven kunnen altijd
-// later via de accommodatie-beheerder worden toegevoegd. Hier bewust
-// minimaal: naam, adres, check-in/uit, coördinaten (handmatig, zoals de
-// bestaande Noorwegen-data).
-function renderTripAccommodationFields() {
-  const container = document.getElementById('trip-accommodations-fields');
-  if (!container) return;
-  container.innerHTML = pendingNewAccommodations.map((_, i) => `
-    <div class="card" style="padding:13px;margin-bottom:10px">
-      <p class="eyebrow" style="margin-bottom:8px">Verblijf ${i + 1}</p>
-      <input id="new-acc-name-${i}" placeholder="Naam accommodatie"/>
-      <input id="new-acc-address-${i}" placeholder="Adres"/>
-      <div style="display:flex;gap:10px">
-        <input id="new-acc-checkin-${i}" type="date" style="flex:1"/>
-        <input id="new-acc-checkout-${i}" type="date" style="flex:1"/>
-      </div>
-      <div style="display:flex;gap:10px;margin-bottom:0">
-        <input id="new-acc-lat-${i}" type="number" step="0.0001" placeholder="Breedtegraad (optioneel)" style="flex:1;margin-bottom:0"/>
-        <input id="new-acc-lng-${i}" type="number" step="0.0001" placeholder="Lengtegraad (optioneel)" style="flex:1;margin-bottom:0"/>
-      </div>
-    </div>`).join('');
-}
-
-function addAnotherTripAccommodation() {
-  pendingNewAccommodations.push({});
-  renderTripAccommodationFields();
-}
-
-// FIX (zie docs/10-issues/33): de reisdatums stonden hier volledig vast
-// aan de verblijven — er waren geen eigen datumvelden, een verblijf was
-// verplicht, en een leeg gelaten verblijf-blok werd stilzwijgend tóch een
-// spook-"Verblijf 1" met check-in/uit "nu" (inclusief tijdstip). Dat
-// spookverblijf blokkeerde daarna in "Reis bewerken" elke datumwijziging
-// met ⚠️-meldingen over een verblijf dat je nooit bewust had aangemaakt.
-// Nu: de reis heeft eigen begin/eind-datumvelden, verblijven zijn
-// optioneel, en alleen blokken waar echt iets is ingevuld worden een
-// verblijf (datums genormaliseerd op lokale middernacht).
+// Een reis is puur naam + land + datums (zie docs/10-issues/33, vervolg):
+// de verblijf-velden zijn hier volledig weggehaald. Vroeger was een
+// verblijf verplicht en werden de reisdatums eruit afgeleid — een leeg
+// gelaten verblijf-blok werd dan stilzwijgend een spook-"Verblijf 1" met
+// check-in/uit "nu", dat daarna elke datumwijziging blokkeerde. Verblijven
+// voeg je nu altijd toe via het Verblijf-scherm ("+ Verblijf"), los van de
+// reisdatums (die verruimen hoogstens automatisch, zie applyTripData).
 async function saveTrip() {
   const name = document.getElementById('trip-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return; }
@@ -490,63 +455,12 @@ async function saveTrip() {
 
   const startStr = document.getElementById('trip-start-input').value;
   const endStr = document.getElementById('trip-end-input').value;
-  if ((startStr || endStr) && !(startStr && endStr)) { showToast('Vul zowel begin- als einddatum in'); return; }
-  const tripStart = startStr ? parseLocalDateInput(startStr) : null;
-  const tripEnd = endStr ? parseLocalDateInput(endStr) : null;
-  if (tripStart && tripEnd && tripEnd < tripStart) { showToast('Einddatum ligt vóór begindatum'); return; }
+  if (!startStr || !endStr) { showToast('Vul begin- en einddatum in'); return; }
+  const startDate = parseLocalDateInput(startStr);
+  const endDate = parseLocalDateInput(endStr);
+  if (endDate < startDate) { showToast('Einddatum ligt vóór begindatum'); return; }
 
-  const today = getToday();
-  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const accommodations = pendingNewAccommodations.map((_, i) => {
-    const accName = document.getElementById(`new-acc-name-${i}`).value.trim();
-    const address = document.getElementById(`new-acc-address-${i}`).value.trim();
-    const checkInStr = document.getElementById(`new-acc-checkin-${i}`).value;
-    const checkOutStr = document.getElementById(`new-acc-checkout-${i}`).value;
-    const lat = parseFloat(document.getElementById(`new-acc-lat-${i}`).value) || 0;
-    const lng = parseFloat(document.getElementById(`new-acc-lng-${i}`).value) || 0;
-    // Een compleet leeg gelaten blok is géén verblijf — overslaan i.p.v.
-    // er stilzwijgend een spook-"Verblijf N" van te maken.
-    if (!accName && !address && !checkInStr && !checkOutStr && !lat && !lng) return null;
-    // Ontbrekende verblijfdatums: het reisvenster als redelijke standaard
-    // (verblijf beslaat de hele reis), anders vandaag — altijd op lokale
-    // middernacht, nooit meer "nu" mét tijdstip (dat tijdstip liet het
-    // verblijf later onterecht "buiten" een zelfde-dag-venster vallen).
-    const checkIn = checkInStr ? parseLocalDateInput(checkInStr) : (tripStart || todayMidnight);
-    const checkOut = checkOutStr ? parseLocalDateInput(checkOutStr) : (tripEnd || checkIn);
-    return {
-      name: accName || `Verblijf ${i + 1}`,
-      address,
-      checkIn: checkIn.toISOString(),
-      checkOut: checkOut.toISOString(),
-      lat, lng,
-      short: (accName || 'Vbl').slice(0, 3),
-      // FIX: elk verblijf in een nieuwe reis kreeg voorheen dezelfde vaste
-      // kleur — nu een kleur per index uit hetzelfde palet als bestaande
-      // reizen (ACCOMMODATIONS is hier nog niet gevuld, dit is een nieuwe
-      // reis, dus cyclen op index i.p.v. nextAccommodationColor()).
-      color: ACCOMMODATION_COLOR_PALETTE[i % ACCOMMODATION_COLOR_PALETTE.length],
-      elevation: 0,
-      coord: lat && lng ? `${lat}°N ${lng}°E` : '—',
-      notes: '',
-      phone: null,
-    };
-  }).filter(Boolean);
-
-  if (!tripStart && accommodations.length === 0) {
-    showToast('Vul de reisdatums in (of voeg een verblijf met datums toe)');
-    return;
-  }
-
-  // Reisvenster = de ingevulde reisdatums, verruimd waar nodig zodat elk
-  // meteen toegevoegd verblijf erbinnen valt (zelfde alleen-verruimen-regel
-  // als applyTripData in js/state.js).
-  const startCandidates = accommodations.map(a => new Date(a.checkIn).getTime());
-  const endCandidates = accommodations.map(a => new Date(a.checkOut).getTime());
-  if (tripStart) { startCandidates.push(tripStart.getTime()); endCandidates.push(tripEnd.getTime()); }
-  const startDate = new Date(Math.min(...startCandidates));
-  const endDate = new Date(Math.max(...endCandidates));
-
-  const trip = await createTrip({ name, country, countryFlag, startDate, endDate, accommodations });
+  const trip = await createTrip({ name, country, countryFlag, startDate, endDate, accommodations: [] });
   closeSheet('sheet-trip');
   showToast(`✓ ${name} toegevoegd`);
   renderTripsScreen();

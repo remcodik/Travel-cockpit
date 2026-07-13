@@ -79,3 +79,24 @@ reis"-deel van de klacht.
    altijd exact het app-thema dat verschijnt zodra je die reis activeert, en
    werkt het deterministisch voor élk vrij getypt land.
 7. **`sw.js`**: `CACHE_VERSION` v23 → v24.
+
+---
+
+## Vervolg (zelfde dag): verblijf-velden volledig weg uit "Reis toevoegen"
+
+**Bron:** "Kun je verblijf weghalen bij t maken van reis ik heb reis
+verwijderd en opnieuw toegevoegd en datums veranderen"
+
+De eerste fix maakte de verblijven al optioneel, maar de blokken stonden
+nog in het formulier — en zolang de oude (ge-cachete) versie draaide, bleef
+opnieuw toevoegen hetzelfde spookverblijf + verspringende datums opleveren.
+Op verzoek is het aanmaken nu tot de kern teruggebracht:
+
+- **`index.html` + `js/screen-tickets.js`**: het "Reis toevoegen"-formulier
+  is puur naam + land + begin/einddatum (datums nu verplicht — er is niets
+  meer om ze uit af te leiden). `pendingNewAccommodations`,
+  `renderTripAccommodationFields()` en `addAnotherTripAccommodation()` zijn
+  verwijderd; een nieuwe reis start altijd zonder verblijven. In het
+  formulier staat een hint dat verblijven daarna via het Verblijf-scherm
+  ("+ Verblijf") worden toegevoegd, los van de reisdatums.
+- **`sw.js`**: `CACHE_VERSION` v24 → v25.

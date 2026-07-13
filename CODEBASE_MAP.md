@@ -244,8 +244,6 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `openPickActiveTripSheet()`
 - `handlePickActiveTrip(tripId)`
 - `openAddTripSheet()`
-- `renderTripAccommodationFields()`
-- `addAnotherTripAccommodation()`
 - `saveTrip()`
 - `renderSettingsScreen()`
 - `setSwitchState(switchEl, on)`
