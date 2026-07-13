@@ -360,8 +360,12 @@ async function saveTripEdit(tripId) {
     // Land (dus ook het kleurenpalet) kan net gewijzigd zijn — direct
     // meenemen, anders zie je de nieuwe thema-kleuren pas na herladen.
     applyCountryTheme(country);
+    document.title = `Travel Cockpit · ${name}`;
     refreshAllScreens();
   }
+  // Naam/vlag/datums van de reis kunnen net gewijzigd zijn — de
+  // herkenningsstrip op elk scherm meteen meenemen.
+  updateTripIdentityStrips();
   closeSheet('sheet-edit-trip');
   showToast(`✓ ${name} bijgewerkt`);
   renderTripsScreen();

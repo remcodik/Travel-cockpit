@@ -173,6 +173,39 @@ body.read-only-mode .edit-pencil-btn { display: none !important; }
 .stat-num { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: var(--ink); line-height: 1; }
 .stat-label { font-size: 8.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--ink-faint); margin-top: 5px; }
 
+/* ── Reis-herkenningsstrip (bovenaan elke hoofdtab) ───────
+   Eén dunne balk met vlag + reisnaam + reisdagen, gevuld door
+   updateTripIdentityStrips() (js/state.js). Zo weet je op elk
+   scherm meteen welke reis actief is en hoe lang die duurt. */
+.trip-id-strip {
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 6px 16px; background: var(--white);
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 12px; font-weight: 800; color: var(--ink);
+  letter-spacing: 0.2px; white-space: nowrap; overflow: hidden;
+}
+.trip-id-strip .flag { font-size: 14px; align-self: center; }
+.trip-id-strip .tname { overflow: hidden; text-overflow: ellipsis; }
+.trip-id-strip .dates { color: var(--ink-faint); font-weight: 600; font-family: var(--font-mono); font-size: 10.5px; flex-shrink: 0; }
+
+/* ── Snelacties-raster (Vandaag) ─────────────────────────
+   Compacte 2-koloms tegels voor route/nabij/laden. */
+.quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.quick-tile {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
+  padding: 13px 13px; background: var(--white); border: 1px solid var(--line);
+  border-radius: 14px; box-shadow: var(--shadow-sm); cursor: pointer;
+  text-align: left; transition: background 0.12s, box-shadow 0.15s, transform 0.1s;
+}
+.quick-tile:active { background: var(--paper-warm); transform: scale(0.98); }
+@media (hover: hover) { .quick-tile:hover { box-shadow: var(--shadow-md); } }
+.quick-tile .qt-icon {
+  width: 34px; height: 34px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.quick-tile .qt-label { font-size: 13px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+.quick-tile .qt-sub { font-size: 10.5px; color: var(--ink-faint); font-weight: 600; }
+
 /* ── 9. Chips / pills ───────────────────────────────────── */
 .chip {
   display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;

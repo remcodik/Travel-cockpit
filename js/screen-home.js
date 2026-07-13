@@ -8,17 +8,12 @@ function renderHomeScreen() {
   const acc = getActiveAccommodation(); // FIX: altijd via datum-logica, nooit hardcoded
 
   renderTripPhaseBanner();
-
-  const activeTrip = getActiveTrip();
-  document.getElementById('home-trip-name').textContent = activeTrip
-    ? `${activeTrip.countryFlag || ''} ${activeTrip.name}`.trim().toUpperCase()
-    : 'NOORWEGEN 2026';
+  updateTripIdentityStrips();
 
   document.getElementById('home-day').textContent = `Dag ${dayNum} · ${formatShortDate(today)}`;
-  document.getElementById('home-coord').textContent = acc ? acc.coord : '15.06 – 30.06';
 
   // Hero accommodatie
-  document.getElementById('home-acc-name').textContent = acc ? acc.name.toUpperCase() : 'ONDERWEG';
+  document.getElementById('home-acc-name').textContent = acc ? acc.name : 'Onderweg';
   document.getElementById('home-acc-elevation').textContent = acc ? `${acc.elevation}m` : '—m';
   const nights = acc ? Math.round((acc.checkOut - acc.checkIn) / 86400000) : 0;
   document.getElementById('home-acc-dates').textContent = acc
@@ -30,28 +25,29 @@ function renderHomeScreen() {
     fillWeatherBadge('home-weather-badge', acc.lat, acc.lng, today);
   }
 
-  // Statistieken
+  // Snelacties: sublabels met de concrete bestemming
+  const accSub = document.getElementById('qt-acc-sub');
+  if (accSub) accSub.textContent = acc ? acc.name : 'Geen verblijf';
+  const nextAct = getActivitiesForDate(today).find(a => a.status !== 'done') || getNextUpcomingActivity(today);
+  const actSub = document.getElementById('qt-act-sub');
+  if (actSub) actSub.textContent = nextAct ? nextAct.name : 'Niets gepland';
+
+  // Voortgang
   const { done, total } = getProgress();
-  document.getElementById('stat-todo').textContent = total - done;
-  document.getElementById('stat-done').textContent = done;
-  document.getElementById('stat-tickets').textContent = 1 + AppState.tickets.length;
   document.getElementById('home-progress-label').textContent = `${done}/${total}`;
   document.getElementById('home-progress-fill').style.width = `${getProgress().percent}%`;
 
-  // Vandaag's activiteiten
-  // FIX: de knop hier deed exact hetzelfde als de altijd-zichtbare "Wat
-  // ligt er voor je?"-banner verderop op dit scherm (allebei navigateTo
-  // ('discover')) — pure duplicatie. Vervangen door een directe actie
-  // ("+ Activiteit toevoegen") en, als die er is, een voorproefje van de
-  // eerstvolgende nog geplande activiteit — nuttiger dan een dubbele knop.
+  // Vandaag's activiteiten — activiteit toevoegen doe je op Planning (op
+  // verzoek hier weggelaten), dus alleen een verwijzing daarheen + een
+  // voorproefje van de eerstvolgende geplande activiteit.
   const todayActs = getActivitiesForDate(today);
   const listEl = document.getElementById('home-today-list');
   if (todayActs.length === 0) {
     const next = getNextUpcomingActivity(today);
     listEl.innerHTML = `
-      <div style="padding:24px 16px;text-align:center">
-        <p class="mono" style="margin-bottom:8px">Niets gepland vandaag</p>
-        <button onclick="openAddActivitySheetForCurrentDay()" class="btn btn-outline">+ Activiteit toevoegen</button>
+      <div style="padding:22px 16px;text-align:center">
+        <p class="mono" style="margin-bottom:10px">Niets gepland vandaag</p>
+        <button onclick="navigateTo('planning')" class="btn btn-outline">Naar planning →</button>
         ${next ? `
         <button onclick="goToActivityDay('${next.date.toISOString()}')" class="mono" style="display:block;width:100%;margin-top:14px;padding:0;background:none;border:none;cursor:pointer;color:var(--ink-faint)">
           Volgende: ${next.emoji} ${escapeHtml(next.name)} · ${formatShortDate(next.date)} →
@@ -81,6 +77,36 @@ function renderHomeScreen() {
   }).join('');
 
   initAllTopoPanels();
+}
+
+// ── Snelacties (Vandaag) ───────────────────────────────────
+// Route/nabij/laden vanuit je huidige verblijf of de activiteit van
+// vandaag. Hergebruiken de bestaande helpers (openMapsForAccommodation,
+// openMapsForCoords, openNearbySearch, openChargingStationsSheet) zodat
+// het gedrag identiek is aan de knoppen op het verblijf- en
+// activiteitscherm.
+function routeToCurrentAccommodation() {
+  const acc = getActiveAccommodation();
+  if (!acc || !isValidLatLng(acc.lat, acc.lng)) { showToast('Geen locatie bekend voor je huidige verblijf'); return; }
+  openMapsForAccommodation(acc.id);
+}
+
+function todayOrNextActivity() {
+  const today = getToday();
+  return getActivitiesForDate(today).find(a => a.status !== 'done') || getNextUpcomingActivity(today);
+}
+
+function routeToTodayActivity() {
+  const act = todayOrNextActivity();
+  if (!act) { showToast('Geen activiteit gepland — plan er eerst een in'); return; }
+  if (!isValidLatLng(act.lat, act.lng)) { showToast(`Geen locatie bekend voor ${act.name}`); return; }
+  openMapsForCoords(act.lat, act.lng, act.name);
+}
+
+function nearbyFoodForCurrentAccommodation() {
+  const acc = getActiveAccommodation();
+  if (!acc) { showToast('Geen huidig verblijf'); return; }
+  openNearbySearch('restaurant', acc.lat || 0, acc.lng || 0, acc.name);
 }
 
 // Springt vanaf Vandaag's "Volgende: ..."-voorproefje naar de betreffende

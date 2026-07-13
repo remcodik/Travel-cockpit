@@ -251,6 +251,28 @@ function formatShortDate(date) {
   return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
 }
 
+// Compacte reisperiode voor de herkenningsstrip: "15–30 jun" als begin en
+// eind in dezelfde maand vallen, anders "28 jun – 3 jul".
+function formatTripDateRange() {
+  const s = TRIP_START, e = TRIP_END;
+  const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
+  return sameMonth
+    ? `${s.getDate()}–${e.getDate()} ${MONTHS[e.getMonth()]}`
+    : `${formatShortDate(s)} – ${formatShortDate(e)}`;
+}
+
+// Vult de dunne reis-herkenningsstrip (.trip-id-strip) bovenaan elke
+// hoofdtab met vlag + reisnaam + reisdagen. Alle strips staan al in de
+// DOM (verborgen schermen incluis), dus in één keer bijwerken volstaat —
+// aangeroepen zodra de actieve reis of z'n datums wijzigen.
+function updateTripIdentityStrips() {
+  const trip = getActiveTrip();
+  const flag = (trip && trip.countryFlag) || '🌍';
+  const name = (trip && trip.name) || 'Reis';
+  const html = `<span class="flag">${flag}</span><span class="tname">${escapeHtml(name)}</span><span class="dates">${formatTripDateRange()}</span>`;
+  document.querySelectorAll('.trip-id-strip').forEach(el => { el.innerHTML = html; });
+}
+
 function getNextAccommodation(currentAccId) {
   const idx = ACCOMMODATIONS.findIndex(a => idsMatch(a.id, currentAccId));
   if (idx >= 0 && idx + 1 < ACCOMMODATIONS.length) return ACCOMMODATIONS[idx + 1];
@@ -574,6 +596,7 @@ function applyTripData(trip, accommodations) {
   // Browsertab/PWA-titel volgt de actieve reis — stond vast op
   // "Noorwegen 2026" (index.html), welke reis er ook actief was.
   document.title = `Travel Cockpit · ${trip.name}`;
+  updateTripIdentityStrips();
 
   ACCOMMODATIONS.length = 0;
   // Sorteert op check-in datum i.p.v. het (onbetrouwbare, vaak
