@@ -3,11 +3,27 @@
 // ═══════════════════════════════════════════════════════════
 
 function renderAccommodationScreen(accId) {
+  // FIX (docs/10-issues/36): een reis mag zonder verblijven bestaan. Zonder
+  // deze guard viel `acc` op null en crashte `acc.id` hieronder — die crash
+  // werd door navigateTo() opgevangen en als rode, blokkerende debug-banner
+  // getoond. Nu een nette lege-staat met een "+ Verblijf"-knop.
+  if (ACCOMMODATIONS.length === 0) {
+    renderEmptyAccommodationScreen();
+    return;
+  }
   // FIX: geen hardcoded fallback meer — gebruik altijd de actieve
   // accommodatie op basis van datum als er geen expliciete keuze is.
   const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, accId)) || getActiveAccommodation();
   AppState.viewingAccommodationId = acc.id;
   const activeAcc = getActiveAccommodation();
+
+  // Elementen die de lege-staat (renderEmptyAccommodationScreen) verbergt
+  // weer terugzetten — anders blijven ze verborgen nadat je vanuit een lege
+  // reis een eerste verblijf toevoegt.
+  const badge = document.getElementById('acc-weather-badge');
+  if (badge) badge.style.display = '';
+  const stripCard = document.getElementById('acc-weather-strip-card');
+  if (stripCard) stripCard.style.display = '';
 
   document.getElementById('acc-name').textContent = acc.name.toUpperCase();
   document.getElementById('acc-elevation').textContent = `${acc.elevation}m · ${acc.coord}`;
@@ -571,11 +587,42 @@ async function saveAccommodationCreate() {
   updateMeerSummary();
 }
 
+// Lege-staat voor een reis zonder verblijven (bewust toegestaan — je kunt
+// een reis eerst alleen met datums bijhouden en later pas verblijven
+// toevoegen). Zet de hero neutraal en toont één duidelijke actie.
+function renderEmptyAccommodationScreen() {
+  AppState.viewingAccommodationId = null;
+  document.getElementById('acc-name').textContent = 'NOG GEEN VERBLIJF';
+  document.getElementById('acc-elevation').textContent = '';
+  document.getElementById('acc-dates').textContent = 'Voeg een verblijf toe om hier je basis te beheren';
+  const badge = document.getElementById('acc-weather-badge');
+  if (badge) badge.style.display = 'none';
+  ['acc-chips', 'acc-nearby-links', 'acc-activities', 'acc-stops', 'acc-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+  const stripCard = document.getElementById('acc-weather-strip-card');
+  if (stripCard) stripCard.style.display = 'none';
+  const ticketsSection = document.getElementById('acc-tickets-section');
+  if (ticketsSection) ticketsSection.style.display = 'none';
+  const info = document.getElementById('acc-info');
+  if (info) {
+    info.innerHTML = `
+      <div style="padding:26px 18px;text-align:center">
+        <p style="font-size:34px;margin-bottom:8px">🏕️</p>
+        <p class="row-title" style="margin-bottom:5px">Deze reis heeft nog geen verblijf</p>
+        <p class="row-sub" style="margin-bottom:16px;line-height:1.5">Je reisdatums staan al vast. Voeg een verblijf toe wanneer je wilt — het hoeft niet.</p>
+        <button onclick="openAddAccommodationSheet()" class="btn btn-primary">+ Verblijf toevoegen</button>
+      </div>`;
+  }
+}
+
 // ── Verblijf verwijderen — met keuze over activiteiten (Fase E) ──
 function openDeleteAccommodationSheet(accId) {
   const acc = ACCOMMODATIONS.find(a => idsMatch(a.id, accId));
   if (!acc) return;
-  if (ACCOMMODATIONS.length <= 1) { showToast('Je kunt het enige verblijf niet verwijderen'); return; }
+  // Het laatste verblijf mag nu wél verwijderd worden — een reis zonder
+  // verblijven is een geldige toestand (zie renderEmptyAccommodationScreen).
 
   const relatedCount = AppState.activities.filter(act => idsMatch(act.accId, accId)).length;
   const warningEl = document.getElementById('delete-acc-warning');
@@ -600,9 +647,11 @@ async function confirmDeleteAccommodation(accId, alsoDeleteActivities) {
   closeSheet('sheet-delete-accommodation');
   await deleteAccommodationWithChoice(accId, alsoDeleteActivities);
   showToast('✓ Verblijf verwijderd');
-  const fallback = getActiveAccommodation();
-  if (document.getElementById('screen-accommodation').classList.contains('active') && fallback) {
-    renderAccommodationScreen(fallback.id);
+  // Verversen naar het volgende verblijf, of naar de lege-staat als dit het
+  // laatste was (renderAccommodationScreen handelt beide af).
+  if (document.getElementById('screen-accommodation').classList.contains('active')) {
+    const fallback = getActiveAccommodation();
+    renderAccommodationScreen(fallback ? fallback.id : null);
   }
   renderHomeScreen();
   updateMeerSummary();

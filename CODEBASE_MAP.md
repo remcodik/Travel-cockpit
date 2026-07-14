@@ -129,6 +129,7 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 
 **Functies:**
 - `renderAccommodationScreen(accId)`
+- `renderEmptyAccommodationScreen()`
 - `openMapsForAccommodation(accId)`
 - `openEditAccommodationSheet(accId)`
 - `openAddAccommodationSheet()`

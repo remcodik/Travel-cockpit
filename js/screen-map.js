@@ -283,27 +283,16 @@ function renderMapMarkers() {
   const homeIcon = L.divIcon({ html: homeHtml, className: '', iconSize: [56, 60], iconAnchor: [28, 60] });
   accommodationMarkers.push(L.marker([HOME_LAT, HOME_LNG], { icon: homeIcon }).addTo(leafletMap));
 
-  // FIX: een verblijf zonder (of met ongeldige, 0/0) coördinaten kreeg
-  // voorheen gewoon een pin op [0,0] — ver in zee bij West-Afrika, dus in
-  // de praktijk onvindbaar en onzichtbaar op een op Noorwegen gerichte
-  // kaart. Zo'n verblijf overslaan we nu i.p.v.'m ergens onzichtbaar neer
-  // te zetten, en melden we in de debug-banner zodat het opvalt i.p.v.
-  // stilzwijgend te "verdwijnen".
+  // FIX (docs/10-issues/36): een verblijf zonder coördinaten is een normale
+  // toestand (net toegevoegd, of een reis die je bewust zonder locatie
+  // bijhoudt), GEEN fout. Voorheen schreef dit bij elke kaartweergave een
+  // rode, niet-afsluitbare debug-banner die de kop/terug-knop op élk scherm
+  // blokkeerde, plus een opdringerige toast. Nu: gewoon geen pin en een
+  // stille console-waarschuwing — de banner is er alleen nog voor échte
+  // (afsluitbare) fouten.
   const invalidAccs = ACCOMMODATIONS.filter(acc => !isValidLatLng(acc.lat, acc.lng));
   if (invalidAccs.length > 0) {
     console.warn('Verblijf(en) zonder geldige coördinaten, geen pin op de kaart:', invalidAccs.map(a => a.name));
-    const banner = document.getElementById('debug-banner');
-    if (banner) {
-      banner.classList.add('show');
-      banner.textContent += `⚠️ Geen locatie ingesteld voor: ${invalidAccs.map(a => a.name).join(', ')} — vul coördinaten in bij het verblijf om de pin te zien.\n\n`;
-    }
-    // Toast erbij (naast de banner): direct zichtbaar en met één tik naar
-    // het bewerkformulier van het eerste verblijf zonder locatie — de
-    // banner alleen meldt het probleem, dit lost het meteen op.
-    const names = invalidAccs.map(a => a.name).join(', ');
-    showToast(`⚠️ Geen locatie ingesteld: ${names} — tik om te bewerken`, 6000, () => {
-      openEditAccommodationSheet(invalidAccs[0].id);
-    });
   }
 
   // Accommodatiepins — altijd zichtbaar, ongeacht filter

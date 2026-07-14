@@ -932,7 +932,9 @@
   </button>
 </nav>
 <div id="toast"></div>
-<div id="debug-banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#A8291F;color:white;padding:10px 14px;font-family:monospace;font-size:11px;z-index:99999;max-height:40vh;overflow-y:auto;white-space:pre-wrap"></div>
+<!-- Tikbaar om te sluiten: deze banner is een fout-diagnosehulp maar mag
+     nooit permanent de kop/terug-knop blokkeren (zie docs/10-issues/36). -->
+<div id="debug-banner" onclick="this.classList.remove('show');this.textContent=''" title="Tik om te sluiten" style="display:none;position:fixed;top:0;left:0;right:0;background:#A8291F;color:white;padding:10px 30px 10px 14px;font-family:monospace;font-size:11px;z-index:99999;max-height:40vh;overflow-y:auto;white-space:pre-wrap;cursor:pointer"></div>
 <div id="gps-global-dot" style="display:none;pointer-events:none;position:fixed;top:calc(env(safe-area-inset-top,12px) + 8px);right:14px;z-index:9998;align-items:center;gap:5px;padding:5px 10px;background:rgba(197,81,43,0.94);border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
   <span style="width:7px;height:7px;border-radius:50%;background:white"></span>
   <span class="mono" style="color:white;font-size:9px;font-weight:700;letter-spacing:0.5px">GPS</span>
