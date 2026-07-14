@@ -31,7 +31,7 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `fetchChargingStationsAlongRoute()`
 - `isDcStation(station)`
 - `renderChargingStationCard(station)`
-- `openChargingStationsSheet()`
+- `openChargingStationsSheet(lat, lng, label)`
 - `handleSearchChargingAlongRoute()`
 - `setChargingFilter(filter)`
 - `setChargingFilterChips(filter)`
@@ -167,6 +167,11 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 **Functies:**
 - `renderHomeScreen()`
 - `renderTripPhaseBanner()`
+- `routeToCurrentAccommodation()`
+- `todayOrNextActivity()`
+- `routeToTodayActivity()`
+- `nearbyFoodForCurrentAccommodation()`
+- `goToActivityDay(isoString)`
 - `renderActivityRow(act, index, total)`
 - `renderElevationTag(elevation, color)`
 - `checkmarkSvg()`
@@ -181,6 +186,10 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `reportMapError(e)`
 - `renderMapFilterChips()`
 - `renderMapMarkers()`
+- `renderMapRoutes()`
+- `buildTripDrivePaths()`
+- `renderMapRouteStrip()`
+- `fitMapToAllPins()`
 - `renderPdHero(act, acc)`
 - `setMapFilter(accId)`
 - `toggleFullRoute()`
@@ -205,6 +214,7 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `handleDeleteActivity(id)`
 - `openAiEnrichSheet(id)`
 - `applyAiEnrichment(id, enriched)`
+- `goToAccommodationFromPlanning()`
 - `openAddActivitySheetForCurrentDay()`
 - `openAddActivitySheet()`
 - `setActivityCategory(chipEl, category)`
@@ -244,8 +254,6 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `openPickActiveTripSheet()`
 - `handlePickActiveTrip(tripId)`
 - `openAddTripSheet()`
-- `renderTripAccommodationFields()`
-- `addAnotherTripAccommodation()`
 - `saveTrip()`
 - `renderSettingsScreen()`
 - `setSwitchState(switchEl, on)`
@@ -264,6 +272,8 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `getToday()`
 - `getTripPhase()`
 - `getDayNumber(date)`
+- `parseLocalDateInput(str)`
+- `formatDateInputValue(date)`
 - `getAccommodationForDate(date)`
 - `getActiveAccommodation()`
 - `getAllTripDays()`
@@ -278,6 +288,9 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `deleteActivity(id)`
 - `getProgress()`
 - `getActiveTrip()`
+- `getTripThemeColors(country)`
+- `formatTripDateRange()`
+- `updateTripIdentityStrips()`
 - `applyTripData(trip, accommodations)`
 - `switchToTrip(tripId)`
 - `createTrip({ name, country, countryFlag, startDate, endDate, accommodations })`

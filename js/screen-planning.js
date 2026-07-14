@@ -441,7 +441,12 @@ function openActivityDetailSheet(id) {
         <button onclick="openNearbySearch('${cat}', ${act.lat || 0}, ${act.lng || 0}, '${safeQuery}')"
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
           ${NEARBY_BUTTON_META[cat].emoji} ${NEARBY_BUTTON_META[cat].label}
-        </button>`).join('')}`;
+        </button>`).join('')}
+        ${isValidLatLng(act.lat, act.lng) ? `
+        <button onclick="openChargingStationsSheet(${act.lat}, ${act.lng}, '${safeQuery}')"
+          style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
+          ⚡ Laden nabij
+        </button>` : ''}`;
   }
 
   // Echt hoogteprofiel (geen zelfgebouwde grafiek — dat zou verzonnen data
@@ -954,6 +959,17 @@ async function applyAiEnrichment(id, enriched) {
   closeSheet('sheet-enrich-activity');
   showToast('✓ Activiteit verrijkt');
   renderPlanningScreen();
+}
+
+// Vanuit Planning naar het verblijf van de geselecteerde dag springen —
+// een reisdag zonder eigen verblijf (Thuis/onderweg) valt terug op het
+// actieve verblijf, zodat de knop altijd ergens zinnigs uitkomt.
+function goToAccommodationFromPlanning() {
+  const day = AppState.selectedPlanningDay || getClosestTripDay();
+  const acc = getAccommodationForDate(day) || getActiveAccommodation();
+  if (!acc) { showToast('Nog geen verblijf — voeg er een toe via het Verblijf-scherm', 4000); navigateTo('accommodation'); return; }
+  AppState.viewingAccommodationId = acc.id;
+  navigateTo('accommodation');
 }
 
 // ── Context-bewust formulier ──────────────────────────────

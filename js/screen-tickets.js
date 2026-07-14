@@ -255,16 +255,21 @@ function renderTripsScreen() {
 function renderTripCard(trip, isActive) {
   const from = trip.startDate ? formatShortDate(trip.startDate) : '—';
   const to = trip.endDate ? formatShortDate(trip.endDate) : '—';
+  // Elke reis draagt haar eigen landkleuren op de kaart (rand, vlag-tegel,
+  // actief-knop) — voorheen was het vlaggetje het enige visuele verschil
+  // tussen reizen. Zelfde tinten als het app-thema dat je krijgt zodra je
+  // deze reis activeert (zie getTripThemeColors in js/state.js).
+  const theme = getTripThemeColors(trip.country || trip.name);
   return `
-    <div class="card" style="border-left:3px solid ${isActive ? 'var(--spruce)' : 'var(--line)'};margin-bottom:10px;overflow:hidden">
+    <div class="card" style="border-left:3px solid ${theme.deep};margin-bottom:10px;overflow:hidden">
       <div style="padding:16px;display:flex;align-items:flex-start;gap:13px">
-        <span style="font-size:28px">${trip.countryFlag || '🌍'}</span>
+        <span style="font-size:28px;background:${theme.tint};border-radius:12px;padding:5px 8px;line-height:1.2">${trip.countryFlag || '🌍'}</span>
         <div style="flex:1">
           <p style="font-weight:800;font-size:15.5px">${escapeHtml(trip.name)}</p>
-          <p class="mono" style="margin-top:4px">${from} – ${to}</p>
+          <p class="mono" style="margin-top:4px;color:${theme.accent}">${from} – ${to}</p>
           <div style="display:flex;gap:7px;margin-top:11px">
             ${isActive
-              ? `<button onclick="showToast('${escapeHtml(trip.name)} is al actief')" style="padding:7px 14px;background:var(--slope-light);color:var(--spruce);border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">✓ Actief</button>
+              ? `<button onclick="showToast('${escapeHtml(trip.name)} is al actief')" style="padding:7px 14px;background:${theme.tint};color:${theme.deep};border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase">✓ Actief</button>
                  ${AppState.trips.length > 1 ? `<button onclick="handleDeactivateTrip('${trip.id}')" class="edit-only" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Deactiveren</button>` : ''}`
               : `<button onclick="handleActivateTrip('${trip.id}')" class="edit-only" style="padding:7px 14px;background:white;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid)">Activeren</button>`}
           </div>
@@ -283,8 +288,15 @@ function openEditTripSheet(tripId) {
   if (!trip) return;
   document.getElementById('edit-trip-name-input').value = trip.name;
   document.getElementById('edit-trip-country-input').value = trip.country || '';
-  document.getElementById('edit-trip-start-input').value = trip.startDate.toISOString().slice(0, 10);
-  document.getElementById('edit-trip-end-input').value = trip.endDate.toISOString().slice(0, 10);
+  // FIX: toISOString().slice(0, 10) gaf de UTC-dag — voor een als lokale
+  // middernacht opgeslagen reisdatum (CEST = UTC+2) is dat de dag ervóór.
+  // Het formulier toonde de begindatum dus één dag te vroeg, en elke keer
+  // opslaan schoof de reis daarna écht een dag terug — waarna verblijven
+  // "buiten de reis" leken te vallen. formatDateInputValue() (js/state.js)
+  // formatteert op de lokale kalenderdag, spiegelbeeldig aan
+  // parseLocalDateInput() waarmee het formulier weer wordt ingelezen.
+  document.getElementById('edit-trip-start-input').value = trip.startDate ? formatDateInputValue(trip.startDate) : '';
+  document.getElementById('edit-trip-end-input').value = trip.endDate ? formatDateInputValue(trip.endDate) : '';
   document.getElementById('edit-trip-save-btn').onclick = () => saveTripEdit(tripId);
   openSheet('sheet-edit-trip');
 }
@@ -319,7 +331,14 @@ async function saveTripEdit(tripId) {
   const outOfRange = accsToCheck.filter(acc => {
     const checkIn = acc.checkIn instanceof Date ? acc.checkIn : new Date(acc.checkIn);
     const checkOut = acc.checkOut instanceof Date ? acc.checkOut : new Date(acc.checkOut);
-    return checkIn < startDate || checkOut > endDate;
+    // FIX: op kalenderdag vergelijken, niet op exact tijdstip — een verblijf
+    // dat (door de oude "nu"-standaard bij het aanmaken) een tijdstip op de
+    // dag draagt viel anders "buiten" een venster dat op precies dezelfde
+    // kalenderdag eindigt (14:32 > middernacht), en blokkeerde zo elke
+    // datum-wijziging met een onterecht ⚠️.
+    const checkInDay = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate());
+    const checkOutDay = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate());
+    return checkInDay < startDate || checkOutDay > endDate;
   });
   if (outOfRange.length > 0) {
     showToast(`⚠️ ${outOfRange.map(a => a.name).join(', ')} valt buiten deze data — pas de datums of het verblijf aan`, 4000);
@@ -341,8 +360,12 @@ async function saveTripEdit(tripId) {
     // Land (dus ook het kleurenpalet) kan net gewijzigd zijn — direct
     // meenemen, anders zie je de nieuwe thema-kleuren pas na herladen.
     applyCountryTheme(country);
+    document.title = `Travel Cockpit · ${name}`;
     refreshAllScreens();
   }
+  // Naam/vlag/datums van de reis kunnen net gewijzigd zijn — de
+  // herkenningsstrip op elk scherm meteen meenemen.
+  updateTripIdentityStrips();
   closeSheet('sheet-edit-trip');
   showToast(`✓ ${name} bijgewerkt`);
   renderTripsScreen();
@@ -412,44 +435,21 @@ async function handlePickActiveTrip(tripId) {
   await switchToTrip(tripId);
 }
 
-let pendingNewAccommodations = [];
-
 function openAddTripSheet() {
   document.getElementById('trip-name-input').value = '';
   document.getElementById('trip-country-input').value = '';
-  pendingNewAccommodations = [{}];
-  renderTripAccommodationFields();
+  document.getElementById('trip-start-input').value = '';
+  document.getElementById('trip-end-input').value = '';
   openSheet('sheet-trip');
 }
 
-// Eén accommodatie is verplicht (DL-003: accommodatie is de operationele
-// eenheid van elke reisdag) — verdere kunnen later via de accommodatie-
-// beheerder worden toegevoegd. Hier bewust minimaal: naam, adres,
-// check-in/uit, coördinaten (handmatig, zoals de bestaande Noorwegen-data).
-function renderTripAccommodationFields() {
-  const container = document.getElementById('trip-accommodations-fields');
-  if (!container) return;
-  container.innerHTML = pendingNewAccommodations.map((_, i) => `
-    <div class="card" style="padding:13px;margin-bottom:10px">
-      <p class="eyebrow" style="margin-bottom:8px">Verblijf ${i + 1}</p>
-      <input id="new-acc-name-${i}" placeholder="Naam accommodatie"/>
-      <input id="new-acc-address-${i}" placeholder="Adres"/>
-      <div style="display:flex;gap:10px">
-        <input id="new-acc-checkin-${i}" type="date" style="flex:1"/>
-        <input id="new-acc-checkout-${i}" type="date" style="flex:1"/>
-      </div>
-      <div style="display:flex;gap:10px;margin-bottom:0">
-        <input id="new-acc-lat-${i}" type="number" step="0.0001" placeholder="Breedtegraad (optioneel)" style="flex:1;margin-bottom:0"/>
-        <input id="new-acc-lng-${i}" type="number" step="0.0001" placeholder="Lengtegraad (optioneel)" style="flex:1;margin-bottom:0"/>
-      </div>
-    </div>`).join('');
-}
-
-function addAnotherTripAccommodation() {
-  pendingNewAccommodations.push({});
-  renderTripAccommodationFields();
-}
-
+// Een reis is puur naam + land + datums (zie docs/10-issues/33, vervolg):
+// de verblijf-velden zijn hier volledig weggehaald. Vroeger was een
+// verblijf verplicht en werden de reisdatums eruit afgeleid — een leeg
+// gelaten verblijf-blok werd dan stilzwijgend een spook-"Verblijf 1" met
+// check-in/uit "nu", dat daarna elke datumwijziging blokkeerde. Verblijven
+// voeg je nu altijd toe via het Verblijf-scherm ("+ Verblijf"), los van de
+// reisdatums (die verruimen hoogstens automatisch, zie applyTripData).
 async function saveTrip() {
   const name = document.getElementById('trip-name-input').value.trim();
   if (!name) { showToast('Voer een naam in'); return; }
@@ -457,37 +457,14 @@ async function saveTrip() {
   if (!country) { showToast('Voer een land in'); return; }
   const countryFlag = flagForCountry(country);
 
-  const accommodations = pendingNewAccommodations.map((_, i) => {
-    const accName = document.getElementById(`new-acc-name-${i}`).value.trim();
-    const checkIn = document.getElementById(`new-acc-checkin-${i}`).value;
-    const checkOut = document.getElementById(`new-acc-checkout-${i}`).value;
-    const lat = parseFloat(document.getElementById(`new-acc-lat-${i}`).value) || 0;
-    const lng = parseFloat(document.getElementById(`new-acc-lng-${i}`).value) || 0;
-    return {
-      name: accName || `Verblijf ${i + 1}`,
-      address: document.getElementById(`new-acc-address-${i}`).value.trim(),
-      checkIn: checkIn ? parseLocalDateInput(checkIn).toISOString() : new Date().toISOString(),
-      checkOut: checkOut ? parseLocalDateInput(checkOut).toISOString() : new Date().toISOString(),
-      lat, lng,
-      short: (accName || 'Vbl').slice(0, 3),
-      // FIX: elk verblijf in een nieuwe reis kreeg voorheen dezelfde vaste
-      // kleur — nu een kleur per index uit hetzelfde palet als bestaande
-      // reizen (ACCOMMODATIONS is hier nog niet gevuld, dit is een nieuwe
-      // reis, dus cyclen op index i.p.v. nextAccommodationColor()).
-      color: ACCOMMODATION_COLOR_PALETTE[i % ACCOMMODATION_COLOR_PALETTE.length],
-      elevation: 0,
-      coord: lat && lng ? `${lat}°N ${lng}°E` : '—',
-      notes: '',
-      phone: null,
-    };
-  }).filter(a => a.name);
+  const startStr = document.getElementById('trip-start-input').value;
+  const endStr = document.getElementById('trip-end-input').value;
+  if (!startStr || !endStr) { showToast('Vul begin- en einddatum in'); return; }
+  const startDate = parseLocalDateInput(startStr);
+  const endDate = parseLocalDateInput(endStr);
+  if (endDate < startDate) { showToast('Einddatum ligt vóór begindatum'); return; }
 
-  if (accommodations.length === 0) { showToast('Voeg minstens één verblijf toe'); return; }
-
-  const startDate = new Date(Math.min(...accommodations.map(a => new Date(a.checkIn).getTime())));
-  const endDate = new Date(Math.max(...accommodations.map(a => new Date(a.checkOut).getTime())));
-
-  const trip = await createTrip({ name, country, countryFlag, startDate, endDate, accommodations });
+  const trip = await createTrip({ name, country, countryFlag, startDate, endDate, accommodations: [] });
   closeSheet('sheet-trip');
   showToast(`✓ ${name} toegevoegd`);
   renderTripsScreen();

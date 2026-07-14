@@ -85,7 +85,12 @@ function renderAccommodationScreen(accId) {
       <button onclick="openNearbySearch('cafe', ${acc.lat || 0}, ${acc.lng || 0}, '${safeName}')"
         style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
         ☕ Café nabij
-      </button>`;
+      </button>
+      ${isValidLatLng(acc.lat, acc.lng) ? `
+      <button onclick="openChargingStationsSheet(${acc.lat}, ${acc.lng}, '${safeName}')"
+        style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);cursor:pointer">
+        ⚡ Laden nabij
+      </button>` : ''}`;
   }
 
   document.getElementById('acc-notes').textContent = acc.notes;

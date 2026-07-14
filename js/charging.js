@@ -126,19 +126,28 @@ function renderChargingStationCard(station) {
 let chargingStations = [];
 let chargingFilter = 'all';
 
-async function openChargingStationsSheet() {
-  const acc = getActiveAccommodation();
+// Optionele lat/lng/label — zonder argumenten rond het actieve verblijf
+// (Vandaag/Meer/verblijfscherm), mét argumenten rond een specifieke plek
+// (bv. een activiteit, via de knop op het activiteit-detailscherm).
+async function openChargingStationsSheet(lat, lng, label) {
   const subEl = document.getElementById('charging-sub');
   const listEl = document.getElementById('charging-list');
-  if (!acc) { showToast('Geen actief verblijf'); return; }
+
+  let centerLat = lat, centerLng = lng, name = label;
+  if (centerLat == null || centerLng == null) {
+    const acc = getActiveAccommodation();
+    if (!acc) { showToast('Geen actief verblijf'); return; }
+    centerLat = acc.lat; centerLng = acc.lng; name = acc.short;
+  }
+  if (!isValidLatLng(centerLat, centerLng)) { showToast(`Geen locatie bekend voor ${name || 'deze plek'}`); return; }
 
   chargingFilter = 'all';
   setChargingFilterChips('all');
-  subEl.textContent = `Binnen 25 km van ${acc.short}`;
+  subEl.textContent = `Binnen 25 km van ${name}`;
   listEl.innerHTML = `<div class="empty-state" style="padding:24px 0"><div class="spinner" style="margin-bottom:10px"></div><p class="mono">Laadstations zoeken…</p></div>`;
   openSheet('sheet-charging');
 
-  const stations = await fetchChargingStationsNear(acc.lat, acc.lng, 25);
+  const stations = await fetchChargingStationsNear(centerLat, centerLng, 25);
   chargingStations = stations || [];
 
   if (stations === null) {

@@ -8,6 +8,7 @@ let gpsTrack = [];
 let gpsPolyline = null;
 let accommodationMarkers = [];
 let activityMarkers = [];
+let routeLines = [];
 let mapFilterAccId = null;
 let mapShowFullRoute = false;
 
@@ -62,14 +63,18 @@ function initMap() {
       }
       if (loadingEl) loadingEl.classList.add('hidden');
     }, 100);
-    // FIX: pins, filterchips én gezichtsveld opnieuw opbouwen bij elk
-    // bezoek — anders bleven ze na het wisselen van reis (Fase B) de
-    // vorige reis tonen, omdat dit vroeger alleen bij de allereerste
-    // kaart-load gebeurde. Zonder fitMapToAllPins() bleef het gezichtsveld
-    // ook altijd vast op Noorwegen staan, ongeacht welke reis actief is.
+    // FIX: pins, filterchips, routelijnen/routestrip én gezichtsveld
+    // opnieuw opbouwen bij elk bezoek — anders bleven ze na het wisselen
+    // van reis (Fase B) de vorige reis tonen, omdat dit vroeger alleen bij
+    // de allereerste kaart-load gebeurde. De routelijnen ontbraken hier
+    // tot nu toe helemaal: die werden alléén bij het aanmaken van de kaart
+    // getekend, dus de Noorwegen-route bleef op de kaart staan, welke reis
+    // er ook actief was.
     mapFilterAccId = null;
     renderMapFilterChips();
     renderMapMarkers();
+    renderMapRoutes();
+    renderMapRouteStrip();
     fitMapToAllPins();
     return;
   }
@@ -100,27 +105,12 @@ function initMap() {
 
       L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
 
-      // Rijroutes: meteen de handgetekende lijn tonen (nooit een lege
-      // kaart), en op de achtergrond de echte, wegen-volgende route erbij
-      // vragen (N7) — vervangt de rechte lijn zodra die binnen is. Faalt
-      // dat (geen ORS_API_KEY ingesteld, netwerkfout, rate limit), dan
-      // blijft gewoon de rechte lijn staan — geen zichtbare fout.
-      DRIVE_PATHS.forEach(path => {
-        const line = L.polyline(path, { color: '#0E3A2E', weight: 2.5, opacity: 0.65 }).addTo(leafletMap);
-        fetchRealRoute(path).then(real => {
-          if (real && real.length > 1) line.setLatLngs(real);
-        }).catch(() => {});
-      });
-      // Ferryroutes blijven rechte lijnen — er bestaat geen "auto-routing"-
-      // equivalent voor zeeroutes (zie 08-restplan-openstaande-punten.md).
-      FERRY_PATHS.forEach(path => {
-        L.polyline(path, { color: '#1B5A8A', weight: 2.5, opacity: 0.7, dashArray: '8,5' }).addTo(leafletMap);
-      });
-
       gpsPolyline = L.polyline([], { color: '#C5512B', weight: 3, opacity: 0.85 }).addTo(leafletMap);
 
       renderMapFilterChips();
       renderMapMarkers();
+      renderMapRoutes();
+      renderMapRouteStrip();
       fitMapToAllPins();
 
       // Nogmaals invalidateSize na de eerste render, voor de zekerheid.
@@ -154,20 +144,104 @@ function isValidLatLng(lat, lng) {
   return Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0);
 }
 
+// ── Routelijnen per reis ────────────────────────────────────
+// FIX: de handgetekende Noorwegen-route (DRIVE_PATHS/FERRY_PATHS,
+// js/data.js) werd voorheen onvoorwaardelijk op de kaart getekend — óók
+// als een heel andere reis actief was. Die hoort alleen bij de
+// standaardreis; elke andere reis krijgt een generieke route Thuis →
+// verblijven (op check-in-volgorde) → Thuis, opgebouwd uit haar eigen
+// verblijven. Lijnen worden bijgehouden in routeLines zodat ze bij het
+// wisselen van reis ook echt van de kaart verdwijnen.
+function renderMapRoutes() {
+  if (!leafletMap) return;
+  routeLines.forEach(l => l.remove());
+  routeLines = [];
+
+  const isDefaultTrip = getCurrentTripId() === DEFAULT_TRIP_ID;
+
+  // Rijroutes: meteen de rechte lijn tonen (nooit een lege kaart), en op
+  // de achtergrond de echte, wegen-volgende route erbij vragen (N7) —
+  // vervangt de rechte lijn zodra die binnen is. Faalt dat (geen
+  // ORS_API_KEY ingesteld, netwerkfout, rate limit), dan blijft gewoon de
+  // rechte lijn staan — geen zichtbare fout.
+  const drivePaths = isDefaultTrip ? DRIVE_PATHS : buildTripDrivePaths();
+  drivePaths.forEach(path => {
+    const line = L.polyline(path, { color: '#0E3A2E', weight: 2.5, opacity: 0.65 }).addTo(leafletMap);
+    routeLines.push(line);
+    fetchRealRoute(path).then(real => {
+      if (real && real.length > 1) line.setLatLngs(real);
+    }).catch(() => {});
+  });
+  // Ferryroutes blijven rechte lijnen — er bestaat geen "auto-routing"-
+  // equivalent voor zeeroutes (zie 08-restplan-openstaande-punten.md).
+  // Alleen de standaardreis heeft handmatig ingetekende ferry-etappes.
+  if (isDefaultTrip) {
+    FERRY_PATHS.forEach(path => {
+      routeLines.push(L.polyline(path, { color: '#1B5A8A', weight: 2.5, opacity: 0.7, dashArray: '8,5' }).addTo(leafletMap));
+    });
+  }
+}
+
+// Thuis → verblijf 1 → verblijf 2 → ... → Thuis, als losse etappes
+// (zelfde vorm als DRIVE_PATHS) zodat fetchRealRoute() per etappe kan
+// vervangen. Verblijven zonder geldige coördinaten worden overgeslagen.
+function buildTripDrivePaths() {
+  const stops = ACCOMMODATIONS
+    .filter(a => isValidLatLng(a.lat, a.lng))
+    .map(a => [a.lat, a.lng]);
+  if (stops.length === 0) return [];
+  const points = [[HOME_LAT, HOME_LNG], ...stops, [HOME_LAT, HOME_LNG]];
+  const paths = [];
+  for (let i = 0; i < points.length - 1; i++) paths.push([points[i], points[i + 1]]);
+  return paths;
+}
+
+// De routestrip onderaan het kaartscherm — FIX: stond voorheen hardcoded
+// in index.html (Nijmegen/Hirtshals/Sogndal/...), dus elke reis toonde de
+// Noorwegen-route. De standaardreis rendert nu haar eigen rijke ROUTE-data
+// (js/data.js, incl. ferry's/hotel); elke andere reis een generieke strip
+// Thuis → verblijven → Thuis uit haar eigen data.
+function renderMapRouteStrip() {
+  const container = document.getElementById('map-route-strip');
+  if (!container) return;
+
+  if (getCurrentTripId() === DEFAULT_TRIP_ID) {
+    container.innerHTML = ROUTE.map(stop => {
+      const acc = stop.type === 'accommodation'
+        ? ACCOMMODATIONS.find(a => a.name.startsWith(stop.name))
+        : null;
+      const color = acc ? acc.color
+        : (stop.type === 'home' ? 'var(--summit)'
+          : (stop.type === 'hotel' ? '#795548' : 'var(--water)'));
+      return `<div class="chip" style="border-left:3px solid ${color}">${stop.emoji} ${escapeHtml(stop.name)} · ${escapeHtml(stop.date)}</div>`;
+    }).join('');
+    return;
+  }
+
+  const homeChip = `<div class="chip" style="border-left:3px solid var(--summit)">🏠 Thuis</div>`;
+  const accChips = ACCOMMODATIONS.map(acc =>
+    `<div class="chip" style="border-left:3px solid ${acc.color}">▲ ${escapeHtml(acc.name)} · ${formatShortDate(acc.checkIn)}–${formatShortDate(acc.checkOut)}</div>`
+  ).join('');
+  container.innerHTML = ACCOMMODATIONS.length > 0
+    ? homeChip + accChips + homeChip
+    : `<div class="chip" style="border-left:3px solid var(--line)">Nog geen verblijven — voeg ze toe via het Verblijf-scherm</div>`;
+}
+
 // FIX: het gezichtsveld van de kaart stond altijd vast op Noorwegen
 // ([61,8], zoom 7) — een verblijf buiten dat vaste kader (een andere reis,
 // of gewoon een net toegevoegd verblijf ergens anders) viel dan buiten
 // beeld zonder dat de gebruiker dat kon weten; het leek dan of dat
 // verblijf helemaal niet op de kaart stond. Past nu altijd het
-// gezichtsveld aan zodat elk verblijf mét geldige coördinaten, plus
-// Thuis, gegarandeerd zichtbaar is.
+// gezichtsveld aan zodat elk verblijf mét geldige coördinaten zichtbaar
+// is; met mapShowFullRoute aan ("Alles") telt Thuis ook mee, zodat de
+// hele route incl. vertrekpunt in beeld komt.
 function fitMapToAllPins() {
   if (!leafletMap) return;
-  const points = [[HOME_LAT, HOME_LNG]];
+  const points = [];
   ACCOMMODATIONS.forEach(acc => {
     if (isValidLatLng(acc.lat, acc.lng)) points.push([acc.lat, acc.lng]);
   });
-  if (points.length < 2) return;
+  if (mapShowFullRoute || points.length === 0) points.push([HOME_LAT, HOME_LNG]);
   try {
     leafletMap.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 9 });
   } catch (e) {
@@ -381,13 +455,14 @@ function setMapFilter(accId) {
   renderMapMarkers();
 }
 
+// FIX: de NO/EU-knop zoomde naar vaste Noorwegen/Europa-coördinaten,
+// ongeacht de actieve reis. Nu generiek: "Reis" kadert de verblijven van
+// de actieve reis, "Alles" neemt Thuis (vertrek/aankomst) erbij.
 function toggleFullRoute() {
   mapShowFullRoute = !mapShowFullRoute;
   const btn = document.getElementById('route-toggle-btn');
-  btn.textContent = mapShowFullRoute ? 'EU' : 'NO';
-  if (leafletMap) {
-    leafletMap.setView(mapShowFullRoute ? [55.0, 7.5] : [61.0, 8.0], mapShowFullRoute ? 5 : 7);
-  }
+  btn.textContent = mapShowFullRoute ? 'Alles' : 'Reis';
+  fitMapToAllPins();
 }
 
 function toggleGPS() {

@@ -100,6 +100,16 @@ function parseLocalDateInput(str) {
   return new Date(y, m - 1, d);
 }
 
+// Spiegel van parseLocalDateInput(): Date → "YYYY-MM-DD" voor een <input
+// type="date">, op basis van de LOKALE kalenderdag. FIX: het bewerkformulier
+// gebruikte .toISOString().slice(0, 10) — dat is de UTC-dag. Een reisdatum
+// die als lokale middernacht is opgeslagen (Nederland, CEST = UTC+2) valt in
+// UTC nog op de dag ervóór, dus het formulier toonde de begindatum één dag
+// te vroeg — en elke keer "Opslaan" schoof de reis dan écht een dag terug.
+function formatDateInputValue(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function getAccommodationForDate(date) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   return ACCOMMODATIONS.find(acc => d >= acc.checkIn && d < acc.checkOut) || null;
@@ -130,6 +140,10 @@ function getAccommodationOrHomeForDate(date) {
 }
 
 function getActiveAccommodation() {
+  // Een reis mag inmiddels zonder verblijven bestaan (datums eerst,
+  // verblijven later) — zonder deze guard crashte `last.checkOut` hieronder
+  // op undefined, waardoor o.a. wisselen naar zo'n reis halverwege stopte.
+  if (ACCOMMODATIONS.length === 0) return null;
   const today = getToday();
   const direct = getAccommodationForDate(today);
   if (direct) return direct;
@@ -235,6 +249,28 @@ function getAllTripDays() {
 
 function formatShortDate(date) {
   return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+}
+
+// Compacte reisperiode voor de herkenningsstrip: "15–30 jun" als begin en
+// eind in dezelfde maand vallen, anders "28 jun – 3 jul".
+function formatTripDateRange() {
+  const s = TRIP_START, e = TRIP_END;
+  const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
+  return sameMonth
+    ? `${s.getDate()}–${e.getDate()} ${MONTHS[e.getMonth()]}`
+    : `${formatShortDate(s)} – ${formatShortDate(e)}`;
+}
+
+// Vult de dunne reis-herkenningsstrip (.trip-id-strip) bovenaan elke
+// hoofdtab met vlag + reisnaam + reisdagen. Alle strips staan al in de
+// DOM (verborgen schermen incluis), dus in één keer bijwerken volstaat —
+// aangeroepen zodra de actieve reis of z'n datums wijzigen.
+function updateTripIdentityStrips() {
+  const trip = getActiveTrip();
+  const flag = (trip && trip.countryFlag) || '🌍';
+  const name = (trip && trip.name) || 'Reis';
+  const html = `<span class="flag">${flag}</span><span class="tname">${escapeHtml(name)}</span><span class="dates">${formatTripDateRange()}</span>`;
+  document.querySelectorAll('.trip-id-strip').forEach(el => { el.innerHTML = html; });
 }
 
 function getNextAccommodation(currentAccId) {
@@ -493,6 +529,21 @@ function applyCountryTheme(country) {
     ?.setAttribute('content', hslToken(terrain, 60, 14));
 }
 
+// Kleuren van één reis zónder het hele app-thema om te zetten — exact
+// dezelfde tinten als applyCountryTheme() voor dat land op :root zou
+// zetten. Gebruikt door de reiskaarten in "Mijn reizen": tot nu toe was
+// het vlaggetje daar het enige visuele verschil tussen reizen; nu draagt
+// elke kaart alvast de kleuren die de hele app krijgt zodra je die reis
+// activeert (zelfde herkomst, dus altijd consistent met het thema).
+function getTripThemeColors(country) {
+  const [terrain, accent] = getCountryHues(country);
+  return {
+    deep: hslToken(terrain, 60, 14),   // = --spruce van dat land
+    accent: hslToken(accent, 64, 47),  // = --summit van dat land
+    tint: hslToken(terrain, 19, 94),   // = --slope-light van dat land
+  };
+}
+
 // Brede (maar per definitie nooit volledige) landnaam→vlag-lookup voor de
 // vrije land-invoer bij reizen toevoegen/bewerken — onbekend land = 🌍
 // i.p.v. een lege of foute vlag.
@@ -542,6 +593,10 @@ function applyTripData(trip, accommodations) {
   TRIP_START.setTime(trip.startDate.getTime());
   TRIP_END.setTime(trip.endDate.getTime());
   applyCountryTheme(trip.country);
+  // Browsertab/PWA-titel volgt de actieve reis — stond vast op
+  // "Noorwegen 2026" (index.html), welke reis er ook actief was.
+  document.title = `Travel Cockpit · ${trip.name}`;
+  updateTripIdentityStrips();
 
   ACCOMMODATIONS.length = 0;
   // Sorteert op check-in datum i.p.v. het (onbetrouwbare, vaak
@@ -656,6 +711,11 @@ async function switchToTrip(tripId) {
 
   AppState.activities = [];
   AppState.tickets = [];
+  // FIX: de "al toegevoegd"-markeringen van AI-ideeën (Ideeën-scherm)
+  // bleven bij het wisselen van reis staan — een suggestie met dezelfde
+  // naam leek in de nieuwe reis dan al toegevoegd terwijl die daar
+  // helemaal niet bestaat.
+  AppState.discoveredAdded = new Set();
   AppState.selectedPlanningDay = getClosestTripDay();
   AppState.viewingAccommodationId = getActiveAccommodation() ? getActiveAccommodation().id : null;
 
@@ -932,6 +992,16 @@ function initAppState() {
       targetTripId = targetTrip.id;
     }
     setCurrentTripId(targetTripId);
+
+    // FIX: AppState.activities begint als de hardcoded Noorwegen-seed
+    // (js/data.js) — dat is alleen juist voor de standaardreis. Voor elke
+    // andere actieve reis lekten de seed-activiteiten (mét hun verwijzingen
+    // naar de Noorwegen-verblijven) na een pagina-herlaad het scherm in:
+    // bij een lege remote bleven ze gewoon staan, en bij een niet-lege
+    // remote voegde de "localOnly"-merge in startFirebaseSync() ze er zelfs
+    // tussen. Zo zag je in een net aangemaakte tweede reis ineens
+    // activiteiten en verblijfsnamen uit de andere reis opduiken.
+    if (targetTripId !== DEFAULT_TRIP_ID) AppState.activities = [];
 
     // FIX (kritiek): een lege/mislukte dbLoadAccommodations() (bv. een
     // Firestore-leescache die nog niet gesynchroniseerd is, vlak na een

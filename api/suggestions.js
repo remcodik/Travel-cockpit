@@ -51,7 +51,9 @@ export default async function handler(req, res) {
 
   // Systeemprompt — direct gebaseerd op docs/04-ai/01-ai-architecture.md
   // en docs/04-ai/01-ai-philosophy.md: AI suggereert, beslist nooit.
-  const systemPrompt = `Je bent de reisassistent in Travel Cockpit, een roadtrip-app voor Noorwegen.
+  // Geen vast land in de prompt — het land van de actieve reis komt via
+  // het userMessage mee ("Land: ..."), dus de assistent werkt voor elke reis.
+  const systemPrompt = `Je bent de reisassistent in Travel Cockpit, een roadtrip-app.
 
 Regels die je ALTIJD volgt:
 1. Je suggereert alleen, je beslist nooit voor de gebruiker.
