@@ -269,8 +269,13 @@ function updateTripIdentityStrips() {
   const trip = getActiveTrip();
   const flag = (trip && trip.countryFlag) || '🌍';
   const name = (trip && trip.name) || 'Reis';
+  const country = trip ? (trip.country || trip.name) : '';
   const html = `<span class="flag">${flag}</span><span class="tname">${escapeHtml(name)}</span><span class="dates">${formatTripDateRange()}</span>`;
-  document.querySelectorAll('.trip-id-strip').forEach(el => { el.innerHTML = html; });
+  const bg = tripStripBackground(country);
+  document.querySelectorAll('.trip-id-strip').forEach(el => {
+    el.innerHTML = html;
+    el.style.background = bg;
+  });
 }
 
 function getNextAccommodation(currentAccId) {
@@ -538,10 +543,21 @@ function applyCountryTheme(country) {
 function getTripThemeColors(country) {
   const [terrain, accent] = getCountryHues(country);
   return {
-    deep: hslToken(terrain, 60, 14),   // = --spruce van dat land
-    accent: hslToken(accent, 64, 47),  // = --summit van dat land
-    tint: hslToken(terrain, 19, 94),   // = --slope-light van dat land
+    deep: hslToken(terrain, 60, 14),      // = --spruce van dat land
+    accent: hslToken(accent, 64, 47),     // = --summit van dat land
+    accentDeep: hslToken(accent, 58, 34), // accent, donker genoeg voor witte tekst
+    tint: hslToken(terrain, 19, 94),      // = --slope-light van dat land
   };
+}
+
+// Gekleurde verloop-achtergrond voor de reis-herkenningsstrip: van de
+// terrein-tint (links) naar de accent-tint (rechts). Zo krijgt elke reis een
+// duidelijk gekleurde, per-land verschillende banner — de accent-kant maakt
+// het onderscheid ook zichtbaar tussen twee landen met een verwant
+// terreingroen (bv. Noorwegen vs. Polen).
+function tripStripBackground(country) {
+  const t = getTripThemeColors(country);
+  return `linear-gradient(100deg, ${t.deep} 0%, ${t.deep} 38%, ${t.accentDeep} 100%)`;
 }
 
 // Brede (maar per definitie nooit volledige) landnaam→vlag-lookup voor de

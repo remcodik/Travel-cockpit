@@ -80,6 +80,43 @@ function goBack() {
   }
 }
 
+// ── Swipen tussen de hoofdtabs ─────────────────────────────
+// Horizontaal vegen wisselt naar de vorige/volgende tab in de
+// onderbalk-volgorde (MAIN_SCREENS). Bewust genegeerd wanneer het gebaar
+// begint op iets dat zélf horizontaal reageert — de Leaflet-kaart (pannen),
+// een horizontale chip-/dagbalk (.hscroll/#day-tabs), de planning-daginhoud
+// (die heeft z'n eigen dag-swipe), een formulierveld, of een open sheet.
+function initTabSwipe() {
+  let startX = 0, startY = 0, tracking = false, ignore = false;
+  const THRESHOLD = 70; // px
+  const IGNORE_SEL = '.leaflet-container, #map-container, .hscroll, #day-tabs, input, select, textarea, #screen-planning .scroll';
+
+  document.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) { tracking = false; return; }
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY; tracking = true;
+    ignore = !!(e.target.closest && e.target.closest(IGNORE_SEL))
+      || !!document.querySelector('.sheet-backdrop.open');
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (!tracking || ignore) { tracking = false; return; }
+    tracking = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    // Overwegend horizontaal én ver genoeg — anders is het verticaal scrollen.
+    if (Math.abs(dx) < THRESHOLD || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+    const current = MAIN_SCREENS.find(s => {
+      const el = document.getElementById('screen-' + s);
+      return el && el.classList.contains('active');
+    });
+    if (!current) return; // op een detailscherm: geen tab-swipe
+    const nextIdx = MAIN_SCREENS.indexOf(current) + (dx < 0 ? 1 : -1);
+    if (nextIdx < 0 || nextIdx >= MAIN_SCREENS.length) return;
+    navigateTo(MAIN_SCREENS[nextIdx]);
+  }, { passive: true });
+}
+
 function closeSheet(sheetId) {
   document.getElementById(sheetId).classList.remove('open');
 }
@@ -134,4 +171,5 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.target === bg) bg.classList.remove('open');
     });
   });
+  initTabSwipe();
 });

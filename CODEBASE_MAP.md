@@ -98,6 +98,7 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `showToast(message, duration, onAction)`
 - `navigateTo(screenId)`
 - `goBack()`
+- `initTabSwipe()`
 - `closeSheet(sheetId)`
 - `openSheet(sheetId)`
 
@@ -290,6 +291,7 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `getProgress()`
 - `getActiveTrip()`
 - `getTripThemeColors(country)`
+- `tripStripBackground(country)`
 - `formatTripDateRange()`
 - `updateTripIdentityStrips()`
 - `applyTripData(trip, accommodations)`
