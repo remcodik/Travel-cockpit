@@ -276,6 +276,7 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `getDayNumber(date)`
 - `parseLocalDateInput(str)`
 - `formatDateInputValue(date)`
+- `defaultEndDateFromStart(startId, endId)`
 - `getAccommodationForDate(date)`
 - `getActiveAccommodation()`
 - `getAllTripDays()`

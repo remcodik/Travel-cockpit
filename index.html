@@ -513,7 +513,7 @@
     <div style="display:flex;gap:10px">
       <div style="flex:1">
         <p class="eyebrow" style="margin-bottom:5px">Begin reis</p>
-        <input id="trip-start-input" type="date"/>
+        <input id="trip-start-input" type="date" onchange="defaultEndDateFromStart('trip-start-input','trip-end-input')"/>
       </div>
       <div style="flex:1">
         <p class="eyebrow" style="margin-bottom:5px">Eind reis</p>
@@ -536,7 +536,7 @@
     <div style="display:flex;gap:10px">
       <div style="flex:1">
         <p class="eyebrow" style="margin-bottom:5px">Begin reis</p>
-        <input id="edit-trip-start-input" type="date"/>
+        <input id="edit-trip-start-input" type="date" onchange="defaultEndDateFromStart('edit-trip-start-input','edit-trip-end-input')"/>
       </div>
       <div style="flex:1">
         <p class="eyebrow" style="margin-bottom:5px">Eind reis</p>
@@ -721,7 +721,7 @@
     <div style="display:flex;gap:10px">
       <div style="flex:1">
         <p class="eyebrow" style="margin-bottom:5px">Check-in</p>
-        <input id="edit-acc-checkin-input" type="date"/>
+        <input id="edit-acc-checkin-input" type="date" onchange="defaultEndDateFromStart('edit-acc-checkin-input','edit-acc-checkout-input')"/>
       </div>
       <div style="flex:1">
         <p class="eyebrow" style="margin-bottom:5px">Tijd</p>
