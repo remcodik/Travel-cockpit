@@ -110,6 +110,23 @@ function formatDateInputValue(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+// Zodra je bij een van-tot-datumpaar de begindatum invult, springt de
+// einddatum standaard naar de dag erna — zo hoef je bij die tweede
+// datumkiezer niet opnieuw maanden ver te scrollen (die opende leeg, dus
+// bij "vandaag", terwijl de reis vaak maanden verderop ligt). Alleen
+// invullen als de einddatum nog leeg is of nu vóór/gelijk aan de begindatum
+// ligt — een bewust later gekozen einddatum blijft dus staan.
+function defaultEndDateFromStart(startId, endId) {
+  const startEl = document.getElementById(startId);
+  const endEl = document.getElementById(endId);
+  if (!startEl || !endEl || !startEl.value) return;
+  const start = parseLocalDateInput(startEl.value);
+  if (endEl.value && parseLocalDateInput(endEl.value) > start) return;
+  const next = new Date(start);
+  next.setDate(next.getDate() + 1);
+  endEl.value = formatDateInputValue(next);
+}
+
 function getAccommodationForDate(date) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   return ACCOMMODATIONS.find(acc => d >= acc.checkIn && d < acc.checkOut) || null;
