@@ -186,7 +186,12 @@ body.read-only-mode .edit-pencil-btn { display: none !important; }
   font-size: 15px; font-weight: 800; color: #fff;
   letter-spacing: 0.2px; white-space: nowrap; overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,0.12);
-  flex-shrink: 0; position: relative; z-index: 5;
+  flex-shrink: 0;
+  /* FIX (docs/10-issues/38): body/.screen gebruiken min-height:100dvh
+     zonder vaste hoogte, dus de héle pagina scrollt (niet .scroll apart) —
+     "buiten .scroll staan" hield de strip dus NIET vast. position:sticky
+     pint 'm aan de bovenkant van het scrollvenster, ongeacht wat scrollt. */
+  position: sticky; top: 0; z-index: 20;
 }
 .trip-id-strip .flag {
   font-size: 16px; line-height: 1;
