@@ -10,7 +10,14 @@ function renderHomeScreen() {
   renderTripPhaseBanner();
   updateTripIdentityStrips();
 
-  document.getElementById('home-day').textContent = `Dag ${dayNum} · ${formatShortDate(today)}`;
+  // FIX (docs/10-issues/36): buiten het reisvenster is "Dag X" negatief of
+  // absurd hoog ("Dag -64") én dubbelop met de fase-banner eronder ("Reis
+  // begint over 65 dagen"). Alleen tijdens de reis tonen we het dagnummer;
+  // ervoor/erna gewoon "Vandaag · datum", zodat er niet twee dingen tegelijk
+  // lijken af te tellen.
+  document.getElementById('home-day').textContent = getTripPhase() === 'during'
+    ? `Dag ${dayNum} · ${formatShortDate(today)}`
+    : `Vandaag · ${formatShortDate(today)}`;
 
   // Hero accommodatie
   document.getElementById('home-acc-name').textContent = acc ? acc.name : 'Onderweg';

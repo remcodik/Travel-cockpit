@@ -178,15 +178,15 @@ body.read-only-mode .edit-pencil-btn { display: none !important; }
    updateTripIdentityStrips() (js/state.js). Zo weet je op elk
    scherm meteen welke reis actief is en hoe lang die duurt. */
 .trip-id-strip {
-  display: flex; align-items: baseline; gap: 7px;
-  padding: 6px 16px; background: var(--white);
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 9px 16px; background: var(--white);
   border-bottom: 1px solid var(--line-soft);
-  font-size: 12px; font-weight: 800; color: var(--ink);
+  font-size: 14.5px; font-weight: 800; color: var(--ink);
   letter-spacing: 0.2px; white-space: nowrap; overflow: hidden;
 }
-.trip-id-strip .flag { font-size: 14px; align-self: center; }
+.trip-id-strip .flag { font-size: 18px; align-self: center; }
 .trip-id-strip .tname { overflow: hidden; text-overflow: ellipsis; }
-.trip-id-strip .dates { color: var(--ink-faint); font-weight: 600; font-family: var(--font-mono); font-size: 10.5px; flex-shrink: 0; }
+.trip-id-strip .dates { color: var(--ink-faint); font-weight: 600; font-family: var(--font-mono); font-size: 12px; flex-shrink: 0; }
 
 /* ── Snelacties-raster (Vandaag) ─────────────────────────
    Compacte 2-koloms tegels voor route/nabij/laden. */
