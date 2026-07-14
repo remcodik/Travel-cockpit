@@ -233,6 +233,7 @@
 
 <!-- ═══════════ ACCOMMODATIE ═══════════ -->
 <div id="screen-accommodation" class="screen" style="padding-bottom:0">
+  <div class="trip-id-strip safe-top"></div>
   <div class="topo-panel" style="height:222px;flex-shrink:0;position:relative">
     <svg class="topo-svg" data-topo="5" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"></svg>
     <div class="topo-overlay"></div>
@@ -296,7 +297,8 @@
 
 <!-- ═══════════ REISGIDS ═══════════ -->
 <div id="screen-guide" class="screen" style="padding-bottom:0">
-  <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+  <div class="trip-id-strip safe-top"></div>
+  <div class="px" style="padding-top:11px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <div style="flex:1;min-width:0">
       <span class="page-title">REISGIDS</span>
@@ -311,7 +313,8 @@
 
 <!-- ═══════════ ROADTRIP ═══════════ -->
 <div id="screen-roadtrip" class="screen" style="padding-bottom:0">
-  <div style="background:var(--spruce-deep);padding:9px 16px 11px;padding-top:calc(env(safe-area-inset-top,12px) + 9px)">
+  <div class="trip-id-strip safe-top"></div>
+  <div style="background:var(--spruce-deep);padding:9px 16px 11px">
     <div style="display:flex;align-items:center;gap:12px">
       <button onclick="goBack()" style="color:rgba(232,228,217,0.6);font-size:21px;background:none;border:none;cursor:pointer">‹</button>
       <div style="flex:1"><p style="font-size:17px;font-weight:800;color:white;letter-spacing:-0.3px;font-family:var(--font-display)">ROADTRIP-MODUS</p><p class="mono" style="color:rgba(232,228,217,0.4);margin-top:2px" id="rt-position">positie onbekend</p></div>
@@ -381,7 +384,8 @@
 
 <!-- ═══════════ TICKETS ═══════════ -->
 <div id="screen-tickets" class="screen" style="padding-bottom:0">
-  <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+  <div class="trip-id-strip safe-top"></div>
+  <div class="px" style="padding-top:11px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <span class="page-title" style="flex:1">TICKETS</span>
     <button onclick="openAddTicketSheet()" class="fab edit-only" style="background:var(--spruce);color:white">+</button>
@@ -396,7 +400,8 @@
 
 <!-- ═══════════ MIJN REIZEN ═══════════ -->
 <div id="screen-trips" class="screen" style="padding-bottom:0">
-  <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+  <div class="trip-id-strip safe-top"></div>
+  <div class="px" style="padding-top:11px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <span class="page-title" style="flex:1">MIJN REIZEN</span>
     <button onclick="openAddTripSheet()" class="fab edit-only" style="background:var(--spruce);color:white">+</button>
@@ -410,7 +415,8 @@
 
 <!-- ═══════════ INSTELLINGEN ═══════════ -->
 <div id="screen-settings" class="screen" style="padding-bottom:0">
-  <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
+  <div class="trip-id-strip safe-top"></div>
+  <div class="px" style="padding-top:11px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center">
     <button onclick="goBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer;margin-right:11px">‹</button>
     <span class="page-title">INSTELLINGEN</span>
   </div>
@@ -895,7 +901,8 @@
 
 <!-- ═══════════ NOTITIES ═══════════ -->
 <div id="screen-notes" class="screen" style="padding-bottom:0">
-  <div class="px safe-top" style="padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center;gap:11px">
+  <div class="trip-id-strip safe-top"></div>
+  <div class="px" style="padding-top:11px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);background:white;display:flex;align-items:center;gap:11px">
     <button onclick="saveNoteAndGoBack()" style="font-size:21px;color:var(--ink-mid);background:none;border:none;cursor:pointer">‹</button>
     <div style="flex:1;min-width:0">
       <p class="eyebrow" id="note-back-label">Terug</p>
