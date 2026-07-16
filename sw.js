@@ -18,7 +18,7 @@
 // update-banner (js/offline.js) dus nooit af, ongeacht hoeveel er
 // daadwerkelijk gewijzigd was. Vanaf nu: bij elke merge die JS/CSS/HTML
 // aanpast, dit getal ophogen.
-const CACHE_VERSION = 'v36';
+const CACHE_VERSION = 'v37';
 const CACHE_NAME = `travel-cockpit-${CACHE_VERSION}`;
 
 const APP_SHELL = [

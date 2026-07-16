@@ -7,17 +7,22 @@ function renderHomeScreen() {
   const dayNum = getDayNumber(today);
   const acc = getActiveAccommodation(); // FIX: altijd via datum-logica, nooit hardcoded
 
-  renderTripPhaseBanner();
   updateTripIdentityStrips();
 
-  // FIX (docs/10-issues/36): buiten het reisvenster is "Dag X" negatief of
-  // absurd hoog ("Dag -64") én dubbelop met de fase-banner eronder ("Reis
-  // begint over 65 dagen"). Alleen tijdens de reis tonen we het dagnummer;
-  // ervoor/erna gewoon "Vandaag · datum", zodat er niet twee dingen tegelijk
-  // lijken af te tellen.
-  document.getElementById('home-day').textContent = getTripPhase() === 'during'
-    ? `Dag ${dayNum} · ${formatShortDate(today)}`
-    : `Vandaag · ${formatShortDate(today)}`;
+  // Datum + reisfase op één banner (docs/10-issues/44):
+  // - tijdens de reis: de dunne dag-rij "Dag X · datum" (geen fase-banner);
+  // - ervoor/erna: alleen de gecombineerde fase-banner (die de datum zélf al
+  //   bevat), dus de losse dag-rij verbergen we — anders staan datum en
+  //   aftel-info op twee aparte regels.
+  const phase = getTripPhase();
+  const dayRow = document.getElementById('home-day-row');
+  if (phase === 'during') {
+    if (dayRow) dayRow.style.display = '';
+    document.getElementById('home-day').textContent = `Dag ${dayNum} · ${formatShortDate(today)}`;
+  } else {
+    if (dayRow) dayRow.style.display = 'none';
+  }
+  renderTripPhaseBanner();
 
   // Hero accommodatie
   document.getElementById('home-acc-name').textContent = acc ? acc.name : 'Onderweg';
@@ -132,10 +137,13 @@ function renderTripPhaseBanner() {
   const phase = getTripPhase();
   if (phase === 'during') { el.innerHTML = ''; return; }
 
-  const daysUntil = Math.ceil((TRIP_START - getToday()) / 86400000);
+  // Eén banner met de datum van vandaag én de reisfase. Bewoording op
+  // verzoek: "nog xx dagen tot <startdatum>" i.p.v. "Reis begint over ...".
+  const today = getToday();
+  const daysUntil = Math.ceil((TRIP_START - today) / 86400000);
   const text = phase === 'before'
-    ? `Reis begint over ${daysUntil} dag${daysUntil === 1 ? '' : 'en'} · ${formatShortDate(TRIP_START)}`
-    : `Reis afgerond op ${formatShortDate(TRIP_END)} — hier is een terugblik`;
+    ? `Vandaag ${formatShortDate(today)} · nog ${daysUntil} dag${daysUntil === 1 ? '' : 'en'} tot ${formatShortDate(TRIP_START)}`
+    : `Vandaag ${formatShortDate(today)} · reis afgerond op ${formatShortDate(TRIP_END)}`;
 
   el.innerHTML = `
     <div class="px" style="padding-top:11px;padding-bottom:11px;background:var(--slope-light);border-bottom:1px solid var(--line-soft)">
