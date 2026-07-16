@@ -149,6 +149,18 @@ function initMap() {
   }, 50);
 }
 
+// Opent Google Maps op precies hetzelfde punt en zoomniveau als de kaart nu
+// toont — dus ingezoomd op het verblijf (bij een stedentrip de stad, bij een
+// rondreis het overzicht dat je op dat moment bekijkt). De @lat,lng,zoomz-
+// vorm bewaart het exacte gezichtsveld. Alleen op het kaartscherm; andere
+// plekken (bv. route vanuit een activiteit) blijven ongewijzigd.
+function openMapInGoogleMaps() {
+  if (!leafletMap) { showToast('Kaart nog niet geladen'); return; }
+  const c = leafletMap.getCenter();
+  const z = Math.round(leafletMap.getZoom());
+  window.open(`https://www.google.com/maps/@${c.lat.toFixed(6)},${c.lng.toFixed(6)},${z}z`, '_blank');
+}
+
 function reportMapError(e) {
   console.error('Kaart-fout:', e);
   const banner = document.getElementById('debug-banner');
