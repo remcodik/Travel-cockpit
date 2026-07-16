@@ -156,12 +156,21 @@ function renderPlanningDay() {
   const isTripBoundaryDay = day.getTime() === TRIP_START.getTime() || day.getTime() === TRIP_END.getTime();
   const hasTwoToneBorder = !!(prevAcc && acc && prevAcc.id !== acc.id);
   const badgeBg = hasTwoToneBorder ? 'var(--white)' : (acc ? acc.color : 'var(--ink-faint)');
-  const badgeBorder = hasTwoToneBorder ? `border:5px solid ${acc.color};border-left:7px solid ${prevAcc.color};` : '';
+  // FIX (docs/10-issues/41): de tweekleurige rand van een verplaatsdag (o.a.
+  // de eerste dag Thuis→verblijf en de laatste dag verblijf→Thuis) werd met
+  // een dikke border gemaakt, wat de badge — en dus de hele dagkop — op die
+  // dagen groter maakte dan op gewone dagen. Nu heeft elke badge dezelfde
+  // vaste buitenmaat (box-sizing:border-box), en op een gewone dag heeft de
+  // rand simpelweg de kleur van de vulling (dus onzichtbaar, maar wél even
+  // groot). Zo blijft de kleurhint behouden zonder maatverschil.
+  const badgeBorder = hasTwoToneBorder
+    ? `border:4px solid ${acc.color};border-left:6px solid ${prevAcc.color};`
+    : `border:4px solid ${badgeBg};`;
   const badgeTextColor = hasTwoToneBorder ? 'var(--ink)' : 'white';
   const badgeLabelColor = hasTwoToneBorder ? 'var(--ink-faint)' : 'rgba(255,255,255,.65)';
 
   document.getElementById('day-header').innerHTML = `
-    <div style="background:${badgeBg};${badgeBorder}border-radius:10px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+    <div style="background:${badgeBg};${badgeBorder}box-sizing:border-box;width:48px;height:44px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
       <span class="mono" style="font-size:8px;color:${badgeLabelColor};font-weight:700;letter-spacing:1px">DAG</span>
       <span style="font-family:var(--font-display);font-size:20px;font-weight:800;color:${badgeTextColor};line-height:1">${dayNum}</span>
     </div>
