@@ -144,6 +144,16 @@ function isValidLatLng(lat, lng) {
   return Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0);
 }
 
+// Reistype wordt afgeleid uit het aantal verblijven — geen aparte
+// indicator nodig (op verzoek): precies één verblijf = stedentrip (kaart
+// zoomt in op de stad + de activiteiten dáár), meerdere verblijven =
+// rondreis (overzicht van alle verblijven + de route). Geldt automatisch
+// voor élke reis, bestaand én nieuw, omdat het puur bij het renderen wordt
+// bepaald — er verandert niets aan de opgeslagen data.
+function isCityTrip() {
+  return ACCOMMODATIONS.length === 1;
+}
+
 // ── Routelijnen per reis ────────────────────────────────────
 // FIX: de handgetekende Noorwegen-route (DRIVE_PATHS/FERRY_PATHS,
 // js/data.js) werd voorheen onvoorwaardelijk op de kaart getekend — óók
@@ -156,6 +166,10 @@ function renderMapRoutes() {
   if (!leafletMap) return;
   routeLines.forEach(l => l.remove());
   routeLines = [];
+
+  // Stedentrip (1 verblijf): geen rijroute tekenen — de reis speelt zich af
+  // binnen één stad, niet als etappe onderweg. De kaart toont de stad zelf.
+  if (isCityTrip()) return;
 
   const isDefaultTrip = getCurrentTripId() === DEFAULT_TRIP_ID;
 
@@ -205,6 +219,14 @@ function renderMapRouteStrip() {
   const container = document.getElementById('map-route-strip');
   if (!container) return;
 
+  // Kop + legenda passen zich aan het reistype aan: bij een stedentrip is er
+  // geen rij/ferry-route, dus tonen we "In de stad" zonder route-legenda.
+  const labelEl = document.getElementById('map-strip-label');
+  const legendEl = document.getElementById('map-strip-legend');
+  const cityTrip = isCityTrip();
+  if (labelEl) labelEl.textContent = cityTrip ? 'In de stad' : 'Route';
+  if (legendEl) legendEl.style.display = cityTrip ? 'none' : '';
+
   if (getCurrentTripId() === DEFAULT_TRIP_ID) {
     container.innerHTML = ROUTE.map(stop => {
       const acc = stop.type === 'accommodation'
@@ -215,6 +237,20 @@ function renderMapRouteStrip() {
           : (stop.type === 'hotel' ? '#795548' : 'var(--water)'));
       return `<div class="chip" style="border-left:3px solid ${color}">${stop.emoji} ${escapeHtml(stop.name)} · ${escapeHtml(stop.date)}</div>`;
     }).join('');
+    return;
+  }
+
+  // Stedentrip: geen Thuis→stad→Thuis-route, maar de stad zelf met haar
+  // ingeplande activiteiten — dat is wat je in één stad wilt zien.
+  if (isCityTrip()) {
+    const acc = ACCOMMODATIONS[0];
+    const actChips = AppState.activities
+      .filter(a => a.date)
+      .sort((a, b) => a.date - b.date)
+      .map(a => `<div class="chip" style="border-left:3px solid ${acc.color}">${a.emoji || '📍'} ${escapeHtml(a.name)}</div>`)
+      .join('');
+    container.innerHTML =
+      `<div class="chip" style="border-left:3px solid ${acc.color}">🏙️ ${escapeHtml(acc.name)} · stedentrip</div>` + actChips;
     return;
   }
 
@@ -237,6 +273,28 @@ function renderMapRouteStrip() {
 // hele route incl. vertrekpunt in beeld komt.
 function fitMapToAllPins() {
   if (!leafletMap) return;
+
+  // Stedentrip: inzoomen op de stad zelf (straatniveau) met de ingeplande
+  // activiteiten erin, i.p.v. het brede rondreis-overzicht. Thuis telt hier
+  // bewust niet mee — dat zou de kaart juist weer ver uitzoomen. Met "Alles"
+  // (mapShowFullRoute) kun je alsnog het geheel incl. Thuis bekijken.
+  if (isCityTrip() && !mapShowFullRoute) {
+    const acc = ACCOMMODATIONS[0];
+    const cityPoints = [];
+    if (isValidLatLng(acc.lat, acc.lng)) cityPoints.push([acc.lat, acc.lng]);
+    AppState.activities.forEach(a => {
+      if (a.date && isValidLatLng(a.lat, a.lng)) cityPoints.push([a.lat, a.lng]);
+    });
+    try {
+      if (cityPoints.length === 1) { leafletMap.setView(cityPoints[0], 13); return; }
+      if (cityPoints.length >= 2) {
+        leafletMap.fitBounds(L.latLngBounds(cityPoints), { padding: [50, 50], maxZoom: 15 });
+        return;
+      }
+    } catch (e) { reportMapError(e); return; }
+    // Geen bruikbare coördinaten: val door naar het brede overzicht hieronder.
+  }
+
   const points = [];
   ACCOMMODATIONS.forEach(acc => {
     if (isValidLatLng(acc.lat, acc.lng)) points.push([acc.lat, acc.lng]);
