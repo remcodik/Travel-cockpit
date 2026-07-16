@@ -437,14 +437,23 @@ function openActivityDetailSheet(id) {
     // eigen link altijd, zoekopdracht blijft de terugval zonder eigen link.
     const hasSafeKomootLink = act.komootTourUrl && /^https?:\/\//i.test(act.komootTourUrl);
     const komootHref = hasSafeKomootLink ? act.komootTourUrl : komootSearchUrl(locationQuery);
+    // Een échte komoot.com-tourlink openen we in hetzelfde venster (geen
+    // target="_blank"): een gewone, door de gebruiker aangetikte navigatie
+    // naar komoot.com is precies wat iOS Universal Links / Android App Links
+    // nodig hebben om de Komoot-app te openen i.p.v. de browser. Een popup/
+    // nieuw tabblad blijft juist vaak in de (in-app) browser hangen. Werkt
+    // alleen als de app geïnstalleerd is én app-link-afhandeling aan staat;
+    // dat kan de web-app niet afdwingen. De zoek-terugval (komootSearchUrl,
+    // een Google-zoekopdracht — geen komoot.com) blijft in een nieuw tabblad.
+    const komootIsAppLink = hasSafeKomootLink && /(?:^|\/\/)(?:www\.)?komoot\.com\//i.test(act.komootTourUrl);
     nearbyEl.innerHTML = `
-        ${hasSafeLink ? `<a href="${escapeHtml(act.link)}" target="_blank"
+        ${hasSafeLink ? `<a href="${escapeHtml(act.link)}" target="_blank" rel="noopener"
           style="padding:7px 14px;border:1.5px solid var(--spruce);border-radius:20px;background:var(--spruce);font-size:11px;font-weight:700;text-transform:uppercase;color:white;text-decoration:none;display:inline-block">
           🔗 Link
         </a>` : ''}
-        ${meta.isHike ? `<a href="${escapeHtml(komootHref)}" target="_blank"
+        ${meta.isHike ? `<a href="${escapeHtml(komootHref)}" ${komootIsAppLink ? '' : 'target="_blank" rel="noopener"'}
           style="padding:7px 13px;border:1.5px solid var(--line);border-radius:20px;background:white;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;display:inline-block">
-          🥾 Komoot
+          🥾 Komoot${komootIsAppLink ? ' →' : ''}
         </a>` : ''}
         ${meta.nearbyCategories.map(cat => `
         <button onclick="openNearbySearch('${cat}', ${act.lat || 0}, ${act.lng || 0}, '${safeQuery}')"
