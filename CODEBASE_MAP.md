@@ -187,6 +187,7 @@ Gegenereerd door `map_codebase.py`. 0 Python-bestand(en), 21 JS/TS-bestand(en).
 - `initMap()`
 - `reportMapError(e)`
 - `isCityTrip()`
+- `applyMapBaseLayer()`
 - `renderMapFilterChips()`
 - `renderMapMarkers()`
 - `renderMapRoutes()`

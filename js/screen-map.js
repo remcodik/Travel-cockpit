@@ -49,6 +49,33 @@ async function fetchRealRoute(waypoints) {
   }
 }
 
+// ── Basis-tegellaag per reistype ───────────────────────────
+// Labels blijven in de lokale taal (zoals op de borden onderweg — geen
+// vertaling, geen API-sleutel nodig). Alleen de kaartstíjl verschilt:
+// - Rondreis: de vertrouwde OpenStreetMap-kaart (goed leesbaar op afstand,
+//   met terrein/natuur).
+// - Stedentrip: CartoDB "Voyager" — een fijnere, rustiger stadscartografie
+//   met duidelijke straten en POI-labels, prettiger bij het inzoomen op één
+//   stad. Gratis en sleutelloos (zelfde soort publieke tegels als OSM).
+let baseTileLayer = null;
+let baseTileLayerIsCity = null;
+const TILE_STYLES = {
+  roadtrip: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '© OpenStreetMap', subdomains: 'abc', maxZoom: 18 },
+  city: { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', attribution: '© OpenStreetMap, © CARTO', subdomains: 'abcd', maxZoom: 20 },
+};
+
+function applyMapBaseLayer() {
+  if (!leafletMap) return;
+  const city = isCityTrip();
+  if (baseTileLayer && baseTileLayerIsCity === city) return; // al de juiste stijl
+  if (baseTileLayer) { baseTileLayer.remove(); baseTileLayer = null; }
+  const cfg = city ? TILE_STYLES.city : TILE_STYLES.roadtrip;
+  baseTileLayer = L.tileLayer(cfg.url, { attribution: cfg.attribution, subdomains: cfg.subdomains, maxZoom: cfg.maxZoom });
+  baseTileLayer.addTo(leafletMap);
+  baseTileLayer.bringToBack(); // onder de routelijnen en pins houden
+  baseTileLayerIsCity = city;
+}
+
 function initMap() {
   const loadingEl = document.getElementById('map-loading');
 
@@ -71,6 +98,7 @@ function initMap() {
     // getekend, dus de Noorwegen-route bleef op de kaart staan, welke reis
     // er ook actief was.
     mapFilterAccId = null;
+    applyMapBaseLayer();
     renderMapFilterChips();
     renderMapMarkers();
     renderMapRoutes();
@@ -98,10 +126,7 @@ function initMap() {
     try {
       leafletMap = L.map(container, { zoomControl: false }).setView([61.0, 8.0], 7);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        maxZoom: 18,
-      }).addTo(leafletMap);
+      applyMapBaseLayer();
 
       L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
 
