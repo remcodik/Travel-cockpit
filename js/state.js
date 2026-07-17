@@ -625,6 +625,17 @@ function applyTripData(trip, accommodations) {
 
   TRIP_START.setTime(trip.startDate.getTime());
   TRIP_END.setTime(trip.endDate.getTime());
+  // FIX (docs/10-issues/45): normaliseer het reisvenster naar lokale
+  // middernacht in het geheugen. Een oudere versie kan startDate/endDate op
+  // een ander tijdstip-van-de-dag hebben opgeslagen (bv. UTC-middernacht).
+  // De auto-verruim-check verderop vergelijkt op exact tijdstip; zonder deze
+  // normalisatie kan zo'n sub-dag-verschil de check laten aanslaan, de datum
+  // een fractie verschuiven én terugschrijven naar Firestore — precies de
+  // "mijn startdatum verandert vanzelf zonder dat ik iets wijzig"-klacht. In
+  // het geheugen normaliseren (niet blind terugschrijven) houdt de weergave
+  // stabiel en voorkomt onnodige schrijfacties.
+  TRIP_START.setHours(0, 0, 0, 0);
+  TRIP_END.setHours(0, 0, 0, 0);
   applyCountryTheme(trip.country);
   // Browsertab/PWA-titel volgt de actieve reis — stond vast op
   // "Noorwegen 2026" (index.html), welke reis er ook actief was.
@@ -695,11 +706,22 @@ function applyTripData(trip, accommodations) {
   // verruimen, nooit krimpen, en alleen wanneer het venster een bestaand
   // verblijf niet meer dekt.
   if (ACCOMMODATIONS.length > 0) {
-    const accMinCheckIn = new Date(Math.min(...ACCOMMODATIONS.map(a => a.checkIn.getTime())));
-    const accMaxCheckOut = new Date(Math.max(...ACCOMMODATIONS.map(a => a.checkOut.getTime())));
+    // Op kalenderdag (lokale middernacht) vergelijken — TRIP_START/END zijn
+    // hierboven al genormaliseerd, en checkIn/checkOut in de migratie erboven.
+    // Zo verruimt het venster alleen bij een verblijf dat écht een hele dag
+    // buiten de reis valt, nooit door een tijdstip-verschil.
+    const dayStart = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const accMinCheckIn = new Date(Math.min(...ACCOMMODATIONS.map(a => dayStart(a.checkIn))));
+    const accMaxCheckOut = new Date(Math.max(...ACCOMMODATIONS.map(a => dayStart(a.checkOut))));
     let windowWidened = false;
-    if (accMinCheckIn.getTime() < TRIP_START.getTime()) { TRIP_START.setTime(accMinCheckIn.getTime()); windowWidened = true; }
-    if (accMaxCheckOut.getTime() > TRIP_END.getTime()) { TRIP_END.setTime(accMaxCheckOut.getTime()); windowWidened = true; }
+    if (accMinCheckIn.getTime() < TRIP_START.getTime()) {
+      console.warn(`Reisvenster verruimd: startdatum ${TRIP_START.toDateString()} → ${accMinCheckIn.toDateString()} om een verblijf te dekken`);
+      TRIP_START.setTime(accMinCheckIn.getTime()); windowWidened = true;
+    }
+    if (accMaxCheckOut.getTime() > TRIP_END.getTime()) {
+      console.warn(`Reisvenster verruimd: einddatum ${TRIP_END.toDateString()} → ${accMaxCheckOut.toDateString()} om een verblijf te dekken`);
+      TRIP_END.setTime(accMaxCheckOut.getTime()); windowWidened = true;
+    }
     if (windowWidened) updateTripMeta(trip.id, { startDate: new Date(TRIP_START), endDate: new Date(TRIP_END) });
   }
 
