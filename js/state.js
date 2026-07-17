@@ -705,24 +705,36 @@ function applyTripData(trip, accommodations) {
   // in Planning, zoals hierboven met Hotel Kolding gebeurde) — dus alleen
   // verruimen, nooit krimpen, en alleen wanneer het venster een bestaand
   // verblijf niet meer dekt.
+  // FIX (docs/10-issues/46 — "startdatum verandert vanzelf, komt steeds
+  // terug"): dit blok verruimde het reisvenster om verblijven te dekken ÉN
+  // schreef die verruiming terug naar Firestore (updateTripMeta). Dat
+  // terugschrijven was de kern van het probleem: zodra één verblijf-datum
+  // ook maar iets buiten het venster lag (vaak een onzichtbaar tijdstip-
+  // verschil uit een oudere versie), veranderde de opgeslagen reis-startdatum
+  // "vanzelf" en bleef daarna zo staan — elke keer opnieuw. De opgeslagen
+  // reisdatums zijn nu heilig: NOOIT meer automatisch overschrijven. We
+  // verruimen hoogstens in het geheugen (zodat een verblijf zichtbaar blijft
+  // in Planning, zoals Hotel Kolding), maar slaan dat niet op; elk apparaat
+  // leidt die weergave zelf af uit de verblijven. Valt een verblijf echt
+  // buiten je reisdatums, dan zeggen we welk — jij beslist of je de reis of
+  // dat verblijf aanpast.
   if (ACCOMMODATIONS.length > 0) {
-    // Op kalenderdag (lokale middernacht) vergelijken — TRIP_START/END zijn
-    // hierboven al genormaliseerd, en checkIn/checkOut in de migratie erboven.
-    // Zo verruimt het venster alleen bij een verblijf dat écht een hele dag
-    // buiten de reis valt, nooit door een tijdstip-verschil.
     const dayStart = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const origStart = TRIP_START.getTime();
+    const origEnd = TRIP_END.getTime();
     const accMinCheckIn = new Date(Math.min(...ACCOMMODATIONS.map(a => dayStart(a.checkIn))));
     const accMaxCheckOut = new Date(Math.max(...ACCOMMODATIONS.map(a => dayStart(a.checkOut))));
-    let windowWidened = false;
-    if (accMinCheckIn.getTime() < TRIP_START.getTime()) {
-      console.warn(`Reisvenster verruimd: startdatum ${TRIP_START.toDateString()} → ${accMinCheckIn.toDateString()} om een verblijf te dekken`);
-      TRIP_START.setTime(accMinCheckIn.getTime()); windowWidened = true;
+    if (accMinCheckIn.getTime() < origStart) TRIP_START.setTime(accMinCheckIn.getTime()); // alleen in geheugen
+    if (accMaxCheckOut.getTime() > origEnd) TRIP_END.setTime(accMaxCheckOut.getTime());   // alleen in geheugen
+    const outside = ACCOMMODATIONS.filter(a => dayStart(a.checkIn) < origStart || dayStart(a.checkOut) > origEnd);
+    if (outside.length > 0) {
+      const names = outside.map(a => a.name).join(', ');
+      console.warn('Verblijf(en) buiten de opgeslagen reisdatums (venster alleen in geheugen verruimd, NIET opgeslagen):',
+        outside.map(a => `${a.name}: ${a.checkIn.toDateString()}–${a.checkOut.toDateString()}`));
+      // Niet-blokkerende, informerende melding zodat de gebruiker de échte
+      // oorzaak ziet en zelf kan corrigeren, i.p.v. een stille datumwijziging.
+      onDbReady(() => showToast && showToast(`ℹ️ ${names} valt buiten je reisdatums — pas de reis of dat verblijf aan`, 5000));
     }
-    if (accMaxCheckOut.getTime() > TRIP_END.getTime()) {
-      console.warn(`Reisvenster verruimd: einddatum ${TRIP_END.toDateString()} → ${accMaxCheckOut.toDateString()} om een verblijf te dekken`);
-      TRIP_END.setTime(accMaxCheckOut.getTime()); windowWidened = true;
-    }
-    if (windowWidened) updateTripMeta(trip.id, { startDate: new Date(TRIP_START), endDate: new Date(TRIP_END) });
   }
 
   // Eenmalige hoogte-verificatie via Open-Meteo (zie docs/10-issues/12-
