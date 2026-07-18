@@ -263,8 +263,17 @@ function openEditAccommodationSheet(accId) {
   document.getElementById('edit-acc-sheet-title').textContent = 'VERBLIJF BEWERKEN';
   document.getElementById('edit-acc-name-input').value = acc.name;
   document.getElementById('edit-acc-address-input').value = acc.address || '';
-  document.getElementById('edit-acc-checkin-input').value = acc.checkIn.toISOString().slice(0, 10);
-  document.getElementById('edit-acc-checkout-input').value = acc.checkOut.toISOString().slice(0, 10);
+  // FIX (docs/10-issues/47 — de échte oorzaak van "startdatum verschuift
+  // vanzelf, komt steeds terug"): toISOString().slice(0,10) geeft de UTC-dag.
+  // Een als lokale middernacht opgeslagen check-in ("…T22:00:00Z" in CEST) is
+  // in UTC de dag ervóór, dus het formulier toonde de datum één dag te vroeg
+  // (14 sep terwijl het overzicht 15 sep toont). Tikte je dan op Opslaan —
+  // ook zonder iets te wijzigen — dan werd die te vroege dag opgeslagen, en
+  // schoof de datum elke keer opnieuw een dag terug (17→16→15). formatDate-
+  // InputValue() formatteert op de lokale kalenderdag, spiegelbeeldig aan
+  // parseLocalDateInput() waarmee het formulier weer wordt uitgelezen.
+  document.getElementById('edit-acc-checkin-input').value = formatDateInputValue(acc.checkIn);
+  document.getElementById('edit-acc-checkout-input').value = formatDateInputValue(acc.checkOut);
   document.getElementById('edit-acc-checkin-time-input').value = acc.checkInTime || '15:00';
   document.getElementById('edit-acc-checkout-time-input').value = acc.checkOutTime || '11:00';
   document.getElementById('edit-acc-phone-input').value = acc.phone || '';
