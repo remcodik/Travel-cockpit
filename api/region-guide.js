@@ -1,3 +1,4 @@
+import { requireSession } from './_lib/firebaseAdmin.js';
 // ═══════════════════════════════════════════════════════════
 // api/region-guide.js — Vercel serverless function
 // Reisgids-achtige omgevingsinfo bij een verblijf: karakter van de
@@ -13,6 +14,8 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Alleen POST toegestaan' });
   }
+  const session = await requireSession(req, res);
+  if (!session) return;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

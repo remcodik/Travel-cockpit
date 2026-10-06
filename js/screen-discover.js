@@ -263,7 +263,7 @@ async function handleLoadMoreSuggestions() {
   };
 
   try {
-    const response = await fetch('/api/suggestions', {
+    const response = await authedFetch('/api/suggestions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

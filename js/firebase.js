@@ -21,6 +21,16 @@ const FIREBASE_CONFIG = {
 // Gedeelde link = zelfde trip-ID = zelfde data voor alle bezoekers.
 const DEFAULT_TRIP_ID = 'noorwegen-2026';
 
+// fetch() naar onze eigen AI-endpoints met het Firebase ID-token van de
+// ingelogde bezoeker (eigenaar of deel-link). Zonder token weigeren
+// /api/suggestions, /api/region-guide en /api/enrich-activity.
+async function authedFetch(url, options = {}) {
+  const user = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+  const headers = { ...(options.headers || {}) };
+  if (user) headers.Authorization = 'Bearer ' + await user.getIdToken();
+  return fetch(url, { ...options, headers });
+}
+
 let db = null;
 let tripId = DEFAULT_TRIP_ID;
 let dbReady = false;

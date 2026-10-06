@@ -864,7 +864,7 @@ async function openAiEnrichSheet(id) {
     const resolvedCategory = act.category || categoryForEmoji(act.emoji);
     const isFoodCategory = resolvedCategory === 'restaurant' || resolvedCategory === 'cafe';
     const [response, wikipediaPhoto] = await Promise.all([
-      fetch('/api/enrich-activity', {
+      authedFetch('/api/enrich-activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

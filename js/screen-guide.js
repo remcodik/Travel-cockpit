@@ -58,7 +58,7 @@ async function handleGenerateRegionGuide(accId) {
     </div>`;
 
   try {
-    const response = await fetch('/api/region-guide', {
+    const response = await authedFetch('/api/region-guide', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

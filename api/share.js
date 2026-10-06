@@ -16,7 +16,7 @@
 //   POST /api/share  { action: 'revoke', pin, shareId, revoked } → revoke-share
 // ═══════════════════════════════════════════════════════════
 
-import { getAdminAuth, getAdminFirestore, checkOwnerPin } from './_lib/firebaseAdmin.js';
+import { getAdminAuth, getAdminFirestore, verifyPinWithLimit } from './_lib/firebaseAdmin.js';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -74,8 +74,11 @@ async function handleRedeem(req, res) {
 async function handleLogin(req, res) {
   const { pin } = req.body || {};
   try {
-    if (!checkOwnerPin(pin)) {
-      return res.status(401).json({ error: 'Onjuiste code' });
+    const pinCheck = await verifyPinWithLimit(req, pin);
+    if (!pinCheck.ok) {
+      return res.status(pinCheck.locked ? 429 : 401).json({
+        error: pinCheck.locked ? 'Te veel pogingen — probeer het over 15 minuten opnieuw' : 'Onjuiste code',
+      });
     }
     const token = await getAdminAuth().createCustomToken('owner', {
       owner: true,
@@ -95,8 +98,11 @@ async function handleLogin(req, res) {
 // bewaker, niet de rules). ──
 async function handleCreate(req, res) {
   const { pin, scope, tripId, label } = req.body || {};
-  if (!checkOwnerPin(pin)) {
-    return res.status(401).json({ error: 'Onjuiste code' });
+  const pinCheck = await verifyPinWithLimit(req, pin);
+  if (!pinCheck.ok) {
+    return res.status(pinCheck.locked ? 429 : 401).json({
+      error: pinCheck.locked ? 'Te veel pogingen — probeer het over 15 minuten opnieuw' : 'Onjuiste code',
+    });
   }
   if (scope !== 'view' && scope !== 'edit') {
     return res.status(400).json({ error: 'scope moet "view" of "edit" zijn' });
@@ -131,8 +137,11 @@ async function handleCreate(req, res) {
 // alleen met de eigenaar-PIN. ──
 async function handleList(req, res) {
   const { pin } = req.body || {};
-  if (!checkOwnerPin(pin)) {
-    return res.status(401).json({ error: 'Onjuiste code' });
+  const pinCheck = await verifyPinWithLimit(req, pin);
+  if (!pinCheck.ok) {
+    return res.status(pinCheck.locked ? 429 : 401).json({
+      error: pinCheck.locked ? 'Te veel pogingen — probeer het over 15 minuten opnieuw' : 'Onjuiste code',
+    });
   }
   try {
     const db = getAdminFirestore();
@@ -150,8 +159,11 @@ async function handleList(req, res) {
 // Alleen met de eigenaar-PIN. ──
 async function handleRevoke(req, res) {
   const { pin, shareId, revoked } = req.body || {};
-  if (!checkOwnerPin(pin)) {
-    return res.status(401).json({ error: 'Onjuiste code' });
+  const pinCheck = await verifyPinWithLimit(req, pin);
+  if (!pinCheck.ok) {
+    return res.status(pinCheck.locked ? 429 : 401).json({
+      error: pinCheck.locked ? 'Te veel pogingen — probeer het over 15 minuten opnieuw' : 'Onjuiste code',
+    });
   }
   if (typeof shareId !== 'string' || !shareId) {
     return res.status(400).json({ error: 'shareId ontbreekt' });
