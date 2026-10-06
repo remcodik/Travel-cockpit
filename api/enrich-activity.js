@@ -11,11 +11,14 @@
 // ═══════════════════════════════════════════════════════════
 
 import { fetchPageContext } from './_lib/fetchPageContext.js';
+import { requireSession } from './_lib/firebaseAdmin.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Alleen POST toegestaan' });
   }
+  const session = await requireSession(req, res);
+  if (!session) return;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
